@@ -10,7 +10,7 @@ from .. import context
 from ..context.func_context import current_function_name_context 
 from ..models.key_models import StepType, Step, Trace
 from ..models.common import LLMProvider
-from ..helper import args_helper
+from ..helper import args_helper, inspect_helper
 from ..client import sync_client
 
 
@@ -229,10 +229,12 @@ class BaseTracker(ABC):
             print(str(exception))
             
             start_arguments = args_helper.StartArguments(
-                func_name=func.__name__,
+                func_name=inspect_helper.get_call_name(func=func, args=args),
                 tags=tracker_options.tags,
                 project_name=tracker_options.project_name
             )
+
+        tracker_options.func_name = start_arguments.func_name
 
         if not context.get_storage_current_trace_data():
             current_trace = args_helper.create_new_trace(
@@ -242,14 +244,11 @@ class BaseTracker(ABC):
                 tags=tracker_options.tags,
             )
             context.set_storage_trace(current_trace=current_trace)
-        
-        if not tracker_options.step_name:
-            tracker_options.step_name = func.__name__
 
         new_step: Step = args_helper.create_new_step(
             project_name=tracker_options.project_name,
             input=start_arguments.input,
-            name=tracker_options.step_name,
+            name=tracker_options.func_name,
             type=tracker_options.step_type,
             tags=tracker_options.tags,
             model=tracker_options.model,
@@ -306,7 +305,7 @@ class BaseTracker(ABC):
             # TODO: Log the error information and create a new step to prevent executing exception.
             current_step: Step = args_helper.create_new_step(
                 project_name=tracker_options.project_name,
-                name=tracker_options.step_name,
+                name=tracker_options.func_name,
                 type=tracker_options.step_type,
                 tags=tracker_options.tags,
                 model=tracker_options.model,

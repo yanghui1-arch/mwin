@@ -24,9 +24,10 @@ class AITraceTracker(BaseTracker):
             args=args,
             kwargs=kwargs
         )
+        func_name = inspect_helper.get_call_name(func=func, args=args)
 
         return args_helper.StartArguments(
-            func_name=func.__name__,
+            func_name=func_name,
             tags=tracker_options.tags,
             input=inputs,
             project_name=tracker_options.project_name,
