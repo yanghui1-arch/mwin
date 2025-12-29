@@ -48,8 +48,8 @@ async def query_chats(
                 role=chat.role, 
                 content=chat.payload.get("content", ""), 
                 start_timestamp=chat.start_timestamp
-            ) 
-            for chat in kubent_chats if chat.role == "user" or chat.role == "assistant"
+            )
+            for chat in kubent_chats if chat.role == "user" or (chat.role == "assistant" and chat.payload.get("tool_calls", None) is None)
         ]
         return ResponseModel.success(data=query_chats)
     except TypeError | ValueError as session_id_type_error:
