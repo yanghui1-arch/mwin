@@ -177,7 +177,6 @@ class ProxyStream(Stream):
                     start_time=self.step.start_time,
                     end_time=datetime.now()
                 )
-                print(f"[LOG]: proxy log step successfully: {llm_output}")
                 
             yield chunk
 
