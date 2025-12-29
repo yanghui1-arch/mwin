@@ -45,7 +45,6 @@ def patch_async_openai_chat_completions(step: Step, tracker_options: TrackerOpti
             # log
             client: SyncClient = get_cached_sync_client()
             client.log_step(
-                project_name=tracker_options.project_name,
                 step_name=step.name,
                 step_id=step.id,
                 trace_id=step.trace_id,
@@ -98,7 +97,6 @@ class ProxyAsyncStream(AsyncStream):
             )
             client: SyncClient = get_cached_sync_client()
             client.log_step(
-                project_name=self.tracker_options.project_name,
                 step_name=self.step.name,
                 step_id=self.step.id,
                 trace_id=self.step.trace_id,
@@ -134,7 +132,6 @@ class ProxyAsyncStream(AsyncStream):
                 )
                 client: SyncClient = get_cached_sync_client()
                 client.log_step(
-                    project_name=self.tracker_options.project_name,
                     step_name=self.step.name,
                     step_id=self.step.id,
                     trace_id=self.step.trace_id,

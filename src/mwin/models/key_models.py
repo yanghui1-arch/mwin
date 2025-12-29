@@ -13,7 +13,6 @@ class StepType(Enum):
     TOOL = 'tool'
 
 class Step(BaseModel):
-    project_name: str
     name: str
     id: str | UUID
     trace_id: str | UUID
@@ -39,7 +38,6 @@ class Step(BaseModel):
         return value.strftime("%Y-%m-%d %H:%M:%S")
 
 class Trace(BaseModel):
-    project_name: str
     id: str | UUID | int
     conversation_id: str | UUID
     name: str
@@ -59,7 +57,6 @@ class Trace(BaseModel):
         return value.strftime("%Y-%m-%d %H:%M:%S")
 
 class Conversation(BaseModel):
-    project_name: str
     id: str | UUID
     name: str
     traces: List[Trace]

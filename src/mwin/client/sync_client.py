@@ -39,7 +39,6 @@ class SyncClient:
 
     def log_step(
         self,
-        project_name: str,
         step_name: str,
         step_id: str,
         trace_id: str,
@@ -61,7 +60,7 @@ class SyncClient:
             parent_step_id = None
             
         log_step_req = LogStepRequest(
-            project_name=project_name,
+            project_name=self._project_name,
             step_name=step_name,
             step_id=step_id,
             trace_id=trace_id,
@@ -112,7 +111,6 @@ class SyncClient:
 
     def log_trace(
         self,
-        project_name: str,
         trace_name: str,
         trace_id: str,
         conversation_id: str,
@@ -126,7 +124,7 @@ class SyncClient:
         """Create a trace and log it in server."""
 
         log_trace_req = LogTraceRequest(
-            project_name=project_name,
+            project_name=self._project_name,
             trace_name=trace_name,
             trace_id=trace_id,
             conversation_id=conversation_id,

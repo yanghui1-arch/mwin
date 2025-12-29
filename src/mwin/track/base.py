@@ -30,7 +30,6 @@ class BaseTracker(ABC):
  
     def track(
         self,
-        project_name: str,
         func_name: str | Callable | None = None,
         tags: List[str] | None = None,
         step_type: StepType = StepType.CUSTOMIZED,
@@ -44,7 +43,6 @@ class BaseTracker(ABC):
         In other words, you cannot set the step id and its belonging trace id. It's recommended to be used in a simple demo.
 
         Args:
-            project_name(str): current work project name.
             func_name(str | Callable | None): caller can set it they want to name with 'str' type. If caller doesn't set, it will be `Callable`.
             tags(List[str] | None): tags of tracking steps. Default to `None`.
             step_type(StepType): step type. Default to `StepType.CUSTOMIZED`.
@@ -59,7 +57,6 @@ class BaseTracker(ABC):
         """
 
         tracker_options = TrackerOptions(
-            project_name=project_name,
             tags=tags,
             step_type=step_type,
             step_name=step_name,
@@ -231,14 +228,12 @@ class BaseTracker(ABC):
             start_arguments = args_helper.StartArguments(
                 func_name=inspect_helper.get_call_name(func=func, args=args),
                 tags=tracker_options.tags,
-                project_name=tracker_options.project_name
             )
 
         tracker_options.func_name = start_arguments.func_name
 
         if not context.get_storage_current_trace_data():
             current_trace = args_helper.create_new_trace(
-                project_name=tracker_options.project_name,
                 input=start_arguments.input,
                 name=tracker_options.trace_name,
                 tags=tracker_options.tags,
@@ -246,7 +241,6 @@ class BaseTracker(ABC):
             context.set_storage_trace(current_trace=current_trace)
 
         new_step: Step = args_helper.create_new_step(
-            project_name=tracker_options.project_name,
             input=start_arguments.input,
             name=tracker_options.func_name,
             type=tracker_options.step_type,
@@ -295,7 +289,6 @@ class BaseTracker(ABC):
             end_args = args_helper.EndArguments(
                 tags=tracker_options.tags,
                 output=output,
-                project_name=tracker_options.project_name,
                 model=tracker_options.model,
                 error_info=error_info,
             )
@@ -304,7 +297,6 @@ class BaseTracker(ABC):
         if not current_step:
             # TODO: Log the error information and create a new step to prevent executing exception.
             current_step: Step = args_helper.create_new_step(
-                project_name=tracker_options.project_name,
                 name=tracker_options.func_name,
                 type=tracker_options.step_type,
                 tags=tracker_options.tags,
@@ -326,7 +318,6 @@ class BaseTracker(ABC):
         # update trace
         if not context.get_storage_current_trace_data():
             current_trace = args_helper.create_new_trace(
-                project_name=tracker_options.project_name,
                 name=tracker_options.trace_name,
                 tags=tracker_options.tags,
             )
@@ -350,7 +341,6 @@ class BaseTracker(ABC):
         client: sync_client.SyncClient = sync_client.get_cached_sync_client()
 
         client.log_step(
-            project_name=current_step.project_name,
             step_name=current_step.name,
             step_id=str(current_step.id),
             trace_id=str(current_step.trace_id),
@@ -367,7 +357,6 @@ class BaseTracker(ABC):
         )
 
         client.log_trace(
-            project_name=current_trace.project_name,
             trace_name=current_trace.name,
             trace_id=str(current_trace.id),
             conversation_id=str(current_trace.conversation_id),

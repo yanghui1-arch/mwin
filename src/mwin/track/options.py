@@ -11,7 +11,6 @@ class TrackerOptions:
     Controls how tracker tracks the llm input and output.
     
     Args:
-        project_name(str): current work project name.
         tags(List[str] | None): tags of step or trace. Default to `None`.
         func_name(str | None): function name that caller set. Default to `None`. If caller doesn't
                                 set name, it will be None.
@@ -24,7 +23,6 @@ class TrackerOptions:
         llm_ignore_fields(List[str] | None): a list of llm ignore fields name. Default to `None`.
     """
 
-    project_name: str
     tags: List[str] | None = None
     func_name: str | None = None
     step_type: StepType | None = None

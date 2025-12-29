@@ -47,10 +47,14 @@ def build_client_config(
         if env_project:
             project_name = env_project
         else:
-            warnings.warn(
-                f"[mwin] Project name is empty. Mwin will set it `{DEFAULT_PROJECT_NAME}`."
-            )
-            project_name = DEFAULT_PROJECT_NAME
+            cfg = _get_persisted_config()
+            if cfg and getattr(cfg, "project_name", None):
+                project_name = cfg.project_name
+            else:
+                warnings.warn(
+                    f"[mwin] Project name is empty. Mwin will set it `{DEFAULT_PROJECT_NAME}`."
+                )
+                project_name = DEFAULT_PROJECT_NAME
 
     # host_url: args > env > file > default
     if host_url is None:

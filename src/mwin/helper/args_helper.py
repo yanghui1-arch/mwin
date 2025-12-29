@@ -12,7 +12,6 @@ class StartArguments(BaseModel):
     func_name: str
     tags: List[str] | None = None
     input: Dict[str, Any] | None = None
-    project_name: str | None = None
     model: str | None = None
     usage: int | None = None
 
@@ -20,13 +19,11 @@ class EndArguments(BaseModel):
 
     tags: List[str] | None = None
     output: Dict[str, Any] | None = None
-    project_name: str | None = None
     model: str | None = None
     error_info: str | None = None
     usage: CompletionUsage | None = None
 
 def create_new_step(
-    project_name: str,
     input: Any | None = None,
     output: Dict[str, Any] | None = None,
     name: str | None = None,
@@ -44,7 +41,6 @@ def create_new_step(
     If not give a trace id, context will try to get the current trace if current trace exists this step's trace id is its id. Otherwise generate a new one.
 
     Args:
-        project_name(str): project name.
         input(Any | None): input of module. Default to `None`. None means it's logging output.
         output(Dict[str, Any] | None): output of module. Default to `None`. None means it's logging input.
         name(str | None): the step name. Caller can set the name to define what the step role is. Default to ``None`. If it's None,
@@ -85,7 +81,6 @@ def create_new_step(
         parent_step_id: str | None = parent_step.id if parent_step else None
 
     step = Step(
-        project_name=project_name,
         name=name,
         id=step_id,
         trace_id=trace_id,
@@ -103,7 +98,6 @@ def create_new_step(
 
 
 def create_new_trace(
-    project_name: str,
     input: Dict[str, Any] | None = None,
     output: Dict[str, Any] | None = None,
     name: str | None = None,
@@ -116,7 +110,6 @@ def create_new_trace(
     """Create a new trace data
     
     Args:
-        project_name(str): project name.
         input(Dict[str, Any] | None): User input. Default to `None`. If it's None, it's logging output.
         output(Dict[str, Any] | None): agent final output. Default to `None`. If it's None, it's logging input.
         name(str | None): trace name. It defines what the trace does or its topic. Default to `None`. If it's None, it will be set using input user content.
@@ -135,12 +128,11 @@ def create_new_trace(
     if conversation_id is None:
         conversation_id = id_helper.generate_id()
     if name is None:
-        name = project_name
+        name = "project_name"
     if tags is None:
         tags = []
 
     trace = Trace(
-        project_name=project_name,
         id=trace_id,
         conversation_id=conversation_id,
         name=name,

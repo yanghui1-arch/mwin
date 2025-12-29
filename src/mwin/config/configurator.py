@@ -23,6 +23,7 @@ class MwinConfigurator:
         api_key: str | None = None,
         url: str | None = None,
         use_local: bool = False,
+        project_name: str | None = None,
     ):
         """Initialize MwinConfigurator
         MwinConfigurator duty is to configure apikey, url and whether user start local option.
@@ -35,6 +36,7 @@ class MwinConfigurator:
 
         self._apikey = api_key
         self._use_local = use_local
+        self._project_name = project_name
 
         if url is None:
             self._url = CLOUD_BASE_URL if self._use_local is False else localhost_base_url
@@ -50,9 +52,10 @@ class MwinConfigurator:
         else:
             self._configure_local()
         config = MwinConfig(
+            project_name=self._project_name,
             apikey=self._apikey,
             url=self._url,
-            use_local=self._use_local
+            use_local=self._use_local,
         )
         save_config(config=config)
         sys.stdout.write("Congrats to configure mwin.")
@@ -62,12 +65,15 @@ class MwinConfigurator:
         
         if not self._apikey:
             self._ask_for_apikey()
-            # _set_configuration_in_os(apikey=self._apikey)
+        if not self._project_name:
+            self._ask_for_project_name()
 
     def _configure_local(self):
         """configure AT local"""
         if not self._apikey:
             self._ask_for_apikey()
+        if not self._project_name:
+            self._ask_for_project_name()
 
     def _ask_for_apikey(self):
         """ask user to input apikey and store it in OS."""
@@ -83,6 +89,16 @@ class MwinConfigurator:
                 sys.stderr.write(str(apikey_exception))
             except Exception as exception:
                 sys.stderr.write(str(exception))
+    
+    def _ask_for_project_name(self):
+        """Ask user to input project name"""
+        project_name_max_len = 40
+        while not self._project_name:
+            project_name = input("What's your project name? ")
+            if project_name and len(project_name) < project_name_max_len:
+                self._project_name = project_name
+            else:
+                sys.stderr.write(f"Invalid project name. Ensure that you have input project name and the length of name doesn't exceed {project_name_max_len} characters\n")
 
     def _validate_apikey(self, apikey: str | None):
         """ validate apikey is correct 
@@ -127,20 +143,6 @@ class MwinConfigurator:
     @property
     def url(self) -> str:
         return self._url
-
-def _set_configuration_in_os(
-    api_key:str | None
-):
-    """Set apikey and worksapce into OS enviroment.
-    Only call it using cloud serve.
-
-    Args:
-        api_key(str | None): AT api key
-        workspace(str | None): AT workspace
-    """
-
-    if api_key is not None:
-        os.environ["AT_API_KEY"] = api_key
 
 def configure(
     api_key: str | None = None,

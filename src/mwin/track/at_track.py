@@ -30,7 +30,6 @@ class AITraceTracker(BaseTracker):
             func_name=func_name,
             tags=tracker_options.tags,
             input=inputs,
-            project_name=tracker_options.project_name,
             model=tracker_options.model,
         )
 
@@ -54,7 +53,6 @@ class AITraceTracker(BaseTracker):
         return args_helper.EndArguments(
             tags=tracker_options.tags,
             output=final_output,
-            project_name=tracker_options.project_name,
             model=tracker_options.model,
             error_info=error_info,
             usage=llm_usage,
