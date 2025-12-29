@@ -18,15 +18,16 @@ Then you need to configure mwin through CLI.
 mwin configure
 ```
 Then you just follow the instructions to configure mwin.
-```bash
+```
 > Which deployment type do you choose?
 > 1 - mwin Cloud Platform (default)
 > 2 - mwin Local Platform
 > Please input the choice number.>2
 > Please enter your API key:
-> Congrats to configure aitrace.
+> What's your project name? mwin-demo
+> Congrats to configure mwin.
 ```
-It needs an AITrace API key. You can get the apikey after logging `http://localhost:5173`.
+It needs an Mwin API key. You can get the apikey after logging `http://localhost:5173`.
 Finally use `@track` to track your llm input and output
 ```python
 from mwin import track, LLMProvider
@@ -35,7 +36,6 @@ from openai import OpenAI
 openai_apikey = 'YOUR API KEY'
 
 @track(
-    project_name="aitrace_demo",
     tags=['test', 'demo'],
     track_llm=LLMProvider.OPENAI,    
 )
@@ -50,7 +50,6 @@ def llm_classification(film_comment: str):
     return "return value"
 
 @track(
-    project_name="aitrace_demo",
     tags=['test', 'demo', 'second_demo'],
     track_llm=LLMProvider.OPENAI,
 )
