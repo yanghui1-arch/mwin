@@ -36,19 +36,16 @@ def get_call_name(func: Callable, args: tuple) -> str:
     """
 
     method_name = func.__name__
-
-    # instance method
-    if args:
-        first = args[0]
-        if hasattr(first, "__class__"):
-            cls = first.__class__
-            if cls.__module__ != "builtins":
-                return f"{cls.__name__}.{method_name}"
-
-    # fallback to qualname
     qualname = getattr(func, "__qualname__", "")
-    if "." in qualname:
-        class_name = qualname.split(".")[0]
-        return f"{class_name}.{method_name}"
 
+    if "." in qualname:
+        owner = qualname.split(".", 1)[0]
+        if args:
+            first = args[0]
+            # instance method
+            if hasattr(first, "__class__") and first.__class__.__name__ == owner:
+                return f"{owner}().{method_name}"
+            # classmethod or static method
+            return f"{owner}.{method_name}"
+    # general method
     return method_name
