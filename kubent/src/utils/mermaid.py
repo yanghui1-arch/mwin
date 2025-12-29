@@ -39,10 +39,10 @@ def steps_to_mermaid(steps: List[Step]) -> str:
     lines.append('    subgraph MAIN["main()"]')
     # nodes
     for s in main_steps:
-        lines.append(f'        {s.id.hex[-5:]}["{s.name}"]')
+        lines.append(f'        {s.id}["{s.name}"]')
     # edges
     for a, b in zip(main_steps, main_steps[1:]):
-        lines.append(f'        {a.id.hex[-5:]} --> {b.id.hex[-5:]}')
+        lines.append(f'        {a.id} --> {b.id}')
 
     lines.append("    end")
 
@@ -54,20 +54,20 @@ def steps_to_mermaid(steps: List[Step]) -> str:
         parent = steps_by_id[parent_id]
         sub_steps = __sort_by_time(sub_steps)
 
-        lines.append(f'    subgraph {parent.id.hex[-5:]}_CTX["{parent.name}()"]')
+        lines.append(f'    subgraph {parent.id}_CTX["{parent.name}()"]')
         # nodes
         for s in sub_steps:
-            lines.append(f'        {s.id.hex[-5:]}["{s.name}"]')
+            lines.append(f'        {s.id}["{s.name}"]')
         # edges
         for a, b in zip(sub_steps, sub_steps[1:]):
-            lines.append(f'        {a.id.hex[-5:]} --> {b.id.hex[-5:]}')
+            lines.append(f'        {a.id} --> {b.id}')
 
         lines.append("    end")
 
         # --- 3. cross subgraph: an edge that enters this subgraph ---
         first = sub_steps[0]
         lines.append(
-            f'    {parent.id.hex[-5:]} -.-> {first.id.hex[-5:]}'
+            f'    {parent.id} -.-> {first.id}'
         )
 
     return "\n".join(lines)
