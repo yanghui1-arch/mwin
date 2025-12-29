@@ -25,3 +25,30 @@ def parse_to_dict_input(
         del bound_args.arguments["self"]
     
     return dict(bound_args.arguments)
+
+def get_call_name(func: Callable, args: tuple) -> str:
+    """Get decorated method name in details.
+    Return 'Class.method' or 'method'. Instance method should be 'Class.method' format-string and general function is 'method'.
+
+    Args:
+        func(Callable): decorated function
+        args(tuple): arguments of function
+    """
+
+    method_name = func.__name__
+
+    # instance method
+    if args:
+        first = args[0]
+        if hasattr(first, "__class__"):
+            cls = first.__class__
+            if cls.__module__ != "builtins":
+                return f"{cls.__name__}.{method_name}"
+
+    # fallback to qualname
+    qualname = getattr(func, "__qualname__", "")
+    if "." in qualname:
+        class_name = qualname.split(".")[0]
+        return f"{class_name}.{method_name}"
+
+    return method_name
