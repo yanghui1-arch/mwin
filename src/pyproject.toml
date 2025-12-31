@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mwin"
-version = "0.1.4"
+version = "0.1.5"
 description = "Track OpenAI, Claude, Gemini and OpenAI-compatible models then give solutions to improve your agent system."
 readme = "README.md"
 requires-python = ">=3.12"
