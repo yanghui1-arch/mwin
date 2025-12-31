@@ -1,12 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowUp } from "lucide-react";
-import { type KeyboardEvent } from "react";
+import { useRef } from "react";
 
 type ChatInputProps = {
-  value: string;
-  onChange: (value: string) => void;
-  onSend: () => void;
+  onSend: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
 };
@@ -33,43 +31,48 @@ export function ChatInputToolBar({ onSend, disabled }: ChatInputToolBarProps) {
   );
 }
 
-export function ChatInput({
-  value,
-  onChange,
-  onSend,
-  placeholder,
-  disabled,
-}: ChatInputProps) {
-  const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault();
-      onSend();
+export function ChatInput({ onSend, placeholder, disabled }: ChatInputProps) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const handleSend = () => {
+    const value = textareaRef.current?.value?.trim();
+    if (!value) return;
+
+    onSend(value);
+
+    // clear without re-render
+    if (textareaRef.current) {
+      textareaRef.current.value = "";
+      textareaRef.current.style.height = "auto"
     }
   };
 
-  const minRows = 1;
-  const maxRows = 5;
-  const rows = Math.min(
-    maxRows,
-    Math.max(
-      minRows,
-      value.split(/\r\n|\r|\n/).length,
-      Math.ceil(value.length / 80)
-    )
-  );
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault()
+      handleSend()
+    }
+  }
+
+  const autoResize = () => {
+    const el = textareaRef.current
+    if (!el) return
+
+    el.style.height = "auto"
+    el.style.height = Math.min(el.scrollHeight, window.innerHeight * 0.2) + "px"
+  }
 
   return (
     <div className="w-full overflow-hidden rounded-md border bg-background">
       <Textarea
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
+        ref={textareaRef}
         onKeyDown={handleKeyDown}
         placeholder={placeholder || "Ask Kubent about your project"}
         disabled={disabled}
-        rows={rows}
+        rows={1}
+        onInput={autoResize}
         className="border-0 bg-transparent pt-3 pb-2 shadow-none focus-visible:ring-0 resize-none max-h-[20vh] min-h-[2.75rem] overflow-y-auto"
       />
-      <ChatInputToolBar onSend={onSend} disabled={disabled} />
+      <ChatInputToolBar onSend={handleSend} disabled={disabled} />
     </div>
   );
 }

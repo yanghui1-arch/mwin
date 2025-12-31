@@ -43,7 +43,6 @@ export default function KubentPage() {
     undefined
   );
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [inputValue, setInputValue] = useState("");
 
   const selectProject = (projectName: string) =>
     setSelectedProject(projects.find((p: Project) => p.name === projectName));
@@ -93,7 +92,7 @@ export default function KubentPage() {
     }
   };
 
-  const handleSend = async () => {
+  const handleSend = async (inputValue: string) => {
     if (!selectedProject) return;
     if (!inputValue.trim()) return;
 
@@ -103,7 +102,6 @@ export default function KubentPage() {
       startTimestamp: new Date().toLocaleString("sv-SE"),
     };
     setMessages((prev) => [...prev, userMessage]);
-    setInputValue("");
     let session: Session | undefined = selectedSession;
     if (!session) {
       const createSessionResponse = await kubentChatApi.createSession();
@@ -276,8 +274,6 @@ export default function KubentPage() {
 
           <div className="mx-auto w-full max-w-4xl">
             <ChatInput
-              value={inputValue}
-              onChange={setInputValue}
               onSend={handleSend}
               placeholder={
                 selectedProject?.name
