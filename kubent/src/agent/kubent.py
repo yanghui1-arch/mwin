@@ -6,6 +6,7 @@ from mwin import track, LLMProvider
 from .react import ReActAgent
 from .tools.search import SearchGoogle
 from .tools.kubent_think import KubentThink
+from .tools import QueryStepInputAndOutput
 from ..env import Env
 
 class Result(BaseModel):
@@ -46,14 +47,18 @@ class Kubent(ReActAgent):
     tools: List[ChatCompletionFunctionToolParam] = Field(..., default_factory=list)
     engine: OpenAI = OpenAI()
     current_env: Env
-    attempt: int = 10
+    attempt: int = 15
 
     class Config:
         arbitrary_types_allowed=True
 
     @model_validator(mode="after")
     def load_tools_and_set_env_action_space(self):
-        self.tools = [SearchGoogle().json_schema, KubentThink().json_schema]
+        self.tools = [
+            SearchGoogle().json_schema, 
+            KubentThink().json_schema,
+            QueryStepInputAndOutput().json_schema,
+        ]
         for tool in self.tools:
             self.current_env.update_space_action(tool=tool)
 
@@ -97,9 +102,10 @@ class Kubent(ReActAgent):
             
         else:
             chats:List[ChatCompletionMessageParam] = [{"role": "user", "content": question}] + obs + [{"role": "assistant", "content": f"Exceed max attempts: {self.attempt}"}]
+            # TODO: Fix it in the later. Makes it pass the final answer not an exceed information.
             return Result(answer=f"Exceed max attempts: {self.attempt}", chats=chats)
 
-    @track(project_name="Kubent", track_llm=LLMProvider.OPENAI)
+    @track(track_llm=LLMProvider.OPENAI)
     def act(
         self, 
         question: str | None,
