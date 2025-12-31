@@ -79,7 +79,7 @@ async def optimize_agent_system(
     kubent = Kubent(current_env=env)
     kubent_result:Result = kubent.run(question=message, chat_hist=chat_hist, agent_workflows=exec_graphs)
     optimize_solution:str = kubent_result.answer
-    background_task.add_task(add_chat, session_id=session_id, user_id=user_id, messages=kubent_result.chats)
+    background_task.add_task(add_chat, session_id=session_id, user_id=user_id, messages=kubent_result.chats, agent_name=kubent.name)
     return ResponseModel.success(data=ChatResponse(message=optimize_solution))
     
 @chat_router.post(

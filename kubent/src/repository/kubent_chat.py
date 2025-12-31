@@ -10,8 +10,9 @@ async def create_new_chat(
     user_id:UUID,
     role:str,
     payload:Dict[str, Any],
+    agent_name: str,
 ):
-    chat = KubentChat(session_uuid=session_id, user_uuid=user_id, role=role, payload=payload)
+    chat = KubentChat(session_uuid=session_id, user_uuid=user_id, role=role, payload=payload, agent_name=agent_name)
     db.add(chat)
     await db.flush()
     return chat
