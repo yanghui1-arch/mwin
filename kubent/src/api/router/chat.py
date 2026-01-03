@@ -6,11 +6,13 @@ from src.env import Env
 from src.repository import (
     step,
     trace,
+    project,
     kubent_chat,
     kubent_chat_session,
 )
 from src.repository.models import (
     Step,
+    Project,
     KubentChatSession,
     KubentChat,
 )
@@ -62,7 +64,6 @@ async def optimize_agent_system(
             title=None, 
             total_tokens=None
         )
-        await db.commit()
         session_id = chat_session.id
     else:
         session_id = UUID(req.session_id)
@@ -74,12 +75,19 @@ async def optimize_agent_system(
         traces_id: List[UUID] = await trace.select_latest_traces_id_by_project_id(db=db, project_id=req.project_id)
         steps_in_traces: List[List[Step]] = [await step.select_steps_by_trace_id(db=db, trace_id=trace_id) for trace_id in traces_id]
         exec_graphs: List[str] = [mermaid.steps_to_mermaid(steps=steps) for steps in steps_in_traces]
+        selected_project: Project | None = await project.query_project_by_id(db=db, project_id=req.project_id)
+
+        if not selected_project:
+            return ResponseModel.error(message=f"Invalid project id: {req.project_id}")
 
     env = Env(env_name=f"optimize_{user_id}")
     kubent = Kubent(current_env=env)
-    kubent_result:Result = kubent.run(question=message, chat_hist=chat_hist, agent_workflows=exec_graphs)
+    kubent_result:Result = kubent.run(question=message, chat_hist=chat_hist, agent_workflows=exec_graphs, session_id=session_id, user_id=user_id, project_name=selected_project.name)
     optimize_solution:str = kubent_result.answer
     background_task.add_task(add_chat, session_id=session_id, user_id=user_id, messages=kubent_result.chats, agent_name=kubent.name)
+    
+    # In the last commit db to ensure atomicity.
+    await db.commit()
     return ResponseModel.success(data=ChatResponse(message=optimize_solution))
     
 @chat_router.post(

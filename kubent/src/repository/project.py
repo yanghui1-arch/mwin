@@ -18,3 +18,15 @@ async def query_project(
     
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
+
+async def query_project_by_id(
+    db: AsyncSession,
+    project_id: int,
+) -> Project | None:
+    
+    stmt = select(Project).where(
+        Project.id == project_id
+    )
+    
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
