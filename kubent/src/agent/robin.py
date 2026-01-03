@@ -9,26 +9,59 @@ from .tools import RobinThink
 from ..env import Env
 
 class Result(BaseModel):
-    answer: "LMAnswerResult"
+    answer: str
     """Answer of Robin"""
 
     chats: List[Dict[str, Any]]
     """ChatCompletionParams list. It contains agent's question, Robin's tool calling & Robin's thoughts and Robin's answer but not contains previous chat history."""
 
+def _format_lm_answer(lm_answer: "LMAnswerResult") -> str:
+    evaluation: "EvaluationResult" = lm_answer.evaluation
+    missing_info: List[str] | None = lm_answer.missing_info
+    new_strategy:  "StrategyResult" | None = lm_answer.new_strategy
+
+    formatted_ans: List[str] = []
+    if evaluation.is_aligned_with_strategy is False:
+        evaluation_res = ["## Your chats are not aligned with this project strategy. I will tell you the issues and what you need to do in the next to survive the whole chatting."]
+        for issue in evaluation.issue_resolution:
+            evaluation_res.append(f"### {issue.brief_issue_title}")
+            evaluation_res.append(f"{issue.issue}")
+            evaluation_res.append(f"#### Solution")
+            evaluation_res.append(f"{issue.pr}")
+        formatted_ans.append("\n".join(evaluation_res))
+    
+    if missing_info is not None:
+        mis_info_res = []
+        mis_info_res.append("## Offered information is not enough. You need to give me more information. The following is what I need.")
+        mis_info_res.append("\n- ".join(missing_info))
+        formatted_ans.append("\n".join(mis_info_res))
+    
+    if new_strategy is not None:
+        new_strategy_res = []
+        new_strategy_res.append("## Project strategy will be updated.")
+        new_strategy_res.append("### New Strategy")
+        new_strategy_res.append(new_strategy.content)
+        new_strategy_res.append("### Reasons")
+        new_strategy_res.append(new_strategy.explaination)
+        formatted_ans.append("\n".join(new_strategy_res))
+
+    return '\n'.join(formatted_ans)
+
 class LMAnswerResult(BaseModel):
     evaluation: "EvaluationResult" = Field(..., description="Robin evaluate agents chats to ensure every chat is on the right way.")
     missing_info: List[str] | None = Field(None, description="Robin points out the missing information which results in unabling to decide whether set a new project's strategy. If information is enough, it's null.")
-    new_strategies: "StrategyResult" | None = Field(None, description="Set a new stratygy only when missing info is null and Robin find it's time to change the project's stratygy.")
+    new_strategy: "StrategyResult" | None = Field(None, description="Set a new stratygy only when missing info is null and Robin find it's time to change the project's stratygy.")
 
 class EvaluationResult(BaseModel):
     is_aligned_with_strategy: bool = Field(..., description="Evaluate the agent chats are aligned with project's strategy.")
     issue_resolution: List["IssueResolution"] | None = Field(None, description="Give pairs of issue and its pr if agent chats are not aligned with strategy.")
 
 class StrategyResult(BaseModel):
-    new_strategy: str = Field(..., description="Project's new strategy.")
+    content: str = Field(..., description="Project's new strategy.")
     explaination: str = Field(..., description="Explain the necessity of changing/setting the new strategy.")
 
 class IssueResolution(BaseModel):
+    brief_issue_title: str = Field(..., description="Brief issue title which summarize the issue in the simplest words.")
     issue: str = Field(..., description="Issues in the other agent's chats which is not on the right way.")
     pr: str = Field(..., description="Solution of solving the issues.")
     
@@ -85,8 +118,8 @@ class Robin(ReActAgent):
     2. Understand whether other agents fully understand what the project's strategy is.
     3. Correct misunderstandings of agents who doesn't understand what the project is actually doing.
     """
-    name: str = "Robin"
     current_env: Env
+    name: str = "Robin"
     attempt: int = 25
     model: str = "anthropic/claude-haiku-4.5"
     engine: OpenAI = OpenAI()
@@ -164,9 +197,10 @@ class Robin(ReActAgent):
             )
             # TODO: Fix model refusal condition.
             parsed_ans:LMAnswerResult = completion.choices[0].message.parsed
+            lm_ans: str = _format_lm_answer(lm_answer=parsed_ans)
             chats:List[ChatCompletionMessageParam] = [{"role": "user", "content": question}] + obs + [{"role": "assistant", "content": act_info.get("answer")}]
             return Result(
-                answer=parsed_ans,
+                answer=lm_ans,
                 chats=chats
             )
             
