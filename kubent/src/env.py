@@ -6,7 +6,7 @@ from .agent.tools import TOOL_KITS, Tool
 
 class Action(BaseModel):
     func: Callable
-    type: Literal['think', 'search', 'command', 'general_function'] = 'general_function'
+    type: Literal['think', 'search', 'command', 'general_function', 'communicate'] = 'general_function'
     
     def is_search(self):
         return self.type == 'search'
