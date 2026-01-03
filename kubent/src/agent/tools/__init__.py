@@ -4,6 +4,7 @@ from .search import SearchGoogle
 from .kubent_think import KubentThink
 from .robin_think import RobinThink
 from .query_step import QueryStepInputAndOutput
+from .robin import ConsultRobin
 
 __all__ = ["Tool"]
 
@@ -15,4 +16,7 @@ TOOL_KITS:Dict[str, Tool] = {
     "think_process": KubentThink(),
     "robin_think_process": RobinThink(),
     "query_step_input_and_output": QueryStepInputAndOutput(),
+    
+    # tool that offers by agent
+    "consult_robin": ConsultRobin(),
 }

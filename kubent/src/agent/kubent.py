@@ -1,4 +1,5 @@
 from typing import List, Dict, Any
+from uuid import UUID
 from pydantic import BaseModel, Field, model_validator
 from openai import OpenAI, pydantic_function_tool
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletion, ChatCompletionFunctionToolParam
@@ -7,6 +8,7 @@ from .react import ReActAgent
 from .tools.search import SearchGoogle
 from .tools.kubent_think import KubentThink
 from .tools import QueryStepInputAndOutput
+from .tools import ConsultRobin
 from ..env import Env
 
 class Result(BaseModel):
@@ -16,7 +18,7 @@ class Result(BaseModel):
     chats: List[Dict[str, Any]]
     """ChatCompletionParams list. It contains user's question, kubent's tool calling & kubent's thoughts and kubent's answer but not contains previous chat history."""
 
-system_bg = f"""Your name is "Kubent". Kubent is a useful assistant to keep improve agent performance better.
+system_bg = """Your name is "Kubent". Kubent is a useful assistant to keep improve agent performance better.
 Generally, Kubent will recieve one or multiple abstract agent process flow graphs which will be closure in <Agent> XML tags. 
 These graphs reflects how agent system works. It's possible that more than two graphs works as the same. Kubent can think them as a pattern or a fixed route.
 Kubent's task is to response user's question based on agent system workflow.
@@ -24,7 +26,7 @@ Kubent's task is to response user's question based on agent system workflow.
 As we all know, every agent system works for a certain purpose.
 For example one people designs a phone agent that can give strange a phone and recommend its product. Another designs an office-word agent that can handle word documents.
 Due to the complexity of various agent purposes, their process flow graph is different. In the same time, make their performance better will be different.
-Kubent need to pose a concrete and specifically optimized for the task solution to make agent system performance upgrade about ~1% at least than before.
+Kubent need to pose a concrete and specifically optimized for the task solution to make agent system performance upgrade about ~1% \\at least than before.
 There are many tools you can use them. Sometimes Kubent will think considerate details, how to start next step and so on.
 
 Finally Kubent will provide user with a specific enterprise-level solution. This solution must fulfill the following requirements:
@@ -39,6 +41,10 @@ Condition 1: Offer a specific enterprise-level solution.
 Condition 2: Request user provide more details that you can't access by tools or your brain knowledge.
 Condition 3: Think a great response to reply user.
 Condition 4: Daily chat.
+
+<SessionId>{session_id}</SessionId>
+<UserId>{user_id}</UserId>
+<ProjectName>{project_name}</ProjectName>
 """
 
 class Kubent(ReActAgent):
@@ -58,6 +64,7 @@ class Kubent(ReActAgent):
             SearchGoogle().json_schema, 
             KubentThink().json_schema,
             QueryStepInputAndOutput().json_schema,
+            ConsultRobin().json_schema,
         ]
         for tool in self.tools:
             self.current_env.update_space_action(tool=tool)
@@ -66,7 +73,10 @@ class Kubent(ReActAgent):
 
     def run(
         self, 
-        question: str, 
+        question: str,
+        session_id: UUID,
+        user_id: UUID,
+        project_name: str,
         chat_hist: List[ChatCompletionMessageParam] | None = None,
         agent_workflows: List[str] | None = None,
     ) -> Result:
@@ -90,7 +100,15 @@ class Kubent(ReActAgent):
             "answer": ""
         }
         while terminate is False and cnt < self.attempt:
-            obs, reward, terminate, act_info = self.act(question=question, obs=obs, chat_hist=chat_hist, agent_workflows=agent_workflows)
+            obs, reward, terminate, act_info = self.act(
+                question=question, 
+                obs=obs, 
+                chat_hist=chat_hist, 
+                agent_workflows=agent_workflows,
+                session_id=session_id,
+                user_id=user_id,
+                project_name=project_name,
+            )
             cnt += 1
 
         if act_info.get("step_finish_reason") == "solved":
@@ -112,6 +130,9 @@ class Kubent(ReActAgent):
         obs: List[ChatCompletionMessageParam],
         chat_hist: List[ChatCompletionMessageParam] | None,
         agent_workflows: List[str] | None,
+        session_id: UUID,
+        user_id: UUID,
+        project_name: str,
     ) -> tuple[List[ChatCompletionMessageParam], float, bool, Dict[str, str]]:
         if chat_hist is None:
             chat_hist = []
@@ -122,7 +143,7 @@ class Kubent(ReActAgent):
 
         completion:ChatCompletion = self.engine.chat.completions.create(
             model=self.model,
-            messages=[{"role": "system", "content": system_bg}] + chat_hist + [{"role": "user", "content": user_content}] + obs,
+            messages=[{"role": "system", "content": system_bg.format(session_id=session_id, user_id=user_id, project_name=project_name)}] + chat_hist + [{"role": "user", "content": user_content}] + obs,
             tools=self.tools,
             parallel_tool_calls=True,
         )
