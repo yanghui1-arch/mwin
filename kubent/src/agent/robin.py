@@ -1,18 +1,219 @@
-from react import ReActAgent
+from typing import List, Dict, Any
+from datetime import datetime
+from pydantic import model_validator, BaseModel, Field
+from openai import OpenAI
+from openai.types.chat import ChatCompletionMessageParam, ChatCompletion, ParsedChatCompletion
+from mwin import track, LLMProvider
+from .react import ReActAgent
+from .tools import RobinThink
+from ..env import Env
+
+class Result(BaseModel):
+    answer: "LMAnswerResult"
+    """Answer of Robin"""
+
+    chats: List[Dict[str, Any]]
+    """ChatCompletionParams list. It contains agent's question, Robin's tool calling & Robin's thoughts and Robin's answer but not contains previous chat history."""
+
+class LMAnswerResult(BaseModel):
+    evaluation: "EvaluationResult" = Field(..., description="Robin evaluate agents chats to ensure every chat is on the right way.")
+    missing_info: List[str] | None = Field(None, description="Robin points out the missing information which results in unabling to decide whether set a new project's strategy. If information is enough, it's null.")
+    new_strategies: "StrategyResult" | None = Field(None, description="Set a new stratygy only when missing info is null and Robin find it's time to change the project's stratygy.")
+
+class EvaluationResult(BaseModel):
+    is_aligned_with_strategy: bool = Field(..., description="Evaluate the agent chats are aligned with project's strategy.")
+    issue_resolution: List["IssueResolution"] | None = Field(None, description="Give pairs of issue and its pr if agent chats are not aligned with strategy.")
+
+class StrategyResult(BaseModel):
+    new_strategy: str = Field(..., description="Project's new strategy.")
+    explaination: str = Field(..., description="Explain the necessity of changing/setting the new strategy.")
+
+class IssueResolution(BaseModel):
+    issue: str = Field(..., description="Issues in the other agent's chats which is not on the right way.")
+    pr: str = Field(..., description="Solution of solving the issues.")
+    
+
+system_bg = """Your name is Robin, and you are the company's senior project strategy consultant.
+Robin is now responsible for providing strategic consulting services to all agents within the company.
+
+During the consulting process, Robin will also redesign the project strategy based on current conversations between other agents and clients, discussions among colleague agents, 
+or industry insights up to {time} for the project's sector. This ensures that the project strategy aligns first with the client's vision, second with industry trends, 
+and finally that the project remains more competitive compared to other competing projects.
+When other agents consult Robin on project strategy, Robin must evaluate whether the chat records between the agent and other agents or clients align with the current project strategy. 
+If they do not align, Robin will point out one or more areas where the agent went wrong and advise them on how to steer the conversation back on track to align with the project strategy. 
+
+Additionally, since the information provided by other agents during consultations may not be comprehensive, Robin, as a senior strategy consultant, has access to various tools to attempt to obtain missing information.
+and verify its accuracy with the consulting agent. 
+However, if no tools are available to acquire the missing information, Robin will directly identify what information is lacking and request the consulting agent to provide it. 
+
+Finally, Robin may determine that the existing project strategy has not yet been implemented and that it aligns with current industry trends and remains competitive.
+In such cases, Robin will not create a new project strategy.
+If Robin does decide to formulate a new project strategy, they must explain the reasons for the change and outline the content of the new strategy.
+Next, you will receive the project name, project description, the current project strategy, the name of the consulting agent, and their recent 10 chat records. 
+Information about the project will be enclosed within `<Project>`, and details about the consulting agent will be enclosed within `<Agent>`.
+
+<Project>
+  <Name>
+  {project_name}
+  </Name>
+  <Description>
+  {project_description}
+  </Description>
+  <Strategy>
+  {project_strategy}
+  </Strategy>
+</Project>
+
+<Agent>
+  <Name>
+  {agent_name}
+  </Name>
+  <Chats>
+  {agent_chats}
+  </Chats>
+</Agent>
+"""
 
 class Robin(ReActAgent):
     """Robin is the second ReAct agent in kubent system. He is good at analyzing a project motivation.
     In some ways we don't know who is the project's target client and what the project's real target.
-    Sometimes we chat with Kubent system to get improvement suggestions. Robin will keep judging whether
+    Sometimes we chat with Kubent systemto get improvement suggestions. Robin will keep judging whether
     other agents, who are in the whole process of Kubent, understand our project's target and ensure all
     chats are in the right way.
     Robin tasks:
-    1. Identify a project's target client, motivation and user's desired effect.
-    2. Understand whether other agents fully understand what the project is doing now.
-    3. Correct misunderstandings of agents who doesn't understand what the project is actually doing. 
+    1. Identify a project's strategy such as target client, motivation and user's desired effect.
+    2. Understand whether other agents fully understand what the project's strategy is.
+    3. Correct misunderstandings of agents who doesn't understand what the project is actually doing.
     """
     name: str = "Robin"
+    current_env: Env
+    attempt: int = 25
+    model: str = "anthropic/claude-haiku-4.5"
+    engine: OpenAI = OpenAI()
+    parse_model: str = "anthropic/claude-haiku-4.5"
+    parse_engine: OpenAI = OpenAI()
 
-    def act(self,):
-        ...
+    @model_validator(mode="after")
+    def load_tools_and_set_env_action_space(self):
+        self.tools = [RobinThink().json_schema]
+        for tool in self.tools:
+            self.current_env.update_space_action(tool=tool)
+
+        return self
+    
+    @track(track_llm=LLMProvider.OPENAI)
+    def run(
+        self,
+        question: str,
+        project_name: str,
+        project_description: str | None, 
+        project_strategy: str | None,
+        agent_name: str,
+        agent_chats: List[ChatCompletionMessageParam] | None = None,
+        chat_hist: List[ChatCompletionMessageParam] | None = None,
+    ) -> Result:
+        """Robin runs
+        Given a project name and agent name Robin do two things.
+        1. Formulate a strategy
+            - deeply analyze whether project strategies are still aligned with current stage.
+            - try to plan project strategies.
+        2. Evaluate questioning agent's behaviour is aligned with project strategy
+            - ensure that the questioning agent's thinking process, tool functions, and chats with customers are aligned with the project strategy.
+            If they are not aligned, Robin will analyze step by step to identify the issues and provide recommendations or follow-up plans.
+        
+        Args:
+            question(str): agent question.
+            project_name(str): project name.
+            project_description(str | None): project description.
+            project_strategy(str | None): project strategies.
+            agent_name(str): questionning agent name.
+            agent_chats(List[ChatCompletionMessageParam] | None): questioning agent latest 10 chats. 
+        
+        Returns:
+            result contains answer and chats.
+        """
+        
+        cnt = 0
+        terminate = False
+        obs = self.current_env.reset()
+        act_info = {
+            "step_finish_reason": "",
+            "steps": 0,
+            "num_tool_callings": 0, 
+            "answer": ""
+        }
+        while terminate is False and cnt < self.attempt:
+            obs, reward, terminate, act_info = self.act(
+                question=question,
+                obs=obs,
+                chat_hist=chat_hist,
+                project_name=project_name,
+                project_description=project_description,
+                project_strategy=project_strategy,
+                agent_name=agent_name,
+                agent_chats=agent_chats,
+            )
+            cnt += 1
+
+        if act_info.get("step_finish_reason") == "solved":
+            completion: ParsedChatCompletion = self.parse_engine.chat.completions.parse(
+                messages=[{"role": "system", "content": "Parse documents given by user."}, {"role": "user", "content": act_info.get("answer")}],
+                model=self.parse_model,
+                response_format=LMAnswerResult,
+                tool_choice="none"
+            )
+            # TODO: Fix model refusal condition.
+            parsed_ans:LMAnswerResult = completion.choices[0].message.parsed
+            chats:List[ChatCompletionMessageParam] = [{"role": "user", "content": question}] + obs + [{"role": "assistant", "content": act_info.get("answer")}]
+            return Result(
+                answer=parsed_ans,
+                chats=chats
+            )
+            
+        else:
+            completion: ParsedChatCompletion = self.parse_engine.chat.completions.parse(
+                messages=[{"role": "system", "content": "Extract the important thing and parse them as given response format."}, {"role": "user", "content": act_info.get("answer")}],
+                model=self.parse_model,
+                response_format=LMAnswerResult,
+                tool_choice="none"
+            )
+            # TODO: Fix model refusal condition.
+            parsed_ans:LMAnswerResult = completion.choices[0].message.parsed
+            chats:List[ChatCompletionMessageParam] = [{"role": "user", "content": question}] + obs + [{"role": "assistant", "content": act_info.get("answer")}]
+            
+            return Result(answer=act_info.get("answer"), chats=chats)
+
+    @track(track_llm=LLMProvider.OPENAI)
+    def act(
+        self,
+        question: str,
+        obs: List[ChatCompletionMessageParam],
+        chat_hist: List[ChatCompletionMessageParam] | None,
+        project_name: str,
+        project_description: str,
+        project_strategy: str | None,
+        agent_name: str,
+        agent_chats: List[ChatCompletionMessageParam] | None,
+    ):
+        if chat_hist is None:
+            chat_hist = []
+        user_content = question
+
+        completion:ChatCompletion = self.engine.chat.completions.create(
+            model=self.model,
+            messages=[{"role": "system", "content": system_bg.format(
+                    time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    project_name=project_name,
+                    project_description=project_description,
+                    project_strategy=project_strategy,
+                    agent_name=agent_name,
+                    agent_chats=agent_chats,
+                )}] 
+                + chat_hist
+                + [{"role": "user", "content": user_content}]
+                + obs,
+            tools=self.tools,
+            parallel_tool_calls=True,
+        )
+        return self.current_env.step(llm_action=completion.choices[0].message)
     
