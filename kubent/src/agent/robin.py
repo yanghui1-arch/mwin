@@ -2,7 +2,7 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime
 from pydantic import model_validator, BaseModel, Field
 from openai import OpenAI
-from openai.types.chat import ChatCompletionMessageParam, ChatCompletion, ParsedChatCompletion
+from openai.types.chat import ChatCompletionMessageParam, ChatCompletion, ParsedChatCompletion, ChatCompletionFunctionToolParam
 from mwin import track, LLMProvider
 from .react import ReActAgent
 from .tools import RobinThink
@@ -122,8 +122,9 @@ class Robin(ReActAgent):
     name: str = "Robin"
     attempt: int = 25
     model: str = "anthropic/claude-haiku-4.5"
+    tools: List[ChatCompletionFunctionToolParam] = Field(..., default_factory=list)
     engine: OpenAI = OpenAI()
-    parse_model: str = "anthropic/claude-haiku-4.5"
+    parse_model: str = "qwen2.5-72b-instruct"
     parse_engine: OpenAI = OpenAI()
 
     class Config:
@@ -192,30 +193,30 @@ class Robin(ReActAgent):
             cnt += 1
 
         if act_info.get("step_finish_reason") == "solved":
-            completion: ParsedChatCompletion = self.parse_engine.chat.completions.parse(
-                messages=[{"role": "system", "content": "Parse documents given by user."}, {"role": "user", "content": act_info.get("answer")}],
-                model=self.parse_model,
-                response_format=LMAnswerResult,
-                tool_choice="none"
-            )
+            # completion: ParsedChatCompletion = self.parse_engine.chat.completions.parse(
+            #     messages=[{"role": "system", "content": "Parse documents given by user as json."}, {"role": "user", "content": act_info.get("answer")}],
+            #     model=self.parse_model,
+            #     response_format=LMAnswerResult,
+            #     tool_choice="none"
+            # )
             # TODO: Fix model refusal condition.
-            parsed_ans:LMAnswerResult = completion.choices[0].message.parsed
-            lm_ans: str = _format_lm_answer(lm_answer=parsed_ans)
+            # parsed_ans:LMAnswerResult = completion.choices[0].message.parsed
+            # lm_ans: str = _format_lm_answer(lm_answer=parsed_ans)
             chats:List[ChatCompletionMessageParam] = [{"role": "user", "content": question}] + obs + [{"role": "assistant", "content": act_info.get("answer")}]
             return Result(
-                answer=lm_ans,
+                answer=act_info.get("answer"),
                 chats=chats
             )
             
         else:
-            completion: ParsedChatCompletion = self.parse_engine.chat.completions.parse(
-                messages=[{"role": "system", "content": "Extract the important thing and parse them as given response format."}, {"role": "user", "content": act_info.get("answer")}],
-                model=self.parse_model,
-                response_format=LMAnswerResult,
-                tool_choice="none"
-            )
+            # completion: ParsedChatCompletion = self.parse_engine.chat.completions.parse(
+            #     messages=[{"role": "system", "content": "Extract the important thing and parse them as given response format."}, {"role": "user", "content": act_info.get("answer")}],
+            #     model=self.parse_model,
+            #     response_format=LMAnswerResult,
+            #     tool_choice="none"
+            # )
             # TODO: Fix model refusal condition.
-            parsed_ans:LMAnswerResult = completion.choices[0].message.parsed
+            # parsed_ans:LMAnswerResult = completion.choices[0].message.parsed
             chats:List[ChatCompletionMessageParam] = [{"role": "user", "content": question}] + obs + [{"role": "assistant", "content": act_info.get("answer")}]
             
             return Result(answer=act_info.get("answer"), chats=chats)
