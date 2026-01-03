@@ -21,11 +21,11 @@ create table kubent_chat
     user_uuid       uuid                                not null,
     role            varchar(20)                         not null,
     payload         jsonb                               not null,
-    agent_name      text      default ''::text          not null,
+    agent_name      text      default 'Kubent'::text    not null,
     start_timestamp timestamp default CURRENT_TIMESTAMP not null
 );
 
-comment on table kubent_chat is 'Chat with kubent';
+comment on table kubent_chat is 'User chats with an agent. Generally store the user chats only. Chats between agents are not stored in this table.';
 
 comment on column kubent_chat.session_uuid is 'Chat session uuid';
 
@@ -37,7 +37,7 @@ comment on column kubent_chat.payload is 'LLM chat completion';
 
 comment on column kubent_chat.start_timestamp is 'Chat created time';
 
-comment on column kubent_chat.agent_name is 'Which agent the chat talks about';
+comment on column kubent_chat.agent_name is 'Which agent chat with user';
 
 alter table kubent_chat
     owner to postgres;
