@@ -1,5 +1,13 @@
 # Version log
 Every version updates, fixes and removings could be checked here.
+## 0.1.5
+### Feature
+- Simplify track usage and configure project name before using mwin which is a big difference on previous version. - by @yanghui1-arch [(483bdb4)](https://github.com/yanghui1-arch/mwin/commit/483bdb41a253b845c0d7654ef4924dc85c3ef1fa)
+- Add class name and instance/class/static function signal while tracking. - by @yanghui1-arch [(1a3c488)](https://github.com/yanghui1-arch/mwin/commit/1a3c488104d907701f3ae95d6848d8be05df2637) [(d885033)](https://github.com/yanghui1-arch/mwin/commit/d88503373fb90e1d69a8a33784ff97457b9b0a02) [(b0e9b92)](https://github.com/yanghui1-arch/mwin/commit/b0e9b922f769ca7e4433e71153318b54701d21c0)
+
+### Remove
+- Remove step name of TrackerOptions. - by @yanghui1-arch [(f1f6706)](https://github.com/yanghui1-arch/mwin/commit/f1f6706db829f6a8db89dc2d764b152193f1a2ba)
+
 ## 0.1.4
 ### Feature
 - Add PatchResponse as a standard output but not make influences on callers. - by @yanghui1-arch [(65f3e25)](https://github.com/yanghui1-arch/mwin/commit/65f3e254119a8ef84bffe0079dcbede8e0b1209a)
