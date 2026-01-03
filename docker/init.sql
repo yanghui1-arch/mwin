@@ -77,6 +77,7 @@ create table project
     cost                  numeric(38, 2) default 0                 not null,
     last_update_timestamp timestamp      default CURRENT_TIMESTAMP not null,
     description           varchar(255)
+    strategy              text
 );
 
 comment on table project is 'User project detail';
@@ -94,6 +95,8 @@ comment on column project.cost is 'Total llm cost of the project. Stored in US d
 comment on column project.last_update_timestamp is 'Project last update timestamp';
 
 comment on column project.description is 'Project description. Words cannot exceed 255';
+
+comment on column project.strategy is 'Project''s strategy which can be updated by llm or person.';
 
 alter table project
     owner to postgres;
