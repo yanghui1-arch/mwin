@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 from pydantic import model_validator, BaseModel, Field
 from openai import OpenAI
@@ -17,8 +17,8 @@ class Result(BaseModel):
 
 def _format_lm_answer(lm_answer: "LMAnswerResult") -> str:
     evaluation: "EvaluationResult" = lm_answer.evaluation
-    missing_info: List[str] | None = lm_answer.missing_info
-    new_strategy:  "StrategyResult" | None = lm_answer.new_strategy
+    missing_info: Optional[List[str]] = lm_answer.missing_info
+    new_strategy:  Optional["StrategyResult"] = lm_answer.new_strategy
 
     formatted_ans: List[str] = []
     if evaluation.is_aligned_with_strategy is False:
@@ -49,12 +49,12 @@ def _format_lm_answer(lm_answer: "LMAnswerResult") -> str:
 
 class LMAnswerResult(BaseModel):
     evaluation: "EvaluationResult" = Field(..., description="Robin evaluate agents chats to ensure every chat is on the right way.")
-    missing_info: List[str] | None = Field(None, description="Robin points out the missing information which results in unabling to decide whether set a new project's strategy. If information is enough, it's null.")
-    new_strategy: "StrategyResult" | None = Field(None, description="Set a new stratygy only when missing info is null and Robin find it's time to change the project's stratygy.")
+    missing_info: Optional[List[str]] = Field(None, description="Robin points out the missing information which results in unabling to decide whether set a new project's strategy. If information is enough, it's null.")
+    new_strategy: Optional["StrategyResult"] = Field(None, description="Set a new stratygy only when missing info is null and Robin find it's time to change the project's stratygy.")
 
 class EvaluationResult(BaseModel):
     is_aligned_with_strategy: bool = Field(..., description="Evaluate the agent chats are aligned with project's strategy.")
-    issue_resolution: List["IssueResolution"] | None = Field(None, description="Give pairs of issue and its pr if agent chats are not aligned with strategy.")
+    issue_resolution: Optional[List["IssueResolution"]] = Field(None, description="Give pairs of issue and its pr if agent chats are not aligned with strategy.")
 
 class StrategyResult(BaseModel):
     content: str = Field(..., description="Project's new strategy.")
@@ -125,6 +125,9 @@ class Robin(ReActAgent):
     engine: OpenAI = OpenAI()
     parse_model: str = "anthropic/claude-haiku-4.5"
     parse_engine: OpenAI = OpenAI()
+
+    class Config:
+        arbitrary_types_allowed=True
 
     @model_validator(mode="after")
     def load_tools_and_set_env_action_space(self):
