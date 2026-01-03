@@ -32,6 +32,8 @@ public class Project {
 
     private String description;
 
+    private String strategy;
+
     @Column(name = "avg_duration", nullable = false)
     private Integer averageDuration;
 
