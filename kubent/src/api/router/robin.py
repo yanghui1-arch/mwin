@@ -15,7 +15,10 @@ from ...repository.db.conn import get_db
 
 robin_server_router = APIRouter(prefix="/robin_server")
 
-@robin_server_router.post("/consult")
+@robin_server_router.post(
+    "/consult",
+    response_model=ResponseModel[ConsultResponse]
+)
 async def consult(
     req: ConsultRequest,
     db: AsyncSession = Depends(get_db)
