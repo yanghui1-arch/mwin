@@ -16,7 +16,7 @@ _timeout = httpx.Timeout(
 )
 
 _client = httpx.Client(
-    base_url="http://localhost:8000/kubent/extentions/robin_server",
+    base_url="http://localhost:20261/kubent/extentions/robin_server",
     timeout=_timeout,
 )
 

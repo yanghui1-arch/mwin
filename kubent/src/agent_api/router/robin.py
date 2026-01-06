@@ -5,12 +5,12 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from openai.types.chat import ChatCompletionMessageParam
 from ..schemas import ResponseModel
-from ..schemas.robin import ConsultRequest, ConsultResponse
+from ..schemas import ConsultRequest, ConsultResponse
 from ...env import Env
 from ...agent.robin import Robin, Result as RobinResult
 from ...repository.kubent_chat import query_chat
 from ...repository.project import query_project
-from ...repository.models import Project, KubentChat, KubentChatSession
+from ...repository.models import Project, KubentChat
 from ...repository.db.conn import get_db
 
 robin_server_router = APIRouter(prefix="/robin_server")
