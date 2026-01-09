@@ -5,5 +5,5 @@ class Agent(BaseModel, ABC):
     name: str
 
     @abstractmethod
-    async def run(self, *args, **kwargs):
+    def run(self, *args, **kwargs):
         ...
