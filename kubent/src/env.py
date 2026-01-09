@@ -1,5 +1,5 @@
 import json
-from typing import Literal, List, Dict, Callable
+from typing import Callable, TypedDict, Literal, List, Dict
 from pydantic import BaseModel, Field
 from openai.types.chat import ChatCompletionFunctionToolParam, ChatCompletionMessage, ChatCompletionMessageToolCallUnion, ChatCompletionMessageParam
 from .agent.tools import TOOL_KITS, Tool
@@ -20,15 +20,23 @@ class Action(BaseModel):
     def is_think(self):
         return self.type == 'think'
 
+class ToolUsage(TypedDict):
+    name: str
+    result: str
+
+class EnvStepInfo(TypedDict):
+    step_finish_reason: Literal["solved", "think", "action"] | None
+    steps: int
+    num_tool_callings: int
+    answer: str | None
+    tool_use: List[ToolUsage] | None
+
 class Env(BaseModel):
     env_name: str
     """Enviroment name"""
 
     action_spaces: Dict[str, Action] = {}
     """Avaliable actions in the env. Generally it's agent tools and think action"""
-
-    chains: List[Dict[str, str]] = Field(..., default_factory=list)
-    """An executing chains for solving the question"""
 
     steps: int = 0
     """Execute one question steps"""
@@ -51,6 +59,12 @@ class Env(BaseModel):
     > Previous chat history
     """
 
+    tool_usage_history: List[ToolUsage] | None = None
+    """History of agent using tools in one step."""
+
+    step_finish_reason: Literal["solved", "think", "action"] | None = None
+    """Step finish reason."""
+
     answer: str | None = None
     """Agent final answer"""
 
@@ -59,29 +73,27 @@ class Env(BaseModel):
         self.num_search = 0
         self.num_tool_callings = 0
         self.obs = []
+        self.tool_usage_history = None
+        self.step_finish_reason = None
         self.answer =  None
         return self.obs
     
     def step(
         self,
         llm_action: ChatCompletionMessage,
-        terminate_signal: str | None = None
-    ) -> tuple[List[ChatCompletionMessageParam], float, bool, Dict[str, str]]:
+    ) -> tuple[List[ChatCompletionMessageParam], float, bool, EnvStepInfo]:
         reward = 0
         terminate = False
-        if terminate_signal is None:
-            terminate_signal = "[Finish]"
 
         content:str | None = llm_action.content
         tool_calls:List[ChatCompletionMessageToolCallUnion] | None = llm_action.tool_calls
+
         if content is not None and tool_calls is None:
             terminate = True
             self.answer = content
-            self.chains.append(
-                {"action_name": "<finish>", "action_result": f"[Finish] {self.answer}"}
-            )
             self.steps += 1
-            return self.obs, reward, terminate, self._get_info(step_finish_reason="solved")
+            self._mark_step("solved")
+            return self.obs, reward, terminate, self._get_info()
 
         if tool_calls is not None:
             self.obs.append(
@@ -91,6 +103,10 @@ class Env(BaseModel):
                     ]
                 }
             )
+            
+            # Initialize tool usage history.
+            self.tool_usage_history = []
+
             for tool_call in tool_calls:
                 tool_name = tool_call.function.name
                 tool_call_id = tool_call.id
@@ -111,6 +127,7 @@ class Env(BaseModel):
                                     "tool_call_id": tool_call_id
                                 }
                             )
+                            self._mark_step("think")
                             self.num_think += 1
                         else:
                             self.obs.append(
@@ -120,6 +137,7 @@ class Env(BaseModel):
                                     "tool_call_id": tool_call_id
                                 }
                             )
+                            self._mark_step("action")
                             self.num_tool_callings += 1
                     except json.JSONDecodeError as jde:
                         if act.is_think():
@@ -130,6 +148,7 @@ class Env(BaseModel):
                                     "tool_call_id": tool_call_id
                                 }
                             )
+                            self._mark_step("think")
                             self.num_think += 1
                         else:
                             self.obs.append(
@@ -139,11 +158,13 @@ class Env(BaseModel):
                                     "tool_call_id": tool_call_id
                                 }
                             )
+                            self._mark_step("action")
+                            self.num_tool_callings += 1
                         result = f"Invalid arguments: {arguments}"
                     finally:
-                        self.chains.append(
-                            {"action_name": tool_name, "action_result": result}
-                        )
+                        # add tool use
+                        self.tool_usage_history.append(ToolUsage(name=tool_name, result=str(result)))
+                
                 else:
                     self.obs.append(
                         {
@@ -153,12 +174,9 @@ class Env(BaseModel):
                         }
                     )
                     self.num_tool_callings += 1
-                    self.chains.append(
-                        {"action_name": tool_name, "action_result": f"[Observation #{self.num_tool_callings}] Call invaild tool: {tool_name} which can not found in agent action space." + "\n"}
-                    )
 
         self.steps += 1
-        return self.obs, reward, terminate, self._get_info(step_finish_reason="action")
+        return self.obs, reward, terminate, self._get_info()
 
     def update_space_action(self, tool: ChatCompletionFunctionToolParam):
         tool_name = tool['function']['name']
@@ -169,10 +187,17 @@ class Env(BaseModel):
         else:
             print(f"[Error] Failed to update space action: Can't find {tool_name} in tool kits.")
 
-    def _get_info(self, step_finish_reason:Literal["solved", "think", "action"]):
+    def _get_info(self) -> EnvStepInfo:
         return {
-            "step_finish_reason": step_finish_reason,
+            "step_finish_reason": self.step_finish_reason,
             "steps": self.steps,
             "num_tool_callings": self.num_tool_callings, 
-            "answer": self.answer
+            "answer": self.answer,
+            "tool_use": self.tool_usage_history
         }
+    
+    def _mark_step(self, step_type: Literal["think", "action", "solved"]):
+        """Mark the step as an action step"""
+
+        self.step_finish_reason = step_type
+
