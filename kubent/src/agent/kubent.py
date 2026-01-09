@@ -1,7 +1,7 @@
 from typing import List, Dict, Any
 from uuid import UUID
 from pydantic import BaseModel, Field, model_validator
-from openai import OpenAI, pydantic_function_tool
+from openai import OpenAI
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletion, ChatCompletionFunctionToolParam
 from mwin import track, LLMProvider
 from .react import ReActAgent
@@ -9,7 +9,6 @@ from .tools.search import SearchGoogle
 from .tools.kubent_think import KubentThink
 from .tools import QueryStepInputAndOutput
 from .tools import ConsultRobin
-from ..env import Env
 
 class Result(BaseModel):
     answer: str
@@ -52,78 +51,23 @@ class Kubent(ReActAgent):
     model: str = "anthropic/claude-haiku-4.5"
     tools: List[ChatCompletionFunctionToolParam] = Field(..., default_factory=list)
     engine: OpenAI = OpenAI()
-    current_env: Env
     attempt: int = 15
 
     class Config:
         arbitrary_types_allowed=True
 
     @model_validator(mode="after")
-    def load_tools_and_set_env_action_space(self):
+    def load_tools(self):
         self.tools = [
             SearchGoogle().json_schema, 
             KubentThink().json_schema,
             QueryStepInputAndOutput().json_schema,
             ConsultRobin().json_schema,
         ]
-        for tool in self.tools:
-            self.current_env.update_space_action(tool=tool)
-
         return self
 
-    def run(
-        self, 
-        question: str,
-        session_id: UUID,
-        user_id: UUID,
-        project_name: str,
-        chat_hist: List[ChatCompletionMessageParam] | None = None,
-        agent_workflows: List[str] | None = None,
-    ) -> Result:
-        """Kubent start to solve a question
-        
-        Args:
-            question(str): question
-            chat_hist(List[ChatCompletionMessageParam]|None): chat history with Kubent. Default to `None`.
-        
-        Returns:
-            Result that Kubent gives
-        """
-
-        cnt = 0
-        terminate = False
-        obs = self.current_env.reset()
-        act_info = {
-            "step_finish_reason": "",
-            "steps": 0,
-            "num_tool_callings": 0, 
-            "answer": ""
-        }
-        while terminate is False and cnt < self.attempt:
-            obs, reward, terminate, act_info = self.act(
-                question=question, 
-                obs=obs, 
-                chat_hist=chat_hist, 
-                agent_workflows=agent_workflows,
-                session_id=session_id,
-                user_id=user_id,
-                project_name=project_name,
-            )
-            cnt += 1
-
-        if act_info.get("step_finish_reason") == "solved":
-            chats:List[ChatCompletionMessageParam] = [{"role": "user", "content": question}] + obs + [{"role": "assistant", "content": act_info.get("answer")}]
-            return Result(
-                answer=act_info.get("answer"),
-                chats=chats
-            )
-            
-        else:
-            chats:List[ChatCompletionMessageParam] = [{"role": "user", "content": question}] + obs + [{"role": "assistant", "content": f"Exceed max attempts: {self.attempt}"}]
-            # TODO: Fix it in the later. Makes it pass the final answer not an exceed information.
-            return Result(answer=f"Exceed max attempts: {self.attempt}", chats=chats)
-
     @track(track_llm=LLMProvider.OPENAI)
+    @DeprecationWarning("Not use. Replace it to step")
     def act(
         self, 
         question: str | None,
@@ -133,7 +77,39 @@ class Kubent(ReActAgent):
         session_id: UUID,
         user_id: UUID,
         project_name: str,
-    ) -> tuple[List[ChatCompletionMessageParam], float, bool, Dict[str, str]]:
+    ):
+        ...
+
+    @DeprecationWarning("Not use.")
+    def run():
+        ...
+    
+    @track(track_llm=LLMProvider.OPENAI)
+    def step(
+        self, 
+        question: str | None,
+        obs: List[ChatCompletionMessageParam],
+        chat_hist: List[ChatCompletionMessageParam] | None,
+        agent_workflows: List[str] | None,
+        session_id: UUID,
+        user_id: UUID,
+        project_name: str,
+    ) -> ChatCompletion:
+        """Kubent execute one step
+        
+        Args:
+            question(str | None): question
+            obs(List[ChatCompletionMessageParam]): Kubent observations in the context.
+            chat_hist(List[ChatCompletionMessageParam] | None): kubent chat history.
+            agent_workflows(List[str] | None): traces agent workflows.
+            session_id(UUID): session uuid
+            user_id(UUID): user uuid
+            project_name(str): working project
+        
+        Returns:
+            llm chat completion
+        """
+        
         if chat_hist is None:
             chat_hist = []
         user_content = question
@@ -147,15 +123,4 @@ class Kubent(ReActAgent):
             tools=self.tools,
             parallel_tool_calls=True,
         )
-        return self.current_env.step(llm_action=completion.choices[0].message)
-
-    def register_tool(self, tool):
-        try:
-            new_tool:ChatCompletionFunctionToolParam = pydantic_function_tool(tool)
-            self.tools.append(new_tool)
-            self.current_env.update_space_action(tool=tool)
-        except Exception as exce:
-            print(f"[Error] Failed to register new tool for Kubent: {exce}")
-
-    def change_env(self, new_env: Env):
-        self.current_env = new_env
+        return completion

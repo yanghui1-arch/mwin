@@ -1,5 +1,5 @@
 from .response import ResponseModel
-from .chat import ChatRequest, ChatResponse, ChatSessionResponse, ChatSessionTitleRequest
+from .chat import ChatRequest, ChatResponse, ChatSessionResponse, ChatSessionTitleRequest, ChatTaskResponse
 
 __all__ = [
     "ResponseModel",
@@ -7,4 +7,5 @@ __all__ = [
     "ChatResponse",
     "ChatSessionResponse",
     "ChatSessionTitleRequest",
+    "ChatTaskResponse"
 ]

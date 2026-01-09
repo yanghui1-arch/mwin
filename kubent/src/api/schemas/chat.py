@@ -1,6 +1,7 @@
 from uuid import UUID
 from datetime import datetime
 from pydantic import BaseModel
+from ...kubent_celery.tasks import TaskProgress
 
 class ChatRequest(BaseModel):
     session_id: str | None
@@ -8,7 +9,7 @@ class ChatRequest(BaseModel):
     project_id: int | None
 
 class ChatResponse(BaseModel):
-    message: str
+    task_id: str
 
 class ChatSessionResponse(BaseModel):
     id: UUID
@@ -19,3 +20,8 @@ class ChatSessionResponse(BaseModel):
 class ChatSessionTitleRequest(BaseModel):
     message: str
     session_id: str
+
+class ChatTaskResponse(BaseModel):
+    content: str | None
+    exception_traceback: str | None
+    progress_info: TaskProgress | None

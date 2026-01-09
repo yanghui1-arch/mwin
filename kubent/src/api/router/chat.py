@@ -1,8 +1,9 @@
 from uuid import UUID
 from typing import List
-from fastapi import APIRouter, BackgroundTasks, Depends
+from fastapi import APIRouter, Depends
+from celery import states as celery_task_states
+from celery.result import AsyncResult
 from openai.types.chat import ChatCompletionMessageParam
-from src.env import Env
 from src.repository import (
     step,
     trace,
@@ -17,12 +18,12 @@ from src.repository.models import (
     KubentChat,
 )
 from src.repository.db.conn import get_db, AsyncSession
-from src.api.schemas import ChatRequest, ChatResponse, ChatSessionResponse, ChatSessionTitleRequest, ResponseModel
+from src.api.schemas import ChatRequest, ChatResponse, ChatSessionResponse, ChatSessionTitleRequest, ChatTaskResponse, ResponseModel
 from src.api.jwt import verify_at_token
-from src.api.background_task import add_chat
 from src.service import chat
 from src.utils import mermaid
-from src.agent.kubent import Kubent, Result
+from src.kubent_celery.celery_app import celery_app
+from src.kubent_celery.tasks import kubent_run, KubentRequestArgs, KubentResponse, TaskProgress
 
 chat_router = APIRouter(prefix="/chat", tags=["Chat"])
 
@@ -51,7 +52,6 @@ async def create_new_chat_session(
 )
 async def optimize_agent_system(
     req:ChatRequest,
-    background_task:BackgroundTasks,
     user_id: UUID = Depends(verify_at_token),
     db:AsyncSession = Depends(get_db)
 ):
@@ -80,15 +80,49 @@ async def optimize_agent_system(
         if not selected_project:
             return ResponseModel.error(message=f"Invalid project id: {req.project_id}")
 
-    env = Env(env_name=f"optimize_{user_id}")
-    kubent = Kubent(current_env=env)
-    kubent_result:Result = kubent.run(question=message, chat_hist=chat_hist, agent_workflows=exec_graphs, session_id=session_id, user_id=user_id, project_name=selected_project.name)
-    optimize_solution:str = kubent_result.answer
-    background_task.add_task(add_chat, session_id=session_id, user_id=user_id, messages=kubent_result.chats, agent_name=kubent.name)
+    task_id = kubent_run.delay(
+        KubentRequestArgs(
+            question=message,
+            chat_hist=chat_hist,
+            agent_workflows=exec_graphs,
+            session_id=str(session_id),
+            user_id=str(user_id),
+            project_name=selected_project.name
+        )
+    )
     
     # In the last commit db to ensure atomicity.
     await db.commit()
-    return ResponseModel.success(data=ChatResponse(message=optimize_solution))
+    return ResponseModel.success(data=ChatResponse(task_id=str(task_id)))
+
+@chat_router.post(
+    "/query_optimize_result",
+    description="Get the Kubent optimized suggestions.", 
+    response_model=ResponseModel[ChatTaskResponse],
+)
+async def query_optimize_task_result(
+    task_id: str,
+    # verify
+    user_id: UUID = Depends(verify_at_token),
+):
+    res = AsyncResult(task_id, app=celery_app)
+    task_return_value = None
+    exception_traceback = None
+    progress_info = None
+    if res.state == celery_task_states.SUCCESS:
+        result: KubentResponse = res.result
+        task_return_value = result["message"]
+        
+    elif res.state == "PROGRESS":
+        progress_info:TaskProgress = res.info
+
+    elif res.state == celery_task_states.FAILURE:
+        exception_traceback = res.traceback
+    
+    return ResponseModel[ChatTaskResponse].success(
+        data=ChatTaskResponse(content=task_return_value, exception_traceback=exception_traceback, progress_info=progress_info)
+    )
+    
     
 @chat_router.post(
     "/title", 
