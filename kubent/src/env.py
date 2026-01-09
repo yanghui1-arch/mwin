@@ -43,7 +43,7 @@ class Env(BaseModel):
     """Serach number"""
 
     obs: List[ChatCompletionMessageParam] = Field(..., default_factory=list)
-    """Obs is a list of chat completion message param.
+    """Observation of current context.
     
     It contains all messages which is need for the next agent.run(question). However it doesn't contain three parts.
     > User's question
