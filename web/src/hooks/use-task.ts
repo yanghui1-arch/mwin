@@ -20,52 +20,52 @@ type UseTaskPollingOptions<TData> = {
   };
 
 
-  export function useTaskPolling<TData>({
-    taskId,
-    enabled,
-    intervalMs = 100,
-    fetchStatus,
-    onUpdate,
-    onDone,
-  }: UseTaskPollingOptions<TData>) {
-    const abortRef = useRef<AbortController | null>(null);
-    const runningRef = useRef(false);
-  
-    useEffect(() => {
-      // disable or task id is null
-      if (!enabled || !taskId) return;
-  
-      // abort previous subscription
-      abortRef.current?.abort();
-  
-      const controller = new AbortController();
-      abortRef.current = controller;
-      runningRef.current = true;
-  
-      const poll = async () => {
-        while (runningRef.current) {
-          try {
-            const data = await fetchStatus(taskId, controller.signal);
-            onUpdate?.(data);
-  
-            if (data.status === "SUCCESS" || data.status === "FAILED") {
-              onDone?.(data);
-              break;
-            }
-          } catch (err) {
-            if (controller.signal.aborted) break;
-            console.error("polling error:", err);
+export function useTaskPolling<TData>({
+  taskId,
+  enabled,
+  intervalMs = 100,
+  fetchStatus,
+  onUpdate,
+  onDone,
+}: UseTaskPollingOptions<TData>) {
+  const abortRef = useRef<AbortController | null>(null);
+  const runningRef = useRef(false);
+
+  useEffect(() => {
+    // disable or task id is null
+    if (!enabled || !taskId) return;
+
+    // abort previous subscription
+    abortRef.current?.abort();
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+    runningRef.current = true;
+
+    const poll = async () => {
+      while (runningRef.current) {
+        try {
+          const data = await fetchStatus(taskId, controller.signal);
+          onUpdate?.(data);
+
+          if (data.status === "SUCCESS" || data.status === "FAILED") {
+            onDone?.(data);
+            break;
           }
-  
-          await sleep(intervalMs);
+        } catch (err) {
+          if (controller.signal.aborted) break;
+          console.error("polling error:", err);
         }
-      };
-  
-      poll();
-  
-      return () => {
-        runningRef.current = false;
-        controller.abort();
-      };
-    }, [taskId, enabled, intervalMs, fetchStatus, onUpdate, onDone]);
-  }
+
+        await sleep(intervalMs);
+      }
+    };
+
+    poll();
+
+    return () => {
+      runningRef.current = false;
+      controller.abort();
+    };
+  }, [taskId, enabled, intervalMs, fetchStatus, onUpdate, onDone]);
+}
