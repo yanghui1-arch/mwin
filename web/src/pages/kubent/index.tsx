@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { kubentChatApi } from "@/api/kubent/kubent-chat";
 import { cn } from "@/lib/utils";
 import SiderbarMoreActions from "./siderbar/more-actions";
+import { useTaskPolling, type TaskStatus } from "@/hooks/use-task";
 
 type ChatMessage = {
   role: "assistant" | "user";
@@ -35,6 +36,19 @@ type Project = {
   name: string;
 };
 
+type TaskStatusResponse = {
+  status: "PENDING" | "PROGRESS" | "SUCCESS" | "FAILED";
+  content: string | undefined;
+  exceptionTraceback: string | undefined;
+  progressInfo: string | undefined;
+}
+
+type TaskProgressData = {
+  content: string | undefined;
+  exceptionTraceback: string | undefined;
+  progressInfo: string | undefined;
+}
+
 export default function KubentPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project>();
@@ -43,6 +57,39 @@ export default function KubentPage() {
     undefined
   );
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // Track chat with Kubent task status.
+  const [taskId, setTaskId] = useState<string | null>(null);
+  const [enabled, setEnabled] = useState<boolean>(false);
+
+  const fetchTaskStatus = async (taskId: string, signal: AbortSignal): Promise<TaskStatus<TaskProgressData>> => {
+    const taskStatus: TaskStatusResponse = await kubentChatApi.queryChatStatus(taskId, signal);
+
+    return {
+      status: taskStatus.status,
+      data: {
+        content: taskStatus.content,
+        exceptionTraceback: taskStatus.exceptionTraceback,
+        progressInfo: taskStatus.progressInfo,
+      }
+    }
+  }
+
+  
+  const onTaskDone = (_taskStatus: TaskStatus<TaskProgressData>) => {
+    void _taskStatus;
+    setEnabled(false);
+    setTaskId(null);
+  }
+
+  // TODO: Add an update message callback.
+
+  useTaskPolling({
+    taskId,
+    enabled,
+    fetchStatus: fetchTaskStatus,
+    intervalMs: 300,
+    onDone: onTaskDone,
+  })
 
   const selectProject = (projectName: string) =>
     setSelectedProject(projects.find((p: Project) => p.name === projectName));
@@ -77,7 +124,7 @@ export default function KubentPage() {
   };
 
   const handleDeleteSession = async (sessionId: string) => {
-    const response = {data: {code: 200, message: "Success"}}
+    const response = { data: { code: 200, message: "Success" } };
     if (response.data.code !== 200) {
       throw new Error(response.data.message || "Failed to delete session.");
     }
@@ -86,7 +133,7 @@ export default function KubentPage() {
     setSessions(nextSessions);
     // Delete session is current session
     if (selectedSession?.id === sessionId) {
-      console.log("clear")
+      console.log("clear");
       setSelectedSession(undefined);
       setMessages([]);
     }
@@ -123,13 +170,21 @@ export default function KubentPage() {
       kubentChatApi.chat(session.id, inputValue, selectedProject.id),
       kubentChatApi.title(session.id, inputValue.trim()),
     ]);
+    // if (chatResponse.data.code === 200) {
+    //   const assistantMessage: ChatMessage = {
+    //     role: "assistant",
+    //     content: chatResponse.data.data.message,
+    //     startTimestamp: new Date().toLocaleString("sv-SE"),
+    //   };
+    //   setMessages((prev) => [...prev, assistantMessage]);
+    // }
     if (chatResponse.data.code === 200) {
-      const assistantMessage: ChatMessage = {
-        role: "assistant",
-        content: chatResponse.data.data.message,
-        startTimestamp: new Date().toLocaleString("sv-SE"),
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
+      const task_id = chatResponse.data.data.task_id;
+      setTaskId(task_id);
+      setEnabled(true);
+    } else {
+      setTaskId(null);
+      setEnabled(false);
     }
 
     if (titleResponse.data.code === 200) {
@@ -245,7 +300,10 @@ export default function KubentPage() {
                       "bg-accent text-accent-foreground"
                   )}
                 >
-                  <div className="min-w-0 flex-1 truncate" onClick={() => selectSession(session.id)}>
+                  <div
+                    className="min-w-0 flex-1 truncate"
+                    onClick={() => selectSession(session.id)}
+                  >
                     {session.title ?? ""}
                   </div>
                   <div className="shrink-0">
