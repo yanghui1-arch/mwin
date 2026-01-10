@@ -13,4 +13,6 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     List<Project> findProjectsByUserId(UUID userId);
 
     List<Project> findProjectsByName(@NotBlank String projectName);
+
+    List<Project> findProjectsByUserIdOrderByLastUpdateTimestampDesc(UUID userId);
 }

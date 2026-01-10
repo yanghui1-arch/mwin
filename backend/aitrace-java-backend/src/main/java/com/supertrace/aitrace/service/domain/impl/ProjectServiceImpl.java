@@ -85,7 +85,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     public List<Project> getProjectsByUserId(UUID userId) {
-        return this.projectRepository.findProjectsByUserId(userId);
+        return this.projectRepository.findProjectsByUserIdOrderByLastUpdateTimestampDesc(userId);
     }
 
     @Override
