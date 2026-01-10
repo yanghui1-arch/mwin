@@ -5,6 +5,7 @@ from celery.result import AsyncResult
 from openai.types.chat import ChatCompletionMessageParam
 from .celery_app import celery_app
 from ..agent.kubent import Kubent, Result
+from ..agent.runtime import execution_scope
 from ..env import Env, EnvStepInfo
 from ..repository.db.conn import SessionLocal
 from ..repository import kubent_chat
@@ -42,25 +43,27 @@ def kubent_run(self: Task, args: KubentRequestArgs):
         print(f"Invalid user_id and session_id: {user_id} | {session_id}")
     
     # Ready environment and kubent instance.
-    env = Env(env_name=f"optimize_{args["user_id"]}")
-    kubent = Kubent()
-    for tool in kubent.tools:
-        env.update_space_action(tool=tool)
-    
-    kubent_result:Result = run(
-        task=self,
-        env=env,
-        kubent=kubent,
-        question=args["question"],
-        chat_hist=args["chat_hist"],
-        agent_workflows=args["agent_workflows"], 
-        session_id=session_id, 
-        user_id=user_id, 
-        project_name=args["project_name"]
-    )
+    with execution_scope(session_id=session_id, user_id=user_id, project_name=args["project_name"]):
+        env = Env(env_name=f"optimize_{args["user_id"]}")
+        kubent = Kubent()
+        for tool in kubent.tools:
+            env.update_space_action(tool=tool)
+        
+        kubent_result:Result = run(
+            task=self,
+            env=env,
+            kubent=kubent,
+            question=args["question"],
+            chat_hist=args["chat_hist"],
+            agent_workflows=args["agent_workflows"],
+            session_id=session_id,
+            user_id=user_id,
+            project_name=args["project_name"]
+        )
 
-    optimize_solution:str = kubent_result.answer
-    add_chat(session_id=session_id, user_id=user_id, messages=kubent_result.chats, agent_name="Kubent")
+        optimize_solution:str = kubent_result.answer
+        add_chat(session_id=session_id, user_id=user_id, messages=kubent_result.chats, agent_name="Kubent")
+    
     return KubentResponse(message=optimize_solution)
 
 
