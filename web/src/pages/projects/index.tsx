@@ -6,7 +6,7 @@ import { useDataTable } from "@/hooks/use-datatable";
 import { ProjectDataTableToolbar } from "@/components/data-table/data-table-toolbar/project-data-table-toolbar";
 
 type Project = {
-  id: number,
+  id: string,
   name: string;
   description: string;
   cost: number;
@@ -21,7 +21,7 @@ export default function ProjectsPage() {
     if (response.data.code == 200) {
       const userProjects = response.data.data;
       const projects: Project[] = userProjects.map((p) => ({
-        id: p.projectId,
+        id: p.projectId.toString(),
         name: p.projectName,
         description: p.description,
         cost: p.cost,
