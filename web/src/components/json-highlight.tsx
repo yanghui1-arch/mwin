@@ -61,7 +61,7 @@ function renderValue(value: unknown, keyName?: string): ReactElement {
                 <LLMJsonHighlight jsonObject={item as Record<string, unknown>} />
               )
             ) : (
-              <span className="text-amber-400">{String(item)}</span>
+              <span>{String(item)}</span>
             )}
             {i < value.length - 1 && <span className="text-gray-400">,</span>}
           </div>
