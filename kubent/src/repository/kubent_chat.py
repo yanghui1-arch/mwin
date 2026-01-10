@@ -1,5 +1,6 @@
 from typing import Dict, List, Any
 from uuid import UUID
+from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -26,7 +27,14 @@ def create_new_chat_sync(
     payload:Dict[str, Any],
     agent_name: str,
 ):
-    chat = KubentChat(session_uuid=session_id, user_uuid=user_id, role=role, payload=payload, agent_name=agent_name)
+    chat = KubentChat(
+        session_uuid=session_id, 
+        user_uuid=user_id, 
+        role=role, 
+        payload=payload,
+        agent_name=agent_name,
+        start_timestamp=datetime.now()
+    )
     db.add(chat)
     db.flush()
     return chat
