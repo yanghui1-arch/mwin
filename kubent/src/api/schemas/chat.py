@@ -1,4 +1,5 @@
 from uuid import UUID
+from typing import Literal
 from datetime import datetime
 from pydantic import BaseModel
 from ...kubent_celery.tasks import TaskProgress
@@ -22,6 +23,14 @@ class ChatSessionTitleRequest(BaseModel):
     session_id: str
 
 class ChatTaskResponse(BaseModel):
+    status: Literal["PENDING", "RECEIVED", "STARTED", "SUCCESS", "FAILURE", "REVOKED", "REJECTED", "RETRY", "IGNORED"]
+    """task status"""
+
     content: str | None
+    """content after successful to execute task"""
+
     exception_traceback: str | None
+    """error traceback"""
+
     progress_info: TaskProgress | None
+    """Started task information in the progress"""

@@ -119,10 +119,16 @@ async def query_optimize_task_result(
     elif res.state == celery_task_states.FAILURE:
         exception_traceback = res.traceback
     
+    status = res.state
     return ResponseModel[ChatTaskResponse].success(
-        data=ChatTaskResponse(content=task_return_value, exception_traceback=exception_traceback, progress_info=progress_info)
+        data=ChatTaskResponse(
+            status=status,
+            content=task_return_value,
+            exception_traceback=exception_traceback,
+            progress_info=progress_info,
+        )
     )
-    
+
     
 @chat_router.post(
     "/title", 
