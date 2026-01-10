@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 from openai import pydantic_function_tool
 from openai.types.chat import ChatCompletionFunctionToolParam
 from ..toolkits import Tool
+from ....agent.runtime import get_current_user_id, get_current_session_id, get_current_project_name
 
 T = TypeVar("T")
 
@@ -28,13 +29,21 @@ class ResponseModel(BaseModel, Generic[T]):
 class ConsultResult(BaseModel):
     message: str
 
-def consult_robin(question: str, user_uuid: str, session_id: str, project_name: str, agent_name: str) -> str:
+def consult_robin(question: str, agent_name: str) -> str:
+    user_uuid = get_current_user_id()
+    session_id = get_current_session_id()
+    project_name = get_current_project_name()
+    
+    if not user_uuid or not session_id or not project_name:
+        # TODO: Add a logger warning.
+        return "You are not talking a project in the session. Please don't use the function again."
+    
     response = _client.post(
         "/consult",
         json={
             "question": question,
-            "user_uuid": user_uuid,
-            "session_id": session_id,
+            "user_uuid": str(user_uuid),
+            "session_id": str(session_id),
             "project_name": project_name,
             "agent_name": agent_name,
         }
@@ -47,9 +56,6 @@ def consult_robin(question: str, user_uuid: str, session_id: str, project_name: 
 
 class ConsultRobinParams(BaseModel):
     question: str = Field(..., description="Question you want to consult Robin.")
-    user_uuid: str = Field(..., description="User uuid that you are talking about it.")
-    session_id: str = Field(..., description="Session uuid that you are talking in.")
-    project_name: str = Field(..., description="Which project you are involved with.")
     agent_name: str = Field(..., description="Your name.")
 
 class ConsultRobin(Tool):

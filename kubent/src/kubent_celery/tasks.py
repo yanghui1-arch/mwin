@@ -1,7 +1,6 @@
 from typing import TypedDict, Required, List, Dict, Any
 from uuid import UUID
 from celery import Task
-from celery.result import AsyncResult
 from openai.types.chat import ChatCompletionMessageParam
 from .celery_app import celery_app
 from ..agent.kubent import Kubent, Result
@@ -56,9 +55,6 @@ def kubent_run(self: Task, args: KubentRequestArgs):
             question=args["question"],
             chat_hist=args["chat_hist"],
             agent_workflows=args["agent_workflows"],
-            session_id=session_id,
-            user_id=user_id,
-            project_name=args["project_name"]
         )
 
         optimize_solution:str = kubent_result.answer
@@ -72,9 +68,6 @@ def run(
     env: Env,
     kubent: Kubent,
     question: str,
-    session_id: UUID,
-    user_id: UUID,
-    project_name: str,
     chat_hist: List[ChatCompletionMessageParam] | None = None,
     agent_workflows: List[str] | None = None,
 ):
@@ -105,9 +98,6 @@ def run(
             obs=obs,
             chat_hist=chat_hist, 
             agent_workflows=agent_workflows,
-            session_id=session_id,
-            user_id=user_id,
-            project_name=project_name,
         )
         obs, reward, terminate, act_info = env.step(llm_action=completion.choices[0].message)
         cnt += 1

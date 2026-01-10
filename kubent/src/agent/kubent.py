@@ -34,16 +34,12 @@ Finally Kubent will provide user with a specific enterprise-level solution. This
 > Briefly summarize the differences between the modified flowchart and the original one.
 > Explain to the user what problems the proposed solution can address.
 
-When Kubent believes this round of conversation has ended, he will start with [Finish], followed by the response content for the user.
+When Kubent believes this round of conversation has ended, he will output final answer.
 Finish reason has three conditions.
 Condition 1: Offer a specific enterprise-level solution.
 Condition 2: Request user provide more details that you can't access by tools or your brain knowledge.
 Condition 3: Think a great response to reply user.
 Condition 4: Daily chat.
-
-<SessionId>{session_id}</SessionId>
-<UserId>{user_id}</UserId>
-<ProjectName>{project_name}</ProjectName>
 """
 
 class Kubent(ReActAgent):
@@ -89,9 +85,6 @@ class Kubent(ReActAgent):
         obs: List[ChatCompletionMessageParam],
         chat_hist: List[ChatCompletionMessageParam] | None,
         agent_workflows: List[str] | None,
-        session_id: UUID,
-        user_id: UUID,
-        project_name: str,
     ) -> ChatCompletion:
         """Kubent execute one step
         
@@ -100,9 +93,6 @@ class Kubent(ReActAgent):
             obs(List[ChatCompletionMessageParam]): Kubent observations in the context.
             chat_hist(List[ChatCompletionMessageParam] | None): kubent chat history.
             agent_workflows(List[str] | None): traces agent workflows.
-            session_id(UUID): session uuid
-            user_id(UUID): user uuid
-            project_name(str): working project
         
         Returns:
             llm chat completion
@@ -117,7 +107,7 @@ class Kubent(ReActAgent):
 
         completion:ChatCompletion = self.engine.chat.completions.create(
             model=self.model,
-            messages=[{"role": "system", "content": system_bg.format(session_id=session_id, user_id=user_id, project_name=project_name)}] + chat_hist + [{"role": "user", "content": user_content}] + obs,
+            messages=[{"role": "system", "content": system_bg}] + chat_hist + [{"role": "user", "content": user_content}] + obs,
             tools=self.tools,
             parallel_tool_calls=True,
         )
