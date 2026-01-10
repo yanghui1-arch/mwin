@@ -37,7 +37,7 @@ type Project = {
 };
 
 type TaskStatusResponse = {
-  status: "Pending" | "Progress" | "Success" | "Failure";
+  status: "PENDING" | "PROGRESS" | "SUCCESS" | "FAILURE";
   content: string | undefined;
   exceptionTraceback: string | undefined;
   progressInfo: string | undefined;

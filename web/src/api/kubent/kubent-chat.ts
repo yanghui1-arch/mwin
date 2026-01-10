@@ -9,7 +9,7 @@ type ChatTaskResponse = {
 }
 
 type ChatTaskStatus = {
-  status: "Pending" | "Progress" | "Success" | "Failure";
+  status: "PENDING" | "PROGRESS" | "SUCCESS" | "FAILURE";
   content: string | undefined;
   exception_traceback: string | undefined;
   progress_info: string | undefined;
@@ -59,7 +59,7 @@ export const kubentChatApi = {
   },
 
   async queryChatStatus(task_id: string, signal: AbortSignal): Promise<{
-    status: "Pending" | "Progress" | "Success" | "Failure",
+    status: "PENDING" | "PROGRESS" | "SUCCESS" | "FAILURE",
     content: string | undefined,
     exceptionTraceback: string | undefined,
     progressInfo: string | undefined,

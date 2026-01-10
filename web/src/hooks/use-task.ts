@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export type TaskStatus<TData> = {
-  status: "Pending" | "Progress" | "Success" | "Failure";
+  status: "PENDING" | "PROGRESS" | "SUCCESS" | "FAILURE";
   data: TData
 }
 
@@ -48,7 +48,7 @@ export function useTaskPolling<TData>({
           const data = await fetchStatus(taskId, controller.signal);
           onUpdate?.(data);
 
-          if (data.status === "Success" || data.status === "Failure") {
+          if (data.status === "SUCCESS" || data.status === "FAILURE") {
             onDone?.(data);
             break;
           }
