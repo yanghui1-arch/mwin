@@ -67,7 +67,6 @@ class Kubent(ReActAgent):
         return self
 
     @track(track_llm=LLMProvider.OPENAI)
-    @DeprecationWarning("Not use. Replace it to step")
     def act(
         self, 
         question: str | None,
@@ -80,7 +79,6 @@ class Kubent(ReActAgent):
     ):
         ...
 
-    @DeprecationWarning("Not use.")
     def run():
         ...
     
