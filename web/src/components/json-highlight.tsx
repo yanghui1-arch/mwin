@@ -1,12 +1,19 @@
+import { cn } from "@/lib/utils";
 import type { ReactElement } from "react";
 
 interface LLMJsonHighlightProps {
   jsonObject: Record<string, unknown>;
+  className?: string;
 }
 
-export function LLMJsonHighlight({ jsonObject }: LLMJsonHighlightProps) {
+export function LLMJsonHighlight({ jsonObject, className }: LLMJsonHighlightProps) {
   return (
-    <span className="font-mono text-sm">
+    <div
+      className={cn(
+        className,
+        "font-mono text-sm whitespace-pre-wrap break-normal [overflow-wrap:anywhere]"
+      )}
+    >
       {"{"}
       {Object.entries(jsonObject).map(([key, value], idx, arr) => (
         <div key={key} className="ml-4">
@@ -17,7 +24,7 @@ export function LLMJsonHighlight({ jsonObject }: LLMJsonHighlightProps) {
         </div>
       ))}
       {"}"}
-    </span>
+    </div>
   );
 }
 
@@ -30,7 +37,7 @@ function renderValue(value: unknown, keyName?: string): ReactElement {
   if (Array.isArray(value)) {
     return (
       <span>
-        [<br />
+        [
         {value.map((item, i) => (
           <div key={i} className="ml-4">
             {typeof item === "object" && item !== null ? (

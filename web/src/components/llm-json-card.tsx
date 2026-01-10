@@ -22,7 +22,7 @@ export function LLMJsonCard({
       <Card>
         <CardContent>
           <ScrollArea className="max-h-58 overflow-auto rounded-md">
-            <pre className="text-sm font-mono whitespace-pre-wrap wrap-break-words text-left pr-4">
+            <pre className="text-sm font-mono whitespace-pre-wrap wrap-break-words [overflow-wrap:anywhere] text-left pr-4">
               <code>
                 {jsonObject ? (
                   llmJsonLight ? (

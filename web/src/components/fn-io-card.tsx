@@ -34,7 +34,7 @@ export function FunctionIOCard({
           <Card>
             <CardContent>
               <ScrollArea className="max-h-58 overflow-auto rounded-md">
-                <pre className="text-sm font-mono whitespace-pre-wrap wrap-break-words text-left">
+                <pre className="text-sm font-mono whitespace-pre-wrap wrap-break-words [overflow-wrap:anywhere] text-left">
                   <code>
                     {JSON.stringify(
                       data ? data : errorInfo ?? "Something errors.",
