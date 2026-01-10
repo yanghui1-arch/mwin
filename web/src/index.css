@@ -52,6 +52,7 @@
   --color-json-3: var(--json-3);
   --color-json-4: var(--json-4);
   --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-markdown: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; 
 }
 
 :root {

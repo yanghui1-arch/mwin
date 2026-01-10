@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -49,7 +50,7 @@ export function Markdown({ content, className }: MarkdownProps) {
   }, []);
 
   return (
-    <div className={className}>
+    <div className={cn("font-markdown text-[17px] leading-7", className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
