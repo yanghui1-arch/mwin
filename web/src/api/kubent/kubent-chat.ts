@@ -12,7 +12,10 @@ type ChatTaskStatus = {
   status: "PENDING" | "PROGRESS" | "SUCCESS" | "FAILURE";
   content: string | undefined;
   exception_traceback: string | undefined;
-  progress_info: string | undefined;
+  progress_info: {
+    tool_names: string[] | undefined,
+    content: string | undefined,
+  } | undefined;
 }
 
 type Response<T> = {
@@ -62,7 +65,10 @@ export const kubentChatApi = {
     status: "PENDING" | "PROGRESS" | "SUCCESS" | "FAILURE",
     content: string | undefined,
     exceptionTraceback: string | undefined,
-    progressInfo: string | undefined,
+    progressInfo: {
+      toolNames: string[] | undefined,
+      content: string | undefined,
+    } | undefined,
   }>{
     const response = await kubentApi.post<Response<ChatTaskStatus>>(
       "/chat/query_optimize_result",
@@ -76,7 +82,10 @@ export const kubentChatApi = {
       status: response.data.data.status,
       content: response.data.data.content,
       exceptionTraceback: response.data.data.exception_traceback,
-      progressInfo: response.data.data.progress_info,
+      progressInfo: {
+        toolNames: response.data.data.progress_info?.tool_names,
+        content: response.data.data.progress_info?.content,
+      }
     }
   },
 

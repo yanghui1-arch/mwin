@@ -10,7 +10,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useEffect, useState } from "react";
-import { AssistantChatBubble, UserChatBubble } from "@/components/chat/bubble";
+import {
+  AssistantChatBubble,
+  ToolChatBubble,
+  UserChatBubble,
+} from "@/components/chat/bubble";
 import { ChatInput } from "@/components/chat/input";
 import { Label } from "@/components/ui/label";
 import { kubentChatApi } from "@/api/kubent/kubent-chat";
@@ -40,14 +44,24 @@ type TaskStatusResponse = {
   status: "PENDING" | "PROGRESS" | "SUCCESS" | "FAILURE";
   content: string | undefined;
   exceptionTraceback: string | undefined;
-  progressInfo: string | undefined;
-}
+  progressInfo:
+    | {
+        toolNames: string[] | undefined;
+        content: string | undefined;
+      }
+    | undefined;
+};
 
 type TaskProgressData = {
   content: string | undefined;
   exceptionTraceback: string | undefined;
-  progressInfo: string | undefined;
-}
+  progressInfo:
+    | {
+        toolNames: string[] | undefined;
+        content: string | undefined;
+      }
+    | undefined;
+};
 
 export default function KubentPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -60,9 +74,18 @@ export default function KubentPage() {
   // Track chat with Kubent task status.
   const [taskId, setTaskId] = useState<string | null>(null);
   const [enabled, setEnabled] = useState<boolean>(false);
+  const [callingToolInformation, setCallingToolInformation] = useState<
+    string | undefined
+  >(undefined);
 
-  const fetchTaskStatus = async (taskId: string, signal: AbortSignal): Promise<TaskStatus<TaskProgressData>> => {
-    const taskStatus: TaskStatusResponse = await kubentChatApi.queryChatStatus(taskId, signal);
+  const fetchTaskStatus = async (
+    taskId: string,
+    signal: AbortSignal
+  ): Promise<TaskStatus<TaskProgressData>> => {
+    const taskStatus: TaskStatusResponse = await kubentChatApi.queryChatStatus(
+      taskId,
+      signal
+    );
 
     return {
       status: taskStatus.status,
@@ -70,16 +93,30 @@ export default function KubentPage() {
         content: taskStatus.content,
         exceptionTraceback: taskStatus.exceptionTraceback,
         progressInfo: taskStatus.progressInfo,
-      }
-    }
-  }
+      },
+    };
+  };
 
-  
   const onTaskDone = (_taskStatus: TaskStatus<TaskProgressData>) => {
     void _taskStatus;
     setEnabled(false);
     setTaskId(null);
-  }
+    setCallingToolInformation(undefined);
+  };
+
+  const onTaskUpdate = (taskStatus: TaskStatus<TaskProgressData>) => {
+    const status = taskStatus.status;
+    if (status === "PROGRESS") {
+      setCallingToolInformation(taskStatus.data.progressInfo?.content);
+    } else if (status === "SUCCESS") {
+      const assistantMessage: ChatMessage = {
+        role: "assistant",
+        content: taskStatus.data.content as string,
+        startTimestamp: new Date().toLocaleString("sv-SE"),
+      };
+      setMessages((prev) => [...prev, assistantMessage]);
+    }
+  };
 
   // TODO: Add an update message callback.
 
@@ -88,8 +125,9 @@ export default function KubentPage() {
     enabled,
     fetchStatus: fetchTaskStatus,
     intervalMs: 300,
+    onUpdate: onTaskUpdate,
     onDone: onTaskDone,
-  })
+  });
 
   const selectProject = (projectName: string) =>
     setSelectedProject(projects.find((p: Project) => p.name === projectName));
@@ -185,6 +223,7 @@ export default function KubentPage() {
     } else {
       setTaskId(null);
       setEnabled(false);
+      setCallingToolInformation(undefined);
     }
 
     if (titleResponse.data.code === 200) {
@@ -326,6 +365,9 @@ export default function KubentPage() {
                 ) : (
                   <UserChatBubble content={message.content} />
                 )
+              )}
+              {taskId && callingToolInformation && (
+                <ToolChatBubble content={callingToolInformation} />
               )}
             </div>
           </ScrollArea>
