@@ -23,7 +23,7 @@ class ChatSessionTitleRequest(BaseModel):
     session_id: str
 
 class ChatTaskResponse(BaseModel):
-    status: Literal["PENDING", "RECEIVED", "STARTED", "SUCCESS", "FAILURE", "REVOKED", "REJECTED", "RETRY", "IGNORED"]
+    status: Literal["PENDING", "RECEIVED", "STARTED", "PROGRESS", "SUCCESS", "FAILURE", "REVOKED", "REJECTED", "RETRY", "IGNORED"]
     """task status"""
 
     content: str | None
