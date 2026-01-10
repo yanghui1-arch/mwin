@@ -111,7 +111,6 @@ def run(
 
         # task progress update
         llm_response: str | None = completion.choices[0].message.content
-        print(f"\nllm_response:\n{llm_response}\n")
         task_metadata: TaskProgress = {
             "content": llm_response,
             "tool_names": [tool_usage["name"] for tool_usage in act_info["tool_use"]] if act_info["tool_use"] is not None else None
