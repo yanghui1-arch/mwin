@@ -125,6 +125,23 @@ create table step
 alter table step
     owner to postgres;
 
+create table step_meta
+(
+    id       uuid  not null
+        constraint step_meta_pk
+            primary key,
+    metadata jsonb not null
+);
+
+comment on table step_meta is 'It contains step metadata which is used for Kubent or other agents.';
+
+comment on column step_meta.id is 'The id should be as the same as the step id.';
+
+comment on column step_meta.metadata is 'Step metadata in details';
+
+alter table step_meta
+    owner to postgres;
+
 create table trace
 (
     id                    uuid      default gen_random_uuid() not null
