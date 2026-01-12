@@ -10,7 +10,7 @@ from .. import context
 from ..context.func_context import current_function_name_context 
 from ..models.key_models import StepType, Step, Trace
 from ..models.common import LLMProvider
-from ..helper import args_helper, inspect_helper
+from ..helper import args_helper, inspect_helper, exception_helper
 from ..client import sync_client
 
 
@@ -137,6 +137,7 @@ class BaseTracker(ABC):
                 result = func(*args, **kwargs)
             except Exception as e:
                 error_info = str(e)
+                error_info = exception_helper.clean_exception(error_info)
                 func_exception = e
             finally:
                 # after track
@@ -185,6 +186,7 @@ class BaseTracker(ABC):
                 result = await func(*args, **kwargs)
             except Exception as e:
                 error_info = str(e)
+                error_info = exception_helper.clean_exception(error_info)
                 func_exception = e
             finally:
                 # after track
