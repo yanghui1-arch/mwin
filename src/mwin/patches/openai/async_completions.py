@@ -37,7 +37,6 @@ def patch_async_openai_chat_completions(step: Step, tracker_options: TrackerOpti
         )
 
         if isinstance(resp, AsyncStream):
-            print("Return ProxyAsyncStream")
             return ProxyAsyncStream(real_async_stream=resp, tracker_options=tracker_options, step=step, inputs=async_openai_inputs)
 
         # Maybe here can be patched also.
@@ -57,7 +56,8 @@ def patch_async_openai_chat_completions(step: Step, tracker_options: TrackerOpti
                 model=step.model,
                 usage=resp.usage,
                 start_time=step.start_time,
-                end_time=datetime.now()
+                end_time=datetime.now(),
+                description=tracker_options.description
             )
         return resp
     
@@ -109,7 +109,8 @@ class ProxyAsyncStream(AsyncStream):
                 model=self.step.model,
                 usage=llm_usage,
                 start_time=self.step.start_time,
-                end_time=datetime.now()
+                end_time=datetime.now(),
+                description=self.tracker_options.description,
             )
         return chat_completion_chunk
 
@@ -144,7 +145,8 @@ class ProxyAsyncStream(AsyncStream):
                     model=self.step.model,
                     usage=llm_usage,
                     start_time=self.step.start_time,
-                    end_time=datetime.now()
+                    end_time=datetime.now(),
+                    description=self.tracker_options.description
                 )
             yield chunk
 

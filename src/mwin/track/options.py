@@ -19,6 +19,7 @@ class TrackerOptions:
         track_llm(LLMProvider | None): track a certain llm. Default to `None`. 
                                         If `track_llm` is not `None`, AITrace will track provider's api.
         llm_ignore_fields(List[str] | None): a list of llm ignore fields name. Default to `None`.
+        description(str | None): track step description. Default to `None`.
     """
 
     tags: List[str] | None = None
@@ -28,3 +29,4 @@ class TrackerOptions:
     trace_name: str | None = None
     track_llm: LLMProvider | None = None
     llm_ignore_fields: List[str] | None = None
+    description: str | None = None

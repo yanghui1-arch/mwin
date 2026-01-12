@@ -52,6 +52,7 @@ class SyncClient:
         usage: CompletionUsage | None,
         start_time: datetime,
         end_time: datetime | None,
+        description: str | None,
     ) -> LogStepResponse:
         """Create a step and log it in server."""
         
@@ -74,6 +75,7 @@ class SyncClient:
             usage=usage,
             start_time=start_time,
             end_time=end_time,
+            description=description,
         )
         
         try:

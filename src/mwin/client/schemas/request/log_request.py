@@ -19,6 +19,7 @@ class LogStepRequest(BaseModel):
     usage: CompletionUsage | None
     start_time: datetime
     end_time: datetime | None
+    description: str | None
 
     @field_serializer('input', 'output')
     def serialize_any_field(self, value: Any):

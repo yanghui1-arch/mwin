@@ -36,6 +36,7 @@ class BaseTracker(ABC):
         model: str | None = None,
         track_llm: LLMProvider | None = None,
         llm_ignore_fields: List[str] | None = None,
+        description: str | None = None,
     ) -> Callable:
         """track step decorator
         Track step in calling modules. If use decorator to track step, the step and the trace id will be always a whole new ones.
@@ -49,6 +50,7 @@ class BaseTracker(ABC):
             track_llm(LLMProvider | None): track a certain llm. Default to `None`. 
                                             If `track_llm` is not `None`, AITrace will track provider's api.
             llm_ignore_fields(List[str] | None): a list of llm ignore fields name. Default to `None`.
+            description(str | None): step description. Default to `None`.
             
         Returns:
             Callable: decorator
@@ -60,15 +62,20 @@ class BaseTracker(ABC):
             model=model,
             track_llm=track_llm,
             llm_ignore_fields=llm_ignore_fields,
+            description=description,
         )
     
         if callable(func_name):
             func = func_name
+            if description is None:
+                tracker_options.description = inspect.getdoc(func)
             return self._decorator(func=func, tracker_options=tracker_options)
         
         tracker_options.func_name = func_name
 
         def decorator(func:Callable):
+            if description is None:
+                tracker_options.description = inspect.getdoc(func)
             return self._decorator(func=func, tracker_options=tracker_options)
         
         return decorator
@@ -351,6 +358,7 @@ class BaseTracker(ABC):
             usage=current_step.usage,
             start_time=current_step.start_time,
             end_time=current_step.end_time,
+            description=tracker_options.description,
         )
 
         client.log_trace(

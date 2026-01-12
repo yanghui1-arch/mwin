@@ -78,7 +78,8 @@ def patch_openai_chat_completions(step: Step, tracker_options: TrackerOptions, f
                 model=model,
                 usage=resp.usage,
                 start_time=step.start_time,
-                end_time=datetime.now()
+                end_time=datetime.now(),
+                description=tracker_options.description,
             )
         return resp
     
@@ -138,7 +139,8 @@ class ProxyStream(Stream):
                 model=self.model,
                 usage=llm_usage,
                 start_time=self.step.start_time,
-                end_time=datetime.now()
+                end_time=datetime.now(),
+                description=self.tracker_options.description,
             )
         return chunk
 
@@ -175,7 +177,8 @@ class ProxyStream(Stream):
                     model=self.model,
                     usage=llm_usage,
                     start_time=self.step.start_time,
-                    end_time=datetime.now()
+                    end_time=datetime.now(),
+                    description=self.tracker_options.description
                 )
                 
             yield chunk
