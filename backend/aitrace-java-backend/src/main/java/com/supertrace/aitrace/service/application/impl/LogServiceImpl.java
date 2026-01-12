@@ -1,11 +1,13 @@
 package com.supertrace.aitrace.service.application.impl;
 
 import com.supertrace.aitrace.domain.Project;
+import com.supertrace.aitrace.domain.core.step.metadata.StepMetadata;
 import com.supertrace.aitrace.dto.step.LogStepRequest;
 import com.supertrace.aitrace.dto.trace.LogTraceRequest;
 import com.supertrace.aitrace.repository.ProjectRepository;
 import com.supertrace.aitrace.service.application.LogService;
 import com.supertrace.aitrace.service.domain.ProjectService;
+import com.supertrace.aitrace.service.domain.StepMetaService;
 import com.supertrace.aitrace.service.domain.StepService;
 import com.supertrace.aitrace.service.domain.TraceService;
 import jakarta.validation.constraints.NotNull;
@@ -21,6 +23,7 @@ public class LogServiceImpl implements LogService {
     private final ProjectRepository projectRepository;
     private final ProjectService projectService;
     private final StepService stepService;
+    private final StepMetaService stepMetaService;
     private final TraceService traceService;
 
     /**
@@ -35,7 +38,12 @@ public class LogServiceImpl implements LogService {
     public UUID logStep(@NotNull UUID userId, @NotNull LogStepRequest logStepRequest) {
         String projectName = logStepRequest.getProjectName();
         Project projectOwnedByUserId = this.searchProject(userId, projectName);
-        return stepService.logStep(userId, logStepRequest, projectOwnedByUserId.getId());
+        UUID stepId = this.stepService.logStep(userId, logStepRequest, projectOwnedByUserId.getId());
+        StepMetadata stepMetadata = StepMetadata.builder()
+            .description(logStepRequest.getDescription())
+            .build();
+        this.stepMetaService.addStepMeta(stepId, stepMetadata);
+        return stepId;
     }
 
     /**
