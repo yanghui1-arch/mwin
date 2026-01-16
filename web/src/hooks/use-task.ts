@@ -20,6 +20,17 @@ type UseTaskPollingOptions<TData> = {
   };
 
 
+/**
+ * Post requests in the beckend every intervalMs ms to fetch task status.
+ * It's automatically to request when calling useTaskPolling() and will stop when task is done.
+ * 
+ * @param taskId task id
+ * @param enabled whether allowed to post requests
+ * @param intervalMs interval
+ * @param fetchStatus a function to get task status
+ * @param onUpdate a function to do something after get task status.
+ * @param onDone a function if task is done.
+ */
 export function useTaskPolling<TData>({
   taskId,
   enabled,
