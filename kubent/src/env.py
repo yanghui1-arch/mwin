@@ -2,6 +2,7 @@ import json
 from typing import Callable, TypedDict, Literal, List, Dict
 from pydantic import BaseModel, Field
 from openai.types.chat import ChatCompletionFunctionToolParam, ChatCompletionMessage, ChatCompletionMessageToolCallUnion, ChatCompletionMessageParam
+from mwin import track
 from .agent.tools import TOOL_KITS, Tool
 
 class Action(BaseModel):
@@ -78,10 +79,22 @@ class Env(BaseModel):
         self.answer =  None
         return self.obs
     
+    @track
     def step(
         self,
         llm_action: ChatCompletionMessage,
     ) -> tuple[List[ChatCompletionMessageParam], float, bool, EnvStepInfo]:
+        """Environment will be affected by an agent's decision.
+        
+        Args:
+            llm_action(ChatCompletionMessage): agent action.
+
+        Returns:
+            a tuple consists of observation which is passed to the next round conversation, action accumulated rewards, terminate flag 
+            and EnvStepInfo. 
+            EnvStepInfo contains finish reason such as "solved", "think", "action", current steps and counts of calling tool.
+        """
+
         reward = 0
         terminate = False
 
