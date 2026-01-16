@@ -7,7 +7,7 @@ from mwin import track, LLMProvider
 from .react import ReActAgent
 from .tools.search import SearchGoogle
 from .tools.kubent_think import KubentThink
-from .tools import QueryStepInputAndOutput
+from .tools import QueryStep
 from .tools import ConsultRobin
 
 class Result(BaseModel):
@@ -28,18 +28,23 @@ Due to the complexity of various agent purposes, their process flow graph is dif
 Kubent need to pose a concrete and specifically optimized for the task solution to make agent system performance upgrade about ~1% \\at least than before.
 There are many tools you can use them. Sometimes Kubent will think considerate details, how to start next step and so on.
 
-Finally Kubent will provide user with a specific enterprise-level solution. This solution must fulfill the following requirements:
+# Kubent Best Solution
+
+Kubent will provide user with a specific enterprise-level solution. This solution must fulfill the following requirements:
 > Describe Kubent's solution as precisely and explicitly as possible.
 > Provide structured data of the modified agent system flowchart.
 > Briefly summarize the differences between the modified flowchart and the original one.
 > Explain to the user what problems the proposed solution can address.
+Refered to workflow, please use **mermaid** language to describe it.
 
-When Kubent believes this round of conversation has ended, he will output final answer.
-Finish reason has three conditions.
-Condition 1: Offer a specific enterprise-level solution.
-Condition 2: Request user provide more details that you can't access by tools or your brain knowledge.
-Condition 3: Think a great response to reply user.
-Condition 4: Daily chat.
+# Conditions of ending Conversation
+
+1. Offer a specific enterprise-level solution.
+2. Request user provide more details that you can't access by tools or your brain knowledge.
+3. Think a great response to reply user.
+4. Daily chat.
+
+Encourage you to use more tools to get more information in the real world.
 """
 
 class Kubent(ReActAgent):
@@ -57,7 +62,7 @@ class Kubent(ReActAgent):
         self.tools = [
             SearchGoogle().json_schema, 
             KubentThink().json_schema,
-            QueryStepInputAndOutput().json_schema,
+            QueryStep().json_schema,
             ConsultRobin().json_schema,
         ]
         return self
@@ -103,11 +108,10 @@ class Kubent(ReActAgent):
         user_content = question
         if agent_workflows is not None and len(agent_workflows) > 0:
             workflows_desc = [f"<AgentExecutionGraph>\n{workflow}\n</AgentExecutionGraph>" for workflow in agent_workflows]
-            user_content = f"<Agent>\n{"\n".join(workflows_desc)}\n</Agent>" + "\n" + f"<Question>\n{question}\n</Question>"
 
         completion:ChatCompletion = self.engine.chat.completions.create(
             model=self.model,
-            messages=[{"role": "system", "content": system_bg}] + chat_hist + [{"role": "user", "content": user_content}] + obs,
+            messages=[{"role": "system", "content": system_bg + f"<Agent>\n{"\n".join(workflows_desc)}\n</Agent>"}] + chat_hist + [{"role": "user", "content": user_content}] + obs,
             tools=self.tools,
             parallel_tool_calls=True,
         )
