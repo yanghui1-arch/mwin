@@ -1,5 +1,11 @@
 # Version log
 Every version updates, fixes and removings could be checked here.
+
+## 0.1.6
+### Feature
+- Add step discription which allows user to pass or just write python docstring. - by @yanghui1-arch [(45b3efa)](https://github.com/yanghui1-arch/mwin/commit/45b3efaffee5d2ded1a85d26effd6b4126a05ed7)
+### Fix
+- Fix exception too long to log step and trace. - by @yanghui1-arch [(7c52f6f)](https://github.com/yanghui1-arch/mwin/commit/7c52f6f63e01a4c0904a57c49ddac704cea447a1)
 ## 0.1.5
 ### Feature
 - Simplify track usage and configure project name before using mwin which is a big difference on previous version. - by @yanghui1-arch [(483bdb4)](https://github.com/yanghui1-arch/mwin/commit/483bdb41a253b845c0d7654ef4924dc85c3ef1fa)
