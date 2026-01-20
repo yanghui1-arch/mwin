@@ -4,7 +4,7 @@ import { Label } from "./ui/label";
 import { ScrollArea } from "./ui/scroll-area";
 
 interface StepDetailProp {
-  labelTitle: string;
+  labelTitle?: string;
   jsonObject?: Record<string, unknown>;
   errorInfo?: string;
   llmJsonLight?: boolean;
