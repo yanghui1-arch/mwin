@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="src/assets/images/optimizer-ai-logo.png" height="256" />
+</p>
+
 # Web - AITrace
 This module is aitrace web fronted. User can check step, trace and conversation details.
 
