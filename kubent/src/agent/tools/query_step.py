@@ -1,12 +1,23 @@
 from typing import Callable, Literal, List
 from uuid import UUID
+import os
 from pydantic import BaseModel, Field
-from openai import pydantic_function_tool, OpenAI
+from dotenv import load_dotenv
+from openai import OpenAI, pydantic_function_tool
 from openai.types.chat import ChatCompletionFunctionToolParam
 from .toolkits import Tool
 from ...repository.models import Step, StepMeta
 from ...repository.db.conn import SessionLocal
 from ...repository.step_meta import select_step_metadata
+
+load_dotenv()
+_BASE_URL = os.getenv("BASE_URL") or os.getenv("base_url")
+_API_KEY = os.getenv("API_KEY") or os.getenv("api_key")
+_OPENAI_CLIENT_KWARGS: dict[str, str] = {}
+if _BASE_URL:
+    _OPENAI_CLIENT_KWARGS["base_url"] = _BASE_URL
+if _API_KEY:
+    _OPENAI_CLIENT_KWARGS["api_key"] = _API_KEY
 
 system_prompt = """You are a best programer and good at explaining a function input and output.
 You will recieve a function input and output.
@@ -78,7 +89,7 @@ def _build_overview(overview: StepOverview):
             result = result + f"## LLM Model used\n{model}"
         return result
 
-def _step_overview(openai_client: OpenAI, step: Step, step_meta: StepMeta | None) -> str:
+def _step_overview(openai_client, step: Step, step_meta: StepMeta | None) -> str:
 
     status = "success" if step.error_info is None else "failed"
     overview = StepOverview(
@@ -124,7 +135,7 @@ def _step_overview(openai_client: OpenAI, step: Step, step_meta: StepMeta | None
 
 def query_step(step_ids: List[str]) -> str:
     overview_step_info: List[str] = []
-    openai_cli = OpenAI()
+    openai_cli: OpenAI = OpenAI(**_OPENAI_CLIENT_KWARGS)
     try:
         for step_id in step_ids:
             with SessionLocal() as db:
