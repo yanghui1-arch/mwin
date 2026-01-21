@@ -7,6 +7,7 @@ from .toolkits import Tool
 from ...repository.models import Step, StepMeta
 from ...repository.db.conn import SessionLocal
 from ...repository.step_meta import select_step_metadata
+from ...config import model_config
 
 system_prompt = """You are a best programer and good at explaining a function input and output.
 You will recieve a function input and output.
@@ -95,7 +96,7 @@ def _step_overview(openai_client: OpenAI, step: Step, step_meta: StepMeta | None
     step_inputs = str(step.input) if step.input else None
     step_outputs = str(step.output) if step.output else None
     
-    llm_model = "qwen/qwen3-4b:free"
+    llm_model = model_config.get("query_step.model", "qwen/qwen3-4b:free")
     if step_inputs or step_outputs:
         # Model best context is about 40K.
         # Keep inputs and outputs are both less 20K tokens.

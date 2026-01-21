@@ -9,6 +9,7 @@ from .tools.search import SearchGoogle
 from .tools.kubent_think import KubentThink
 from .tools import QueryStep
 from .tools import ConsultRobin
+from ..config import model_config
 
 class Result(BaseModel):
     answer: str
@@ -49,7 +50,7 @@ Encourage you to use more tools to get more information in the real world.
 
 class Kubent(ReActAgent):
     name: str = "Kubent"
-    model: str = "anthropic/claude-haiku-4.5"
+    model: str = model_config.get("kubent.model", "anthropic/claude-haiku-4.5")
     tools: List[ChatCompletionFunctionToolParam] = Field(..., default_factory=list)
     engine: OpenAI = OpenAI()
     attempt: int = 15

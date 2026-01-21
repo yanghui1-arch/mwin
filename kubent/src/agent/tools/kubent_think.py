@@ -3,9 +3,10 @@ from pydantic import BaseModel, Field
 from openai import OpenAI, pydantic_function_tool
 from openai.types.chat import ChatCompletionFunctionToolParam, ChatCompletion
 from .toolkits import Tool
+from ...config import model_config
 
 engine: OpenAI = OpenAI()
-model = "x-ai/grok-4.1-fast"
+model = model_config.get("kubent.think.model", "x-ai/grok-4.1-fast")
 system_bg = """You are the brain of Kubent. Kubent is a useful assistant to keep improve agent performance better.
 You are the best thinker. 
 User will ask you a question. Think carefully about this question and tell him/her the thinking process and the results.
