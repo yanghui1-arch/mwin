@@ -6,17 +6,27 @@ from mwin import track
 from mwin.models import StepType
 
 
-def test_track_sync_records_input_output_and_trace(fake_client):
-    @track(tags=["unit"], step_type=StepType.CUSTOMIZED, model="demo-model")
-    def add(x, y=2):
-        """Add numbers."""
-        return x + y
+@track(tags=["unit"], step_type=StepType.CUSTOMIZED, model="demo-model")
+def add(x, y=2):
+    """Add numbers."""
+    return x + y
+
+class Demo:
+    @track(tags=["unit"])
+    def ping(self, value):
+        return value
+
+
+def test_track_sync(fake_client):
+    """Test general function decorated by track."""
 
     result = add(1)
 
     assert result == 3
     assert len(fake_client.steps) == 1
     assert len(fake_client.traces) == 1
+
+    print(fake_client.steps)
 
     step = fake_client.steps[0]
     assert step["step_name"] == "add"
@@ -31,12 +41,39 @@ def test_track_sync_records_input_output_and_trace(fake_client):
     assert trace["output"] == {"func_output": 3}
 
 
-def test_track_class_method_uses_instance_qualname(fake_client):
-    class Demo:
-        @track(tags=["unit"])
-        def ping(self, value):
-            return value
+def test_track_inner_func_input_with_kwargs(fake_client):
+    """Test inner function decorated by track
+    The inner function inputs has args or kwargs.
+    """
 
+    @track(tags=["unit"], step_type=StepType.CUSTOMIZED, model="demo-model")
+    def sub(x, y=2):
+        """Sub numbers."""
+        return x - y
+
+    result = sub(1)
+
+    assert result == -1
+    assert len(fake_client.steps) == 1
+    assert len(fake_client.traces) == 1
+
+    print(fake_client.steps)
+
+    step = fake_client.steps[0]
+    assert step["step_name"] == "test_track_sync_records_input_with_kwargs_output_and_trace.sub"
+    assert step["input"] == {"func_inputs": {"x": 1, "y": 2}}
+    assert step["output"]["func_output"] == -1
+    assert step["tags"] == ["unit"]
+    assert step["step_type"] == StepType.CUSTOMIZED
+    assert step["model"] == "demo-model"
+    assert step["description"] == "Sub numbers."
+
+    trace = fake_client.traces[0]
+    assert trace["output"] == {"func_output": -1}
+
+
+def test_track_class_method_uses_instance_qualname(fake_client):
+    """Test general customized class function which is decorated by track."""
     Demo().ping("ok")
 
     step = fake_client.steps[0]
@@ -44,6 +81,8 @@ def test_track_class_method_uses_instance_qualname(fake_client):
 
 
 def test_track_exception_is_logged_and_raised(fake_client):
+    """Track inner function , which is decorated by track, raise an error."""
+
     @track(tags=["unit"])
     def boom():
         raise ValueError("boom")
@@ -64,6 +103,8 @@ def test_track_exception_is_logged_and_raised(fake_client):
 
 
 def test_track_async_records_output(fake_client):
+    """Test async function output is right."""
+    
     @track(tags=["unit"])
     async def fetch():
         return "ok"
