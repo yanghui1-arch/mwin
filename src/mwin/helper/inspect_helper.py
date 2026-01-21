@@ -38,6 +38,11 @@ def get_call_name(func: Callable, args: tuple) -> str:
     method_name = func.__name__
     qualname = getattr(func, "__qualname__", "")
 
+    # inner function
+    if ".<locals>." in qualname:
+        owner = qualname.split(".<locals>.", 1)[0]
+        return f"{owner}.{method_name}"
+
     if "." in qualname:
         owner = qualname.split(".", 1)[0]
         if args:
@@ -45,7 +50,8 @@ def get_call_name(func: Callable, args: tuple) -> str:
             # instance method
             if hasattr(first, "__class__") and first.__class__.__name__ == owner:
                 return f"{owner}().{method_name}"
-            # classmethod or static method
+            # classmethod / static method / inner method with args
             return f"{owner}.{method_name}"
+        
     # general method
     return method_name

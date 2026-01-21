@@ -26,8 +26,6 @@ def test_track_sync(fake_client):
     assert len(fake_client.steps) == 1
     assert len(fake_client.traces) == 1
 
-    print(fake_client.steps)
-
     step = fake_client.steps[0]
     assert step["step_name"] == "add"
     assert step["input"] == {"func_inputs": {"x": 1, "y": 2}}
@@ -60,7 +58,7 @@ def test_track_inner_func_input_with_kwargs(fake_client):
     print(fake_client.steps)
 
     step = fake_client.steps[0]
-    assert step["step_name"] == "test_track_sync_records_input_with_kwargs_output_and_trace.sub"
+    assert step["step_name"] == "test_track_inner_func_input_with_kwargs.sub"
     assert step["input"] == {"func_inputs": {"x": 1, "y": 2}}
     assert step["output"]["func_output"] == -1
     assert step["tags"] == ["unit"]
@@ -70,6 +68,22 @@ def test_track_inner_func_input_with_kwargs(fake_client):
 
     trace = fake_client.traces[0]
     assert trace["output"] == {"func_output": -1}
+
+
+def test_track_inner_func_without_args(fake_client):
+    """Test inner function decorated by track without args."""
+
+    @track(tags=["unit"])
+    def add():
+        return 1
+
+    result = add()
+
+    assert result == 1
+    assert len(fake_client.steps) == 1
+
+    step = fake_client.steps[0]
+    assert step["step_name"] == "test_track_inner_func_without_args.add"
 
 
 def test_track_class_method_uses_instance_qualname(fake_client):
