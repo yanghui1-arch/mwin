@@ -7,6 +7,7 @@ from mwin import track, LLMProvider
 from .react import ReActAgent
 from .tools import RobinThink
 from ..env import Env
+from ..config import model_config
 
 class Result(BaseModel):
     answer: str
@@ -121,10 +122,10 @@ class Robin(ReActAgent):
     current_env: Env
     name: str = "Robin"
     attempt: int = 25
-    model: str = "anthropic/claude-haiku-4.5"
+    model: str = model_config.get("robin.model", "anthropic/claude-haiku-4.5")
     tools: List[ChatCompletionFunctionToolParam] = Field(..., default_factory=list)
     engine: OpenAI = OpenAI()
-    parse_model: str = "qwen2.5-72b-instruct"
+    parse_model: str = model_config.get("robin.parse.model", "qwen2.5-72b-instruct")
     parse_engine: OpenAI = OpenAI()
 
     class Config:

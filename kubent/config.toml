@@ -1,0 +1,20 @@
+[robin]
+model = "anthropic/claude-haiku-4.5"
+
+[robin.parse]
+model = "qwen2.5-72b-instruct"
+
+[robin.think]
+model = "x-ai/grok-4.1-fast"
+
+[kubent]
+model = "anthropic/claude-haiku-4.5"
+
+[kubent.think]
+model = "x-ai/grok-4.1-fast"
+
+[query_step]
+model = "qwen/qwen3-4b:free"
+
+[service.chat]
+model = "openai/gpt-oss-120b:free"
