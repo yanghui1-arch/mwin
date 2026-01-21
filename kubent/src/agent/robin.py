@@ -1,6 +1,8 @@
 from typing import Optional, List, Dict, Any
 from datetime import datetime
+import os
 from pydantic import model_validator, BaseModel, Field
+from dotenv import load_dotenv
 from openai import OpenAI
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletion, ParsedChatCompletion, ChatCompletionFunctionToolParam
 from mwin import track, LLMProvider
@@ -8,6 +10,15 @@ from .react import ReActAgent
 from .tools import RobinThink
 from ..env import Env
 from ..config import model_config
+
+load_dotenv()
+_BASE_URL = os.getenv("BASE_URL") or os.getenv("base_url")
+_API_KEY = os.getenv("API_KEY") or os.getenv("api_key")
+_OPENAI_CLIENT_KWARGS: dict[str, str] = {}
+if _BASE_URL:
+    _OPENAI_CLIENT_KWARGS["base_url"] = _BASE_URL
+if _API_KEY:
+    _OPENAI_CLIENT_KWARGS["api_key"] = _API_KEY
 
 class Result(BaseModel):
     answer: str
@@ -124,9 +135,9 @@ class Robin(ReActAgent):
     attempt: int = 25
     model: str = model_config.get("robin.model", "anthropic/claude-haiku-4.5")
     tools: List[ChatCompletionFunctionToolParam] = Field(..., default_factory=list)
-    engine: OpenAI = OpenAI()
+    engine: OpenAI = OpenAI(**_OPENAI_CLIENT_KWARGS)
+    parse_engine: OpenAI = OpenAI(**_OPENAI_CLIENT_KWARGS)
     parse_model: str = model_config.get("robin.parse.model", "qwen2.5-72b-instruct")
-    parse_engine: OpenAI = OpenAI()
 
     class Config:
         arbitrary_types_allowed=True

@@ -1,12 +1,24 @@
 from typing import Callable
+import os
 from pydantic import BaseModel, Field
+from dotenv import load_dotenv
 from openai import OpenAI, pydantic_function_tool
 from openai.types.chat import ChatCompletionFunctionToolParam, ChatCompletion
 from .toolkits import Tool
 from ...config import model_config
 
-engine: OpenAI = OpenAI()
+load_dotenv()
+_BASE_URL = os.getenv("BASE_URL") or os.getenv("base_url")
+_API_KEY = os.getenv("API_KEY") or os.getenv("api_key")
+_OPENAI_CLIENT_KWARGS: dict[str, str] = {}
+if _BASE_URL:
+    _OPENAI_CLIENT_KWARGS["base_url"] = _BASE_URL
+if _API_KEY:
+    _OPENAI_CLIENT_KWARGS["api_key"] = _API_KEY
+
+engine: OpenAI = OpenAI(**_OPENAI_CLIENT_KWARGS)
 model = model_config.get("robin.think.model", "x-ai/grok-4.1-fast")
+
 system_bg = """Robin is a project strategy consultant whose entire thought process is built around questions related to a project,
 such as: Who is the target audience? How will the project generate revenue? What is the purpose of the project? What objectives need to be achieved? And what would the best possible outcome look like? 
 As the company's strategy consultant, Robin receives various questions from other Agents.

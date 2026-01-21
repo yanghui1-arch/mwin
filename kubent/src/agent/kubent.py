@@ -1,6 +1,8 @@
 from typing import List, Dict, Any
 from uuid import UUID
+import os
 from pydantic import BaseModel, Field, model_validator
+from dotenv import load_dotenv
 from openai import OpenAI
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletion, ChatCompletionFunctionToolParam
 from mwin import track, LLMProvider
@@ -17,6 +19,15 @@ class Result(BaseModel):
 
     chats: List[Dict[str, Any]]
     """ChatCompletionParams list. It contains user's question, kubent's tool calling & kubent's thoughts and kubent's answer but not contains previous chat history."""
+
+load_dotenv()
+_BASE_URL = os.getenv("BASE_URL") or os.getenv("base_url")
+_API_KEY = os.getenv("API_KEY") or os.getenv("api_key")
+_OPENAI_CLIENT_KWARGS: dict[str, str] = {}
+if _BASE_URL:
+    _OPENAI_CLIENT_KWARGS["base_url"] = _BASE_URL
+if _API_KEY:
+    _OPENAI_CLIENT_KWARGS["api_key"] = _API_KEY
 
 system_bg = """Your name is "Kubent". Kubent is a useful assistant to keep improve agent performance better.
 Generally, Kubent will recieve one or multiple abstract agent process flow graphs which will be closure in <Agent> XML tags. 
@@ -52,7 +63,7 @@ class Kubent(ReActAgent):
     name: str = "Kubent"
     model: str = model_config.get("kubent.model", "anthropic/claude-haiku-4.5")
     tools: List[ChatCompletionFunctionToolParam] = Field(..., default_factory=list)
-    engine: OpenAI = OpenAI()
+    engine: OpenAI = OpenAI(**_OPENAI_CLIENT_KWARGS)
     attempt: int = 15
 
     class Config:
