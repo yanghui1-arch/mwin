@@ -1,5 +1,6 @@
 from pathlib import Path
 import subprocess
+import shlex
 from typing import Callable, Iterable, Sequence
 from pydantic import BaseModel
 
@@ -91,6 +92,21 @@ class DockerSandbox:
         cmd = ["docker", "exec", container_name]
         cmd.extend(command)
         return self._runner(cmd, check=True, text=True, capture_output=True)
+
+    def write_file(
+        self,
+        session_id: str,
+        path: str,
+        content: str,
+    ) -> subprocess.CompletedProcess[str]:
+        """Write content to a path that exists only inside the container filesystem."""
+        command = ["sh", "-lc", f"cat > {shlex.quote(path)} << 'EOF'\n{content}\nEOF"]
+        return self.exec(session_id, command)
+
+    def read_file(self, session_id: str, path: str) -> subprocess.CompletedProcess[str]:
+        """Read content from a path that exists only inside the container filesystem."""
+        command = ["sh", "-lc", f"cat {shlex.quote(path)}"]
+        return self.exec(session_id, command)
 
     def stop_container(self, agent_id: str) -> subprocess.CompletedProcess[str]:
         container_name = self.build_container_name(agent_id)
