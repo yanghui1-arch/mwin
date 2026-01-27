@@ -1,4 +1,5 @@
 from pathlib import Path
+import shlex
 import subprocess
 from typing import Callable, Iterable, Sequence
 from pydantic import BaseModel
@@ -91,6 +92,40 @@ class DockerSandbox:
         cmd = ["docker", "exec", container_name]
         cmd.extend(command)
         return self._runner(cmd, check=True, text=True, capture_output=True)
+
+    def execute_file(
+        self,
+        session_id: str,
+        path: str,
+        args: Sequence[str] | None = None,
+    ) -> subprocess.CompletedProcess[str]:
+        """Execute a file inside the container only; no host execution occurs."""
+        args_list = list(args) if args else []
+        extension = Path(path).suffix
+        if extension == ".sh":
+            command = ["sh", path, *args_list]
+            return self.exec(session_id, command)
+        if extension == ".py":
+            command = ["python", path, *args_list]
+            return self.exec(session_id, command)
+        if extension == ".js":
+            command = ["node", path, *args_list]
+            return self.exec(session_id, command)
+        if extension == ".c":
+            output_path = f"/tmp/{Path(path).stem}-{session_id}.out"
+            compile_command = ["cc", path, "-o", output_path]
+            run_command = [output_path, *args_list]
+            shell_command = " ".join(shlex.quote(item) for item in compile_command)
+            shell_command += " && "
+            shell_command += " ".join(shlex.quote(item) for item in run_command)
+            return self.exec(session_id, ["sh", "-c", shell_command])
+
+        chmod_command = ["chmod", "+x", path]
+        run_command = [path, *args_list]
+        shell_command = " ".join(shlex.quote(item) for item in chmod_command)
+        shell_command += " && "
+        shell_command += " ".join(shlex.quote(item) for item in run_command)
+        return self.exec(session_id, ["sh", "-c", shell_command])
 
     def stop_container(self, agent_id: str) -> subprocess.CompletedProcess[str]:
         container_name = self.build_container_name(agent_id)
