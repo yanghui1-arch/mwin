@@ -16,7 +16,13 @@
     "main": {
         "projects": {
             "title": "Projects",
-            "titleDescription": "Create a new one project to track and improve your agent performance!"
+            "titleDescription": "Create a new one project to track and improve your agent performance!",
+            "columns": {
+                "name": "Name",
+                "avgDuration": "Duration (avg.)",
+                "cost": "Cost",
+                "lastUpdate": "Last Update"
+            }
         },
         "kubent": {
             "title": "Kubent",

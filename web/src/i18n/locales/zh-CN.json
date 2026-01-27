@@ -16,7 +16,13 @@
     "main": {
         "projects": {
             "title": "项目",
-            "titleDescription": "创建一个新项目并开始追踪数据, 最后优化你的Agent系统吧!"
+            "titleDescription": "创建一个新项目并开始追踪数据, 最后优化你的Agent系统吧!",
+            "columns": {
+                "name": "项目名称",
+                "avgDuration": "平均耗时",
+                "cost": "费用",
+                "lastUpdate": "最近更新时间"
+            }
         },
         "kubent": {
             "title": "Kubent",

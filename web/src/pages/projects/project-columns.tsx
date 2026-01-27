@@ -9,6 +9,7 @@ import {
   Clock,
   DollarSign,
 } from "lucide-react";
+import i18n from "@/i18n";
 
 export type Project = {
   id: string,
@@ -53,7 +54,7 @@ export const projectColumns: ColumnDef<Project>[] = [
             <span className="w-4 inline-flex justify-end">
               <List className="h-4 w-4" />
             </span>
-            <span className="font-semibold">Name</span>
+            <span className="font-semibold">{i18n.t("main.projects.columns.name")}</span>
             <span className="w-4 inline-flex justify-start">
               {column.getIsSorted() === "asc" ? (
                 <ArrowDown className="h-4 w-4" />
@@ -72,7 +73,7 @@ export const projectColumns: ColumnDef<Project>[] = [
       <div className="w-full flex justify-center">
         <span className="inline-flex items-center gap-1">
           <Clock className="h-4 w-4" />
-          <span className="font-semibold">Duration (avg.)</span>
+          <span className="font-semibold">{i18n.t("main.projects.columns.avgDuration")}</span>
         </span>
       </div>
     ),
@@ -87,7 +88,7 @@ export const projectColumns: ColumnDef<Project>[] = [
       <div className="w-full flex justify-center">
         <span className="inline-flex items-center gap-1">
           <DollarSign className="h-4 w-4" />
-          <span className="font-semibold">Cost</span>
+          <span className="font-semibold">{i18n.t("main.projects.columns.cost")}</span>
         </span>
       </div>
     ),
@@ -104,7 +105,7 @@ export const projectColumns: ColumnDef<Project>[] = [
     accessorKey: "lastUpdateTimestamp",
     header: () => (
       <div className="w-full flex justify-center">
-        <span className="font-semibold">Last Update</span>
+        <span className="font-semibold">{i18n.t("main.projects.columns.lastUpdate")}</span>
       </div>
     ),
     cell: ({ row }) => {
