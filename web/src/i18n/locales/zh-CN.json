@@ -1,0 +1,35 @@
+{
+    "common": {
+        
+    },
+    "siderbar": {
+        "observability": "监控",
+        "projects": "项目",
+        "optimizer": "优化",
+        "kubent": "Kubent",
+        "manageApiKey": "管理API Key",
+        "apiKey": "API key",
+        "settings": "设置",
+        "getHelp": "帮助",
+        "search": "搜索"
+    },
+    "main": {
+        "projects": {
+            "title": "项目",
+            "titleDescription": "创建一个新项目并开始追踪数据, 最后优化你的Agent系统吧!"
+        },
+        "kubent": {
+            "title": "Kubent",
+            "titleDescription": "优化你的系统 - {{ projectName }}",
+            "select": "选择一个项目",
+            "siderbar": {
+                "recent": "最近"
+            }
+        },
+        "ApiKey": {
+            "title": "获取Mwin的API Key",
+            "checkApiKey": "查看API Key",
+            "changeApiKey": "更换新的API Key"
+        }
+    }
+}

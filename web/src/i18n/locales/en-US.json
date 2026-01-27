@@ -1,0 +1,35 @@
+{
+    "common": {
+        
+    },
+    "siderbar": {
+        "observability": "Observability",
+        "projects": "Projects",
+        "optimizer": "Optimizer",
+        "kubent": "Kubent",
+        "manageApiKey": "Manage API Key",
+        "apiKey": "API key",
+        "settings": "Settings",
+        "getHelp": "Get Help",
+        "search": "Search"
+    },
+    "main": {
+        "projects": {
+            "title": "Projects",
+            "titleDescription": "Create a new one project to track and improve your agent performance!"
+        },
+        "kubent": {
+            "title": "Kubent",
+            "titleDescription": "Chatting about {{ projectName }}",
+            "select": "Select one project",
+            "siderbar": {
+                "recent": "recent"
+            }
+        },
+        "ApiKey": {
+            "title": "Get your Mwin API Key",
+            "checkApiKey": "Check your API key",
+            "changeApiKey": "Change another"
+        }
+    }
+}
