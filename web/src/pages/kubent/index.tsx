@@ -21,6 +21,7 @@ import { kubentChatApi } from "@/api/kubent/kubent-chat";
 import { cn } from "@/lib/utils";
 import SiderbarMoreActions from "./siderbar/more-actions";
 import { useTaskPolling, type TaskStatus } from "@/hooks/use-task";
+import { useTranslation } from "react-i18next";
 
 type ChatMessage = {
   role: "assistant" | "user";
@@ -77,6 +78,8 @@ export default function KubentPage() {
   const [callingToolInformation, setCallingToolInformation] = useState<
     string | undefined
   >(undefined);
+
+  const { t } = useTranslation()
 
   const fetchTaskStatus = async (
     taskId: string,
@@ -289,16 +292,16 @@ export default function KubentPage() {
   return (
     <div className="flex flex-col gap-4 px-4 lg:px-6">
       <div>
-        <h2 className="text-xl font-semibold">Kubent</h2>
+        <h2 className="text-xl font-semibold">{t("main.kubent.title")}</h2>
         <p className="text-muted-foreground mt-1 text-sm">
           {selectedProject?.name
-            ? `Chatting about ${selectedProject.name}.`
+            ? `${t("main.kubent.titleDescription", { projectName: selectedProject.name })}`
             : "Select a project to chat with Kubent to optimize your agent system."}
         </p>
       </div>
 
       <div className="flex gap-2 lg:flex-row lg:items-center">
-        <Label>Select one project</Label>
+        <Label>{t("main.kubent.select")}</Label>
         <Select onValueChange={selectProject} value={selectedProject?.name}>
           <SelectTrigger className="w-full lg:w-[150px]">
             <SelectValue placeholder="Select a project to optimize" />
@@ -318,7 +321,7 @@ export default function KubentPage() {
       <div className="flex gap-2 w-full">
         <div className="flex h-[69vh] w-[20%] flex-col min-w-0 gap-1 p-2">
           <Label className="text-muted-foreground text-xs font-bold px-1">
-            Recent
+            {t("main.kubent.siderbar.recent")}
           </Label>
           <ScrollArea className="w-full h-full rounded-md  [&>[data-radix-scroll-area-viewport]>div]:block! [&>[data-radix-scroll-area-viewport]>div]:w-full!">
             <div className="flex flex-col gap-1">

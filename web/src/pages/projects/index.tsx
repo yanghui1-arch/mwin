@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import { projectApi } from "@/api/project";
 import { useDataTable } from "@/hooks/use-datatable";
 import { ProjectDataTableToolbar } from "@/components/data-table/data-table-toolbar/project-data-table-toolbar";
+import { useTranslation } from "react-i18next";
 
 type Project = {
-  id: string,
+  id: string;
   name: string;
   description: string;
   cost: number;
@@ -16,6 +17,8 @@ type Project = {
 
 export default function ProjectsPage() {
   const [project, setProject] = useState<Project[]>([]);
+  const { t } = useTranslation();
+
   const getProjects = async () => {
     const response = await projectApi.getAllProjects();
     if (response.data.code == 200) {
@@ -38,16 +41,20 @@ export default function ProjectsPage() {
     getProjects();
   }, []);
 
-  const { table } = useDataTable({ columns: projectColumns, data: project, onRefresh: getProjects });
+  const { table } = useDataTable({
+    columns: projectColumns,
+    data: project,
+    onRefresh: getProjects,
+  });
 
   return (
     <div className="px-4 lg:px-6">
-      <h2 className="text-xl font-semibold">Projects</h2>
+      <h2 className="text-xl font-semibold">{t("main.projects.title")}</h2>
       <p className="text-muted-foreground mt-1 text-sm">
-        Create a new one project to track and improve your agent performance!
+        {t("main.projects.titleDescription")}
       </p>
       <div className="container mx-auto py-5 space-y-4">
-        <ProjectDataTableToolbar table={table}/>
+        <ProjectDataTableToolbar table={table} />
         <DataTable table={table} isNavigate={true} />
       </div>
     </div>

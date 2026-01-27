@@ -10,6 +10,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { IconCheck, IconCopy, IconKey } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 export function APIKeyPage() {
@@ -17,6 +18,9 @@ export function APIKeyPage() {
   const [completeApiKey, setCompleteApiKey] = useState<string>("");
   const [copyCompleteApiKeyFlag, setCopyCompleteApiKeyFlag] =
     useState<boolean>(false);
+
+  const { t } = useTranslation();
+
   useEffect(() => {
     const getApiKey = async () => {
       const response = await http.get("/apikey/get");
@@ -46,7 +50,7 @@ export function APIKeyPage() {
 
   return (
     <div className="flex flex-col gap-4 px-4 lg:px-6">
-      <h2 className="text-xl font-semibold">Get your Mwin API key</h2>
+      <h2 className="text-xl font-semibold">{t("main.apiKey.title")}</h2>
       <div className="flex gap-2 w-[50%]">
         <div className="flex gap-2 h-9 items-center rounded-md border border-input bg-background px-3 text-sm w-[50%]">
           <IconKey />
@@ -56,7 +60,7 @@ export function APIKeyPage() {
           <Dialog>
             <DialogTrigger asChild>
               <Button variant="outline" onClick={getCompleteApiKey}>
-                <Label>Check your API key</Label>
+                <Label>{t("main.apiKey.checkApiKey")}</Label>
               </Button>
             </DialogTrigger>
             <DialogContent>
@@ -83,7 +87,7 @@ export function APIKeyPage() {
           </Dialog>
 
           <Button variant="outline" onClick={changeAnotherApiKey}>
-            <Label>Change another</Label>
+            <Label>{t("main.apiKey.changeApiKey")}</Label>
           </Button>
         </div>
       </div>
