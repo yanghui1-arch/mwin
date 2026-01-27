@@ -23,7 +23,7 @@ function App() {
               <Route path="/overview" element={<OverviewPage />} />
               <Route path="/projects" element={<ProjectsPage />} />
               <Route path="/projects/:name" element={<ProjectDetailPage />} />
-              <Route path="/apikey" element={<APIKeyPage />} />
+              <Route path="/get_apikey" element={<APIKeyPage />} />
               <Route path="/kubent" element={<KubentPage />} />
             </Route>
             <Route path="/login" element={<LoginPage />} />

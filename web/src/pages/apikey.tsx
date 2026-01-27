@@ -54,7 +54,7 @@ export function APIKeyPage() {
         </div>
         <div className="flex flex-col gap-2">
           <Dialog>
-            <DialogTrigger>
+            <DialogTrigger asChild>
               <Button variant="outline" onClick={getCompleteApiKey}>
                 <Label>Check your API key</Label>
               </Button>

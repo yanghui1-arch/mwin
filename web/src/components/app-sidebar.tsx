@@ -60,7 +60,7 @@ const data = {
     },
     {
       title: "API key",
-      url: "/apikey",
+      url: "/get_apikey",
       icon: IconKey,
       label: "Manage API key"
     }
