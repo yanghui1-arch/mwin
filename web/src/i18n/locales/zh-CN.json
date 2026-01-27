@@ -26,7 +26,7 @@
                 "recent": "最近"
             }
         },
-        "ApiKey": {
+        "apiKey": {
             "title": "获取Mwin的API Key",
             "checkApiKey": "查看API Key",
             "changeApiKey": "更换新的API Key"

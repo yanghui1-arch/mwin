@@ -26,7 +26,7 @@
                 "recent": "recent"
             }
         },
-        "ApiKey": {
+        "apiKey": {
             "title": "Get your Mwin API Key",
             "checkApiKey": "Check your API key",
             "changeApiKey": "Change another"
