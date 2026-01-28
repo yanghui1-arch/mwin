@@ -4,6 +4,7 @@ from typing import Iterable, Sequence, List
 
 import docker
 from docker.models.containers import ExecResult, Container
+from docker.errors import NotFound 
 from pydantic import BaseModel
 
 
@@ -115,12 +116,29 @@ class DockerContainer:
         container = self._docker_client.containers.get(self.container_name)
         container.reload()
         return container.status == "running"
+    
+    @property
+    def in_use(self):
+        try:
+            container = self._docker_client.containers.get(self.container_name)
+            container.reload()
+            return True
+        except NotFound as not_found:
+            return False
 
 
 class DockerSandboxConfig(BaseModel):
     agent_name: str
+    """Agent name who uses the sandbox."""
+
     session_id: str
+    """Chat session id which is important for identifing docker container."""
+
     docker_image: str
+    """Docker image."""
+
+    life_seconds: int = 600
+    """Docker will be stopped after life seconds."""
 
 
 class DockerSandbox:
@@ -135,6 +153,13 @@ class DockerSandbox:
             container_name=f"{config.agent_name}-sandbox-{config.session_id}",
         )
         self._container = DockerContainer(config=container_config, client=docker_client)
+        if self._container.in_use:
+            self._container.restart()
+        else:
+            self._container.run(
+                mounts=[],
+                command=["sleep", config.life_seconds]
+            )
 
     def execute_file(
         self,
