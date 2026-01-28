@@ -19,10 +19,10 @@ class VolumeMount(BaseModel):
         return f"{self.host_path}:{self.container_path}{suffix}"
 
 
-class DockerSandboxConfig(BaseModel):
+class DockerContainerConfig(BaseModel):
     image: str
     name_prefix: str = "agent-sandbox"
-    container_workspace_dir: str = "/workspace"
+    work_dir: str = "/workspace"
     read_only_rootfs: bool = False
     network_disabled: bool = False
     user: str | None = None
@@ -31,7 +31,7 @@ class DockerSandboxConfig(BaseModel):
 class DockerContainerRunner:
     def __init__(
         self, 
-        config: DockerSandboxConfig, 
+        config: DockerContainerConfig, 
         runner: DockerRunner | None = None
     ):
         self.config = config
@@ -62,7 +62,7 @@ class DockerContainerRunner:
             "--name",
             container_name,
             "--workdir",
-            self.config.container_workspace_dir,
+            self.config.work_dir,
         ]
         if self.config.read_only_rootfs:
             cmd.append("--read-only")
