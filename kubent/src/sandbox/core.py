@@ -1,11 +1,10 @@
 from pathlib import Path
 import shlex
-import subprocess
-from typing import Callable, Iterable, Sequence
+from typing import Iterable, Sequence
+
+import docker
+from docker.models.containers import ExecResult, Container
 from pydantic import BaseModel
-
-
-DockerRunner = Callable[..., subprocess.CompletedProcess[str]]
 
 
 class VolumeMount(BaseModel):
@@ -21,24 +20,26 @@ class VolumeMount(BaseModel):
 
 class DockerContainerConfig(BaseModel):
     image: str
-    name_prefix: str = "agent-sandbox"
+    container_name: str
     work_dir: str = "/workspace"
     read_only_rootfs: bool = False
     network_disabled: bool = False
     user: str | None = None
 
 
-class DockerContainerRunner:
+class DockerContainer:
+    """Docker Container
+    Support start, run, execute, stop and remove container
+    """
+
     def __init__(
-        self, 
-        config: DockerContainerConfig, 
-        runner: DockerRunner | None = None
+        self,
+        config: DockerContainerConfig,
+        client: docker.DockerClient | None = None,
     ):
         self.config = config
-        self._runner = runner or subprocess.run
-
-    def build_container_name(self, session_id: str) -> str:
-        return f"{self.config.name_prefix}-{session_id}"
+        self.container_name = config.container_name
+        self._docker_client = client or docker.from_env()
 
     def ensure_host_paths(self, mounts: Iterable[VolumeMount]) -> None:
         """Ensure host path is existed."""
@@ -48,102 +49,101 @@ class DockerContainerRunner:
                 continue
             mount.host_path.mkdir(parents=True, exist_ok=True)
 
-    def build_run_command(
+    def build_run_kwargs(
         self,
-        session_id: str,
         mounts: Sequence[VolumeMount],
         command: Sequence[str] | None = None,
-    ) -> list[str]:
-        container_name = self.build_container_name(session_id)
-        cmd = [
-            "docker",
-            "run",
-            "-d",
-            "--name",
-            container_name,
-            "--workdir",
-            self.config.work_dir,
-        ]
-        if self.config.read_only_rootfs:
-            cmd.append("--read-only")
-        if self.config.network_disabled:
-            cmd.append("--network=none")
-        if self.config.user:
-            cmd.extend(["--user", self.config.user])
+    ) -> dict[str, object]:
+        volumes: dict[str, dict[str, str]] = {}
         for mount in mounts:
-            cmd.extend(["-v", mount.volume_flag()])
-        cmd.append(self.config.image)
-        if command:
-            cmd.extend(command)
+            volumes[str(mount.host_path)] = {
+                "bind": mount.container_path,
+                "mode": "ro" if mount.read_only else "rw",
+            }
+        cmd: dict[str, object] = {
+            "image": self.config.image,
+            "detach": True,
+            "name": self.config.container_name,
+            "working_dir": self.config.work_dir,
+            "read_only": self.config.read_only_rootfs,
+            "network_disabled": self.config.network_disabled,
+            "volumes": volumes,
+        }
+        if self.config.user:
+            cmd["user"] = self.config.user
+        if command is not None:
+            cmd["command"] = list(command)
         return cmd
     
-    def restart_container(
+    def restart(
         self,
-        session_id: str
-    ):
-        """Restart an existing container"""
+    ) -> Container:
         
-        container_name = self.build_container_name(session_id)
-        cmd = ["docker", "start", container_name]
-        return self._runner(cmd, text=True, capture_output=True)
+        container = self._docker_client.containers.get(self.container_name)
+        container.start()
+        return container
 
-    def run_container(
+    def run(
         self,
-        session_id: str,
         mounts: Sequence[VolumeMount],
         command: Sequence[str] | None = None,
-    ) -> subprocess.CompletedProcess[str]:
-        """Run a container
-        Create and start a container with command and attached with volumns.
-        """
+    ) -> Container:
 
         self.ensure_host_paths(mounts)
-        cmd = self.build_run_command(session_id, mounts, command)
-        return self._runner(cmd, text=True, capture_output=True)
+        cmd = self.build_run_kwargs(mounts, command)
+        return self._docker_client.containers.run(**cmd)
 
-    def exec(self, session_id: str, command: Sequence[str]) -> subprocess.CompletedProcess[str]:
-        container_name = self.build_container_name(session_id)
-        cmd = ["docker", "exec", container_name]
-        cmd.extend(command)
-        return self._runner(cmd, text=True, capture_output=True)
+    def exec(self, command: Sequence[str]) -> ExecResult:
+        container = self._docker_client.containers.get(self.container_name)
+        return container.exec_run(list(command), demux=True)
 
-    def stop_container(self, agent_id: str) -> subprocess.CompletedProcess[str]:
-        container_name = self.build_container_name(agent_id)
-        return self._runner(["docker", "stop", container_name], text=True, capture_output=True)
+    def stop(self) -> Container:
+        container = self._docker_client.containers.get(self.container_name)
+        container.stop()
+        return container
 
-    def remove_container(self, agent_id: str) -> subprocess.CompletedProcess[str]:
-        container_name = self.build_container_name(agent_id)
-        return self._runner(["docker", "rm", container_name], text=True, capture_output=True)
+    def remove_container(self) -> Container:
+        container = self._docker_client.containers.get(self.container_name)
+        container.remove()
+        return container
 
 
 class DockerSandboxConfig(BaseModel):
+    agent_name: str
     session_id: str
+    docker_image: str
 
 
 class DockerSandbox:
-    """File/script-level wrapper for DockerContainerRunner exec-based operations."""
+    """File/script-level wrapper for DockerContainer exec-based operations.
+    Caller stimulate the sandbox to interact with docker. 
+    """
 
-    def __init__(self, runner: DockerContainerRunner, config: DockerSandboxConfig):
-        self._runner = runner
+    def __init__(self, config: DockerSandboxConfig, docker_client: docker.client.DockerClient):
         self.session_id = config.session_id
+        container_config = DockerContainerConfig(
+            image=config.docker_image,
+            container_name=f"{config.agent_name}-sandbox-{config.session_id}",
+        )
+        self._container = DockerContainer(config=container_config, client=docker_client)
 
     def execute_file(
         self,
         path: str,
         args: Sequence[str] | None = None,
-    ) -> subprocess.CompletedProcess[str]:
+    ):
         """Execute a file inside the container only; no host execution occurs."""
         args_list = list(args) if args else []
         extension = Path(path).suffix
         if extension == ".sh":
             command = ["sh", path, *args_list]
-            return self._runner.exec(self.session_id, command)
+            return self._container.exec(command)
         if extension == ".py":
             command = ["python", path, *args_list]
-            return self._runner.exec(self.session_id, command)
+            return self._container.exec(command)
         if extension == ".js":
             command = ["node", path, *args_list]
-            return self._runner.exec(self.session_id, command)
+            return self._container.exec(command)
         if extension == ".c":
             output_path = f"/tmp/{Path(path).stem}-{self.session_id}.out"
             compile_command = ["cc", path, "-o", output_path]
@@ -151,27 +151,27 @@ class DockerSandbox:
             shell_command = " ".join(shlex.quote(item) for item in compile_command)
             shell_command += " && "
             shell_command += " ".join(shlex.quote(item) for item in run_command)
-            return self._runner.exec(self.session_id, ["sh", "-c", shell_command])
+            return self._container.exec(["sh", "-c", shell_command])
 
         chmod_command = ["chmod", "+x", path]
         run_command = [path, *args_list]
         shell_command = " ".join(shlex.quote(item) for item in chmod_command)
         shell_command += " && "
         shell_command += " ".join(shlex.quote(item) for item in run_command)
-        return self._runner.exec(self.session_id, ["sh", "-c", shell_command])
+        return self._container.exec(["sh", "-c", shell_command])
 
     def write_file(
         self,
         path: str,
         content: str,
-    ) -> subprocess.CompletedProcess[str]:
+    ):
         """Write content to a path that exists only inside the container filesystem."""
 
         command = ["sh", "-lc", f"cat > {shlex.quote(path)} << 'EOF'\n{content}\nEOF"]
-        return self._runner.exec(self.session_id, command)
+        return self._container.exec(self.session_id, command)
 
-    def read_file(self, path: str) -> subprocess.CompletedProcess[str]:
+    def read_file(self, path: str):
         """Read content from a path that exists only inside the container filesystem."""
         
         command = ["sh", "-lc", f"cat {shlex.quote(path)}"]
-        return self._runner.exec(self.session_id, command)
+        return self._container.exec(self.session_id, command)
