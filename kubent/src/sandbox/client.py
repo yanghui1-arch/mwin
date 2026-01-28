@@ -6,12 +6,13 @@ from docker.errors import DockerException
 _docker_client: DockerClient | None = None
 
 
-def get_docker_client(
+def init_docker_client(
     retries: int = 5,
     base_delay: float = 0.5,
 ) -> DockerClient:
     """
-    Get a singleton DockerClient with retry.
+    Init a singleton DockerClient with retry.
+    It should be executed when fastapi startup. Otherwise there is a risk to block the whole process.
 
     Args:
         retries(int): max retry attempts
@@ -43,3 +44,12 @@ def get_docker_client(
     raise RuntimeError(
         f"Failed to initialize Docker client after {retries} retries"
     ) from last_exc
+
+
+def get_docker_client():
+    if _docker_client is None:
+        raise RuntimeError(
+            "Docker client not initialized. "
+            "Did you forget to call init_docker_client() on startup?"
+        )
+    return _docker_client
