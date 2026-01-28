@@ -104,14 +104,14 @@ class DockerContainerRunner:
         container = self._docker_client.containers.get(container_name)
         return container.exec_run(list(command), demux=True)
 
-    def stop_container(self, agent_id: str):
-        container_name = self.build_container_name(agent_id)
+    def stop_container(self, session_id: str):
+        container_name = self.build_container_name(session_id)
         container = self._docker_client.containers.get(container_name)
         container.stop()
         return container
 
-    def remove_container(self, agent_id: str):
-        container_name = self.build_container_name(agent_id)
+    def remove_container(self, session_id: str):
+        container_name = self.build_container_name(session_id)
         container = self._docker_client.containers.get(container_name)
         container.remove()
         return container
