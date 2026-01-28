@@ -95,6 +95,9 @@ class DockerContainer:
 
     def exec(self, command: str | List[str]) -> ExecResult:
         container = self._docker_client.containers.get(self.container_name)
+        if not self._is_running():
+            container = self.restart()
+            container.reload()
         return container.exec_run(command, demux=True)
 
     def stop(self) -> Container:
@@ -106,6 +109,12 @@ class DockerContainer:
         container = self._docker_client.containers.get(self.container_name)
         container.remove()
         return container
+    
+
+    def _is_running(self):
+        container = self._docker_client.containers.get(self.container_name)
+        container.reload()
+        return container.status == "running"
 
 
 class DockerSandboxConfig(BaseModel):
