@@ -28,7 +28,7 @@ class DockerSandboxConfig(BaseModel):
     user: str | None = None
 
 
-class DockerSandbox:
+class DockerContainerRunner:
     def __init__(
         self, 
         config: DockerSandboxConfig, 
@@ -93,6 +93,21 @@ class DockerSandbox:
         cmd.extend(command)
         return self._runner(cmd, check=True, text=True, capture_output=True)
 
+    def stop_container(self, agent_id: str) -> subprocess.CompletedProcess[str]:
+        container_name = self.build_container_name(agent_id)
+        return self._runner(["docker", "stop", container_name], check=True, text=True, capture_output=True)
+
+    def remove_container(self, agent_id: str) -> subprocess.CompletedProcess[str]:
+        container_name = self.build_container_name(agent_id)
+        return self._runner(["docker", "rm", container_name], check=True, text=True, capture_output=True)
+
+
+class DockerSandbox:
+    """File/script-level wrapper for DockerContainerRunner exec-based operations."""
+
+    def __init__(self, runner: DockerContainerRunner):
+        self._runner = runner
+
     def execute_file(
         self,
         session_id: str,
@@ -104,13 +119,13 @@ class DockerSandbox:
         extension = Path(path).suffix
         if extension == ".sh":
             command = ["sh", path, *args_list]
-            return self.exec(session_id, command)
+            return self._runner.exec(session_id, command)
         if extension == ".py":
             command = ["python", path, *args_list]
-            return self.exec(session_id, command)
+            return self._runner.exec(session_id, command)
         if extension == ".js":
             command = ["node", path, *args_list]
-            return self.exec(session_id, command)
+            return self._runner.exec(session_id, command)
         if extension == ".c":
             output_path = f"/tmp/{Path(path).stem}-{session_id}.out"
             compile_command = ["cc", path, "-o", output_path]
@@ -118,14 +133,14 @@ class DockerSandbox:
             shell_command = " ".join(shlex.quote(item) for item in compile_command)
             shell_command += " && "
             shell_command += " ".join(shlex.quote(item) for item in run_command)
-            return self.exec(session_id, ["sh", "-c", shell_command])
+            return self._runner.exec(session_id, ["sh", "-c", shell_command])
 
         chmod_command = ["chmod", "+x", path]
         run_command = [path, *args_list]
         shell_command = " ".join(shlex.quote(item) for item in chmod_command)
         shell_command += " && "
         shell_command += " ".join(shlex.quote(item) for item in run_command)
-        return self.exec(session_id, ["sh", "-c", shell_command])
+        return self._runner.exec(session_id, ["sh", "-c", shell_command])
 
     def write_file(
         self,
@@ -135,17 +150,9 @@ class DockerSandbox:
     ) -> subprocess.CompletedProcess[str]:
         """Write content to a path that exists only inside the container filesystem."""
         command = ["sh", "-lc", f"cat > {shlex.quote(path)} << 'EOF'\n{content}\nEOF"]
-        return self.exec(session_id, command)
+        return self._runner.exec(session_id, command)
 
     def read_file(self, session_id: str, path: str) -> subprocess.CompletedProcess[str]:
         """Read content from a path that exists only inside the container filesystem."""
         command = ["sh", "-lc", f"cat {shlex.quote(path)}"]
-        return self.exec(session_id, command)
-
-    def stop_container(self, agent_id: str) -> subprocess.CompletedProcess[str]:
-        container_name = self.build_container_name(agent_id)
-        return self._runner(["docker", "stop", container_name], check=True, text=True, capture_output=True)
-
-    def remove_container(self, agent_id: str) -> subprocess.CompletedProcess[str]:
-        container_name = self.build_container_name(agent_id)
-        return self._runner(["docker", "rm", container_name], check=True, text=True, capture_output=True)
+        return self._runner.exec(session_id, command)
