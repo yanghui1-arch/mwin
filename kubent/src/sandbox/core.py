@@ -202,16 +202,15 @@ class DockerSandbox:
         """Write content to a path that exists only inside the container filesystem."""
 
         command = ["sh", "-lc", f"cat > {shlex.quote(path)} << 'EOF'\n{content}\nEOF"]
-        return self._container.exec(self.session_id, command)
+        return self._container.exec(command)
 
     def read_file(self, path: str) -> ExecResult:
         """Read content from a path that exists only inside the container filesystem."""
         
         command = ["sh", "-lc", f"cat {shlex.quote(path)}"]
-        return self._container.exec(self.session_id, command)
+        return self._container.exec(command)
     
     def bash(self, command: str) -> ExecResult:
         """Execute bash command"""
         # TODO: Add a judgement to avoid dangerous bash command to influence host. 
         return self._container.exec(command)
-    
