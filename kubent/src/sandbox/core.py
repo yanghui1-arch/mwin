@@ -1,6 +1,6 @@
 from pathlib import Path
 import shlex
-from typing import Iterable, Sequence
+from typing import Iterable, Sequence, List
 
 import docker
 from docker.models.containers import ExecResult, Container
@@ -93,9 +93,9 @@ class DockerContainer:
         cmd = self.build_run_kwargs(mounts, command)
         return self._docker_client.containers.run(**cmd)
 
-    def exec(self, command: Sequence[str]) -> ExecResult:
+    def exec(self, command: str | List[str]) -> ExecResult:
         container = self._docker_client.containers.get(self.container_name)
-        return container.exec_run(list(command), demux=True)
+        return container.exec_run(command, demux=True)
 
     def stop(self) -> Container:
         container = self._docker_client.containers.get(self.container_name)
@@ -131,7 +131,7 @@ class DockerSandbox:
         self,
         path: str,
         args: Sequence[str] | None = None,
-    ):
+    ) -> ExecResult:
         """Execute a file inside the container only; no host execution occurs."""
         args_list = list(args) if args else []
         extension = Path(path).suffix
@@ -164,14 +164,20 @@ class DockerSandbox:
         self,
         path: str,
         content: str,
-    ):
+    ) -> ExecResult:
         """Write content to a path that exists only inside the container filesystem."""
 
         command = ["sh", "-lc", f"cat > {shlex.quote(path)} << 'EOF'\n{content}\nEOF"]
         return self._container.exec(self.session_id, command)
 
-    def read_file(self, path: str):
+    def read_file(self, path: str) -> ExecResult:
         """Read content from a path that exists only inside the container filesystem."""
         
         command = ["sh", "-lc", f"cat {shlex.quote(path)}"]
         return self._container.exec(self.session_id, command)
+    
+    def bash(self, command: str) -> ExecResult:
+        """Execute bash command"""
+        # TODO: Add a judgement to avoid dangerous bash command to influence host. 
+        return self._container.exec(command)
+    
