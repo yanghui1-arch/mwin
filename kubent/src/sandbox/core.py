@@ -137,6 +137,9 @@ class DockerSandboxConfig(BaseModel):
     docker_image: str
     """Docker image."""
 
+    docker_volumns: Sequence[VolumeMount] | None = None
+    """Docker volumns"""
+
     life_seconds: int = 600
     """Docker will be stopped after life seconds."""
 
@@ -157,8 +160,8 @@ class DockerSandbox:
             self._container.restart()
         else:
             self._container.run(
-                mounts=[],
-                command=["sleep", config.life_seconds]
+                mounts=config.docker_volumns or [],
+                command=["sleep", str(config.life_seconds)]
             )
 
     def execute_file(
