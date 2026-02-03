@@ -1,9 +1,10 @@
 from typing import List, Dict, Any
 from uuid import UUID
 import os
+from textwrap import dedent
 from pydantic import BaseModel, Field, model_validator
 from dotenv import load_dotenv
-from openai import OpenAI
+from openai import OpenAI, BadRequestError
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletion, ChatCompletionFunctionToolParam
 from mwin import track, LLMProvider
 from .react import ReActAgent
@@ -11,7 +12,9 @@ from .tools.search import SearchGoogle
 from .tools.kubent_think import KubentThink
 from .tools import QueryStep
 from .tools import ConsultRobin
+from .runtime import current_project_name, current_user_id
 from ..config import model_config
+from ..utils.llm_context import solve_exceed_context, NewMessage
 
 class Result(BaseModel):
     answer: str
@@ -97,20 +100,20 @@ class Kubent(ReActAgent):
     
     @track(track_llm=LLMProvider.OPENAI)
     def step(
-        self, 
+        self,
         question: str | None,
         obs: List[ChatCompletionMessageParam],
         chat_hist: List[ChatCompletionMessageParam] | None,
         agent_workflows: List[str] | None,
     ) -> ChatCompletion:
         """Kubent execute one step
-        
+
         Args:
             question(str | None): question
             obs(List[ChatCompletionMessageParam]): Kubent observations in the context.
             chat_hist(List[ChatCompletionMessageParam] | None): kubent chat history.
             agent_workflows(List[str] | None): traces agent workflows.
-        
+
         Returns:
             llm chat completion
         """
@@ -120,11 +123,52 @@ class Kubent(ReActAgent):
         user_content = question
         if agent_workflows is not None and len(agent_workflows) > 0:
             workflows_desc = [f"<AgentExecutionGraph>\n{workflow}\n</AgentExecutionGraph>" for workflow in agent_workflows]
+            system_bg += f"<Agent>\n{"\n".join(workflows_desc)}\n</Agent>"
 
-        completion:ChatCompletion = self.engine.chat.completions.create(
-            model=self.model,
-            messages=[{"role": "system", "content": system_bg + f"<Agent>\n{"\n".join(workflows_desc)}\n</Agent>"}] + chat_hist + [{"role": "user", "content": user_content}] + obs,
-            tools=self.tools,
-            parallel_tool_calls=True,
-        )
-        return completion
+        try:
+            completion:ChatCompletion = self.engine.chat.completions.create(
+                model=self.model,
+                messages=[{"role": "system", "content": system_bg}] + chat_hist + [{"role": "user", "content": user_content}] + obs,
+                tools=self.tools,
+                parallel_tool_calls=True,
+            )
+            return completion
+        except BadRequestError as bqe:
+           # Exceed the length of model context
+           # (system_prompt, {user, [assistant/tool, tool], assistant/without_tool } * N )
+           # Strategy of context for kubent:
+           # 1. Update system prompt as new system prompt - tell kubent summary of previous conversations.
+           # 2. Save the latest four user-assistant[wo/tool] pairs and the last user message. If also exceed then only save the last user message.
+           # 3. Compose the new system prompt + Optional[four user-assistant[w/tool] pairs] + last user prompt
+
+           # Store the tool usage and its results into the ~/usr/kubent/conversations/conversation-{session_id}
+           # The file is composed of two parts
+           # - One is a summary.
+           # - Another is the details.
+            if "maximum context" in bqe.args[0]:
+                new_message:NewMessage = solve_exceed_context(
+                    conversations=chat_hist + [{"role": "user", "content": user_content}] + obs,
+                    user_uuid=current_user_id.get(),
+                    project_name=current_project_name.get(),
+                )
+
+                system_bg += dedent(f"""
+                # Summary of History Conversations with User
+                {new_message.summary_conversation}
+
+                # Stored Coversation path
+                {str(new_message.saved_path.resolve())}
+                """)
+                
+                completion:ChatCompletion = self.engine.chat.completions.create(
+                    model=self.model,
+                    messages=[{"role": "system", "content": system_bg}] + new_message.paris + [new_message.last_user_prompt],
+                    tools=self.tools,
+                    parallel_tool_calls=True,
+                )
+                
+                return completion
+
+            # Not because exceed context length of model.
+            else:
+                raise bqe
