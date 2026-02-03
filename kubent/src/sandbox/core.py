@@ -7,6 +7,8 @@ from docker.models.containers import ExecResult, Container
 from docker.errors import NotFound 
 from pydantic import BaseModel
 
+from .client import get_docker_client
+
 
 class VolumeMount(BaseModel):
     host_path: Path
@@ -217,3 +219,22 @@ class DockerSandbox:
         """Execute bash command"""
         # TODO: Add a judgement to avoid dangerous bash command to influence host. 
         return self._container.exec(command)
+
+
+def create_sandbox(
+    agent_name: str,
+    session_id: str,
+    docker_image: str,
+    docker_volumns: Sequence[VolumeMount | None] = None,
+    life_seconds: int = 600,
+):
+    sandbox_config = DockerSandboxConfig(
+        agent_name=agent_name,
+        session_id=session_id,
+        docker_image=docker_image,
+        docker_volumns=docker_volumns,
+        life_seconds=life_seconds
+    )
+
+    docker_client = get_docker_client()
+    return DockerSandbox(config=sandbox_config, docker_client=docker_client)
