@@ -1,5 +1,5 @@
 from .client import init_docker_client, get_docker_client
-from .core import DockerSandbox, DockerSandboxConfig
+from .core import DockerSandbox, DockerSandboxConfig, VolumeMount
 from .manager import (
     SandboxManager,
     SandboxPoolItem,
@@ -21,4 +21,5 @@ __all__ = [
     # Sandbox
     "DockerSandboxConfig",
     "DockerSandbox",
+    "VolumeMount",
 ]
