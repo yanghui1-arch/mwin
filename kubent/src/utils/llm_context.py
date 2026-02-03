@@ -28,6 +28,16 @@ Focus on:
 
 Keep the summary to 3-5 paragraphs maximum. Be specific and factual."""
 
+OBS_SYSTEM_PROMPT = """You are summarizing what Kubent (an AI assistant) has done in the current turn to answer the user's question.
+
+Focus on:
+1. Which tools Kubent called
+2. What each tool returned (brief, 1 sentence per tool, more clear)
+3. Any conclusions or findings from the tool results
+
+Keep it very concise (2-3 sentences max). Format as: "Kubent called X and found Y. Then called Z which returned W."
+This helps Kubent understand what it has already done for this specific question."""
+
 
 class NewMessage(BaseModel):
     summary_conversation: str
@@ -56,7 +66,7 @@ class ConversationPair(BaseModel):
 
 def _parse_conversation_pairs(
     conversation: List[ChatCompletionMessageParam]
-) -> tuple[List[ConversationPair], ChatCompletionUserMessageParam | None]:
+) -> List[ConversationPair]:
     """
     Parse conversation into structured pairs of user-assistant exchanges.
 
@@ -65,23 +75,17 @@ def _parse_conversation_pairs(
     2. user → assistant (with tools) → tool messages → assistant (final answer)
 
     Returns:
-        tuple of (list of conversation pairs, last user prompt if unanswered)
+        a list of conversation pairs
     """
     pairs: List[ConversationPair] = []
     current_user_msg: ChatCompletionUserMessageParam | None = None
     current_assistant_with_tools: ChatCompletionAssistantMessageParam | None = None
     current_tool_messages: List[ChatCompletionToolMessageParam] = []
-    last_user_prompt: ChatCompletionUserMessageParam | None = None
 
     for message in conversation:
         role = message["role"]
 
         if role == "user":
-            # Save previous incomplete pair if exists
-            if current_user_msg is not None:
-                # This means previous user message had no final answer
-                last_user_prompt = current_user_msg
-
             # Start new exchange
             current_user_msg = message  # type: ignore
             current_assistant_with_tools = None
@@ -112,17 +116,12 @@ def _parse_conversation_pairs(
                 current_user_msg = None
                 current_assistant_with_tools = None
                 current_tool_messages = []
-                last_user_prompt = None
 
         elif role == "tool":
             if current_user_msg is not None:
                 current_tool_messages.append(message)  # type: ignore
 
-    # Check if there's an unanswered user prompt
-    if current_user_msg is not None:
-        last_user_prompt = current_user_msg
-
-    return pairs, last_user_prompt
+    return pairs
 
 
 def _generate_summary(conversation: List[ChatCompletionMessageParam], client: OpenAI) -> str:
@@ -262,15 +261,7 @@ def _generate_summary_obs(observations: List[ChatCompletionMessageParam], client
             messages=[
                 {
                     "role": "system",
-                    "content": """You are summarizing what Kubent (an AI assistant) has done in the current turn to answer the user's question.
-
-Focus on:
-1. Which tools Kubent called
-2. What each tool returned (brief, 1 sentence per tool)
-3. Any conclusions or findings from the tool results
-
-Keep it very concise (2-3 sentences max). Format as: "Kubent called X and found Y. Then called Z which returned W."
-This helps Kubent understand what it has already done for this specific question."""
+                    "content": OBS_SYSTEM_PROMPT,
                 },
                 {
                     "role": "user",
@@ -491,7 +482,7 @@ def solve_exceed_context(
     client = OpenAI(**client_kwargs)
 
     # Parse only chat_hist into pairs (not user_content or obs)
-    pairs, _ = _parse_conversation_pairs(chat_hist)
+    pairs = _parse_conversation_pairs(chat_hist)
     summary_conversation = _generate_summary(chat_hist, client)
     summary_obs = _generate_summary_obs(obs, client)
 
