@@ -147,22 +147,30 @@ class Kubent(ReActAgent):
            # - Another is the details.
             if "maximum context" in bqe.args[0]:
                 new_message:NewMessage = solve_exceed_context(
-                    conversations=chat_hist + [{"role": "user", "content": user_content}] + obs,
+                    chat_hist=chat_hist,
+                    user_content=user_content,
+                    obs=obs,
                     user_uuid=current_user_id.get(),
                     project_name=current_project_name.get(),
                 )
 
+                if new_message.summary_obs:
+                    system_bg += dedent(f"""
+                    # Summary of What You've Done in the current turn.
+                    {new_message.summary_obs}
+                    """)
+
                 system_bg += dedent(f"""
-                # Summary of History Conversations with User
+                # Summary of What You've Done So Far
                 {new_message.summary_conversation}
 
-                # Stored Coversation path
+                # Stored Conversation Path
                 {str(new_message.saved_path.resolve())}
                 """)
-                
+
                 completion:ChatCompletion = self.engine.chat.completions.create(
                     model=self.model,
-                    messages=[{"role": "system", "content": system_bg}] + new_message.paris + [new_message.last_user_prompt],
+                    messages=[{"role": "system", "content": system_bg}] + new_message.paris + [{"role": "user", "content": user_content}],
                     tools=self.tools,
                     parallel_tool_calls=True,
                 )
