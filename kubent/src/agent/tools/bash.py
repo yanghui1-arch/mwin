@@ -29,7 +29,6 @@ def bash(command: str):
     docker_volumns = []
     for file in matched_files:
         file_name = file.name
-        print(file_name)
         docker_volumns.append(
             VolumeMount(
                 host_path=file.resolve(),
@@ -37,7 +36,6 @@ def bash(command: str):
                 read_only=True
             )
         )
-    print(docker_volumns)
 
     sandbox_manager = get_sandbox_manager()
     sandbox = sandbox_manager.get_sandbox(
