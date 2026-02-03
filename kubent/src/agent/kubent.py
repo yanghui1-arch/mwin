@@ -170,7 +170,7 @@ class Kubent(ReActAgent):
 
                 completion:ChatCompletion = self.engine.chat.completions.create(
                     model=self.model,
-                    messages=[{"role": "system", "content": system_bg}] + new_message.paris + [{"role": "user", "content": user_content}],
+                    messages=[{"role": "system", "content": system_bg}] + new_message.pairs + [{"role": "user", "content": user_content}],
                     tools=self.tools,
                     parallel_tool_calls=True,
                 )

@@ -41,9 +41,9 @@ This helps Kubent understand what it has already done for this specific question
 
 class NewMessage(BaseModel):
     summary_conversation: str
-    # Note: keeping typo "paris" for compatibility with kubent.py
+    # Note: keeping typo "pairs" for compatibility with kubent.py
     # Using ChatCompletionMessageParam to include tool messages
-    paris: List[ChatCompletionMessageParam]
+    pairs: List[ChatCompletionMessageParam]
     summary_obs: str
     saved_path: Path
 
@@ -495,7 +495,7 @@ def solve_exceed_context(
 
     return NewMessage(
         summary_conversation=summary_conversation,
-        paris=recent_pairs,  # Note: keeping typo for compatibility with kubent.py
+        pairs=recent_pairs,  # Note: keeping typo for compatibility with kubent.py
         summary_obs=summary_obs,
         saved_path=saved_path
     )
