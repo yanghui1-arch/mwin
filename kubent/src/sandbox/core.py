@@ -217,8 +217,15 @@ class DockerSandbox:
     
     def bash(self, command: str) -> ExecResult:
         """Execute bash command"""
-        # TODO: Add a judgement to avoid dangerous bash command to influence host. 
+        # TODO: Add a judgement to avoid dangerous bash command to influence host.
         return self._container.exec(command)
+
+    def close(self) -> None:
+        """Close the sandbox by stopping the container."""
+        try:
+            self._container.stop()
+        except Exception as e:
+            print(f"Warning: Failed to stop container {self._container.container_name}: {e}")
 
 
 def create_sandbox(
