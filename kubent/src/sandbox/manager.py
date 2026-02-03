@@ -30,11 +30,12 @@ class SandboxPoolItem(BaseModel):
 
 class SandboxManager:
     """
-    Manages a pool of Docker sandboxes with LRU eviction policy.
+    Manages a pool of Docker sandboxes with LRU soft eviction policy.
 
     Features:
     - Pool starts empty and grows on demand
-    - When capacity is reached, removes the least recently used sandbox
+    - Soft eviction: removes from pool but keeps container alive
+    - Separate cleanup for idle containers. (FastAPI server will execute cleanup every 60 seconds.)
     - Tracks sandbox usage and access patterns
     - Uses composite key (agent_name + session_id) for identification
     """
@@ -53,6 +54,8 @@ class SandboxManager:
         """
         self.capacity = capacity
         self._pool: OrderedDict[str, SandboxPoolItem] = OrderedDict()
+        # Track evicted sandboxes
+        self._evicted: OrderedDict[str, SandboxPoolItem] = OrderedDict()
         self._docker_client = docker_client or get_docker_client()
 
     @staticmethod
@@ -91,9 +94,18 @@ class SandboxManager:
         """
         key = self._make_key(agent_name, session_id)
 
+        # Check active pool
         if key in self._pool:
             item = self._pool[key]
             item.update_access()
+            self._pool.move_to_end(key)
+            return item.sandbox
+
+        # Check evicted pool (reuse if still alive)
+        if key in self._evicted:
+            item = self._evicted.pop(key)
+            item.update_access()
+            self._pool[key] = item
             self._pool.move_to_end(key)
             return item.sandbox
 
@@ -149,29 +161,94 @@ class SandboxManager:
             True if sandbox was removed, False if it didn't exist
         """
         key = self._make_key(agent_name, session_id)
-        if key not in self._pool:
-            return False
 
-        pool_item = self._pool.pop(key)
-        pool_item.sandbox.close()
+        # Try active pool first
+        if key in self._pool:
+            pool_item = self._pool.pop(key)
+            pool_item.sandbox.close()
+            return True
 
-        return True
+        # Try evicted pool
+        if key in self._evicted:
+            pool_item = self._evicted.pop(key)
+            pool_item.sandbox.close()
+            return True
+
+        return False
 
     def _evict_lru(self) -> None:
-        """Evict the least recently used sandbox from the pool."""
+        """
+        Soft eviction: Remove least recently used sandbox from pool but keep container alive.
+
+        The container continues running and can still be used by any active operations.
+        Use cleanup_idle_sandboxes() to actually close idle containers.
+        """
         if not self._pool:
             return
 
+        # Just remove from pool, don't close the container
         lru_key, pool_item = self._pool.popitem(last=False)
 
-        try:
-            pool_item.sandbox.close()
-        except Exception as e:
-            print(f"Error evicting sandbox {lru_key}: {e}")
+        # Move to evicted pool for tracking
+        self._evicted[lru_key] = pool_item
+
+    def cleanup_idle_sandboxes(self, idle_timeout: int = 720) -> int:
+        """
+        Cleanup sandboxes that have been idle for longer than the timeout.
+
+        This method should be called periodically (e.g., every minute) to clean up
+        evicted sandboxes that are no longer needed.
+
+        Args:
+            idle_timeout(int): Seconds of idle time before cleanup (default: 720 = 12 minutes)
+
+        Returns:
+            Number of sandboxes cleaned up
+        """
+        current_time = time.time()
+        cleaned_count = 0
+        keys_to_remove = []
+
+        # Check evicted pool for idle sandboxes
+        for key, item in self._evicted.items():
+            idle_time = current_time - item.last_accessed
+            if idle_time > idle_timeout:
+                keys_to_remove.append(key)
+
+        # Clean up idle sandboxes
+        for key in keys_to_remove:
+            item = self._evicted.pop(key)
+            try:
+                item.sandbox.close()
+                cleaned_count += 1
+                print(f"Cleaned up idle sandbox {key} (idle for {idle_timeout}s)")
+            except Exception as e:
+                print(f"Error cleaning up sandbox {key}: {e}")
+
+        return cleaned_count
+
+    def cleanup_all_evicted(self) -> int:
+        """
+        Immediately cleanup all evicted sandboxes regardless of idle time.
+
+        Returns:
+            Number of sandboxes cleaned up
+        """
+        count = len(self._evicted)
+        keys = list(self._evicted.keys())
+
+        for key in keys:
+            item = self._evicted.pop(key)
+            try:
+                item.sandbox.close()
+            except Exception as e:
+                print(f"Error cleaning up evicted sandbox {key}: {e}")
+
+        return count
 
     def get_pool_info(self) -> Dict[str, dict]:
         """
-        Get information about all sandboxes in the pool.
+        Get information about all sandboxes in the active pool.
 
         Returns:
             Dictionary mapping composite key to sandbox metadata
@@ -185,36 +262,87 @@ class SandboxManager:
                 "last_accessed": datetime.fromtimestamp(item.last_accessed).isoformat(),
                 "access_count": item.access_count,
                 "idle_seconds": time.time() - item.last_accessed,
+                "status": "active",
             }
         return info
 
-    def clear_pool(self) -> int:
+    def get_evicted_info(self) -> Dict[str, dict]:
+        """
+        Get information about all evicted sandboxes (still alive but not in active pool).
+
+        Returns:
+            Dictionary mapping composite key to sandbox metadata
+        """
+        info = {}
+        for key, item in self._evicted.items():
+            info[key] = {
+                "agent_name": item.agent_name,
+                "session_id": item.session_id,
+                "created_at": datetime.fromtimestamp(item.created_at).isoformat(),
+                "last_accessed": datetime.fromtimestamp(item.last_accessed).isoformat(),
+                "access_count": item.access_count,
+                "idle_seconds": time.time() - item.last_accessed,
+                "status": "evicted",
+            }
+        return info
+
+    def get_all_sandboxes_info(self) -> Dict[str, dict]:
+        """
+        Get information about all sandboxes (both active and evicted).
+
+        Returns:
+            Dictionary mapping composite key to sandbox metadata
+        """
+        info = {}
+        info.update(self.get_pool_info())
+        info.update(self.get_evicted_info())
+        return info
+
+    def clear_pool(self, close_containers: bool = True) -> int:
         """
         Remove all sandboxes from the pool.
+
+        Args:
+            close_containers: If True, close containers. If False, just remove from pool.
 
         Returns:
             Number of sandboxes removed
         """
-        count = len(self._pool)
-        keys = list(self._pool.keys())
+        count = len(self._pool) + len(self._evicted)
 
-        for key in keys:
-            agent_name, session_id = key.split(":", 1)
-            self.remove_sandbox(agent_name, session_id)
+        if close_containers:
+            keys = list(self._pool.keys())
+            for key in keys:
+                agent_name, session_id = key.split(":", 1)
+                self.remove_sandbox(agent_name, session_id)
+
+            # Also cleanup evicted
+            self.cleanup_all_evicted()
+        else:
+            self._pool.clear()
+            self._evicted.clear()
 
         return count
 
     def get_pool_size(self) -> int:
-        """Get the current number of sandboxes in the pool."""
+        """Get the current number of sandboxes in the active pool."""
         return len(self._pool)
 
+    def get_evicted_size(self) -> int:
+        """Get the current number of evicted sandboxes (still alive)."""
+        return len(self._evicted)
+
+    def get_total_size(self) -> int:
+        """Get the total number of sandboxes (active + evicted)."""
+        return len(self._pool) + len(self._evicted)
+
     def is_pool_full(self) -> bool:
-        """Check if the pool has reached its capacity."""
+        """Check if the active pool has reached its capacity."""
         return len(self._pool) >= self.capacity
 
     def has_sandbox(self, agent_name: str, session_id: str) -> bool:
         """
-        Check if a sandbox exists in the pool.
+        Check if a sandbox exists in the pool (active or evicted).
 
         Args:
             agent_name: Name of the agent
@@ -224,14 +352,14 @@ class SandboxManager:
             True if sandbox exists, False otherwise
         """
         key = self._make_key(agent_name, session_id)
-        return key in self._pool
+        return key in self._pool or key in self._evicted
 
 
 _sandbox_manager: Optional[SandboxManager] = None
 
 
 def init_sandbox_manager(
-    capacity: int = 10,
+    capacity: int = 64,
     docker_client: docker.DockerClient | None = None,
 ) -> SandboxManager:
     """

@@ -227,6 +227,11 @@ class DockerSandbox:
         except Exception as e:
             print(f"Warning: Failed to stop container {self._container.container_name}: {e}")
 
+        try:
+            self._container.remove_container()
+        except Exception as e:
+            print(f"Warning: Failed to remove container {self._container.container_name}: {e}")
+
 
 def create_sandbox(
     agent_name: str,
