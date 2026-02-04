@@ -11,6 +11,7 @@ from openai.types.chat import (
     ChatCompletionUserMessageParam,
     ChatCompletionToolMessageParam
 )
+from ..config import config
 
 __all__ = [
     "NewMessage",
@@ -177,7 +178,7 @@ def _generate_summary(conversation: List[ChatCompletionMessageParam], client: Op
     # Use LLM to generate summary
     try:
         response = client.chat.completions.create(
-            model="openai/gpt-oss-120b:free",  # Use a cheaper model for summarization
+            model=config.get("utils.solve_context_length.model", "openai/gpt-oss-120b:free"),
             messages=[
                 {
                     "role": "system",
@@ -257,7 +258,7 @@ def _generate_summary_obs(observations: List[ChatCompletionMessageParam], client
     # Use LLM to generate summary
     try:
         response = client.chat.completions.create(
-            model="openai/gpt-oss-120b:free",  # Use a cheaper model for summarization
+            model=config.get("utils.solve_context_length.model", "openai/gpt-oss-120b:free"),
             messages=[
                 {
                     "role": "system",
@@ -303,7 +304,8 @@ def _save_conversation_to_file(
     """
     # Determine save directory
     home_dir = Path.home()
-    save_dir = home_dir / "kubent" / "conversations"
+    # Currently only support Kubent.
+    save_dir = home_dir / config.get("agent.host.data_dir", "data") / config.get("agent.host.kubent.conversations_dir", "kubent/conversations")
     save_dir.mkdir(parents=True, exist_ok=True)
 
     # Generate filename with format: conversation_{user_uuid}_{project_name}_{timestamp}.md

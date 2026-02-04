@@ -28,11 +28,25 @@ class Config:
             self._cached_data = self._load_data()
         return self._cached_data
 
-    def get(self, dotted_key: str, default: str) -> str:
+    def get(self, dotted_key: str, default: str | None = None) -> str:
+        """Get the value in config.toml.
+
+        Args:
+            dotted_key(str): key of config.toml
+            default(str | None): default value if dotted_key is not found in the config.toml. Default to None.
+        
+        Returns:
+            value of dotted_key in config.toml.
+        
+        Raises:
+            ValueError if key is not found in config.toml and not give a default value.
+        """
         data = self._data()
         cursor: Any = data
         for part in dotted_key.split("."):
             if not isinstance(cursor, dict):
+                if default is None:
+                    raise ValueError(f"Failed to find {dotted_key} in config.toml. Check the key and set a value in config.toml.")
                 return default
             cursor = cursor.get(part)
         if isinstance(cursor, str):

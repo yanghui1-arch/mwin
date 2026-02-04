@@ -1,3 +1,13 @@
+[agent.host]
+# it is under the Path.home() use relative path
+data_dir = "data"
+[agent.host.kubent]
+conversations_dir = "kubent/conversations"
+
+[agent.docker]
+work_dir = "/workspace"
+conversations_dir = "/workspace/conversations"
+
 [robin]
 model = "anthropic/claude-haiku-4.5"
 
@@ -18,3 +28,7 @@ model = "qwen/qwen3-4b:free"
 
 [service.chat]
 model = "openai/gpt-oss-120b:free"
+
+[utils.solve_context_length]
+model = "openai/gpt-oss-120b:free"
+context_length = 64 * 1024

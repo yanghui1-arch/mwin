@@ -8,6 +8,7 @@ from docker.errors import NotFound
 from pydantic import BaseModel
 
 from .client import get_docker_client
+from ..config import config
 
 
 class VolumeMount(BaseModel):
@@ -24,7 +25,7 @@ class VolumeMount(BaseModel):
 class DockerContainerConfig(BaseModel):
     image: str
     container_name: str
-    work_dir: str = "/workspace"
+    work_dir: str = config.get("agent.docker.work_dir", "/workspace")
     read_only_rootfs: bool = False
     network_disabled: bool = False
     user: str | None = None

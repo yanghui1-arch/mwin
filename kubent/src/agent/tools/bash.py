@@ -7,6 +7,7 @@ from openai.types.chat import ChatCompletionFunctionToolParam
 from .toolkits import Tool
 from ..runtime import get_current_agent_name, get_current_session_id, get_current_user_id, get_current_project_name
 from ...sandbox import get_sandbox_manager, DockerSandboxConfig, VolumeMount
+from ...config import config
 
 def bash(command: str):
     """Execute bash command
@@ -21,7 +22,7 @@ def bash(command: str):
     project_name = get_current_project_name()
 
     home_path = Path.home()
-    conversation_path = home_path / "kubent" / "conversations"
+    conversation_path = home_path / config.get("agent.host.data_dir", "data") / config.get(f"agent.host.{agent_name}.conversations_dir", f"{agent_name}/conversations")
     conversation_path.mkdir(parents=True, exist_ok=True)
     pattern = f"conversation_{user_id}_{project_name}*.md"
     matched_files = list(conversation_path.glob(pattern=pattern))
@@ -32,7 +33,7 @@ def bash(command: str):
         docker_volumns.append(
             VolumeMount(
                 host_path=file.resolve(),
-                container_path=f"/workspace/conversations/{file_name}",
+                container_path=config.get("agent.docker.conversations_dir", "/workspace/conversations") + "/" + f"{file_name}",
                 read_only=True
             )
         )
