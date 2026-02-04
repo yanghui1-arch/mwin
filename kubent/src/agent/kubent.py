@@ -63,7 +63,7 @@ Encourage you to use more tools to get more information in the real world.
 """
 
 class Kubent(ReActAgent):
-    name: str = "Kubent"
+    name: str = "kubent"
     model: str = config.get("kubent.model", "anthropic/claude-haiku-4.5")
     tools: List[ChatCompletionFunctionToolParam] = Field(..., default_factory=list)
     engine: OpenAI = OpenAI(**_OPENAI_CLIENT_KWARGS)

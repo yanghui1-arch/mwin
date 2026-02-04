@@ -131,7 +131,7 @@ class Robin(ReActAgent):
     3. Correct misunderstandings of agents who doesn't understand what the project is actually doing.
     """
     current_env: Env
-    name: str = "Robin"
+    name: str = "robin"
     attempt: int = 25
     model: str = config.get("robin.model", "anthropic/claude-haiku-4.5")
     tools: List[ChatCompletionFunctionToolParam] = Field(..., default_factory=list)
