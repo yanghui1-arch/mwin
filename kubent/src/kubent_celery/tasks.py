@@ -42,7 +42,7 @@ def kubent_run(self: Task, args: KubentRequestArgs):
         print(f"Invalid user_id and session_id: {user_id} | {session_id}")
     
     # Ready environment and kubent instance.
-    with execution_scope(session_id=session_id, user_id=user_id, project_name=args["project_name"], agent_name="Kubent"):
+    with execution_scope(session_id=session_id, user_id=user_id, project_name=args["project_name"], agent_name="kubent"):
         env = Env(env_name=f"optimize_{args["user_id"]}")
         kubent = Kubent()
         for tool in kubent.tools:
@@ -58,7 +58,7 @@ def kubent_run(self: Task, args: KubentRequestArgs):
         )
 
         optimize_solution:str = kubent_result.answer
-        add_chat(session_id=session_id, user_id=user_id, messages=kubent_result.chats, agent_name="Kubent")
+        add_chat(session_id=session_id, user_id=user_id, messages=kubent_result.chats, agent_name="kubent")
     
     return KubentResponse(message=optimize_solution)
 
