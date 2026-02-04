@@ -10,7 +10,7 @@ DEFAULT_CONFIG_PATH = Path(__file__).resolve().parents[1] / "config.toml"
 
 
 @dataclass
-class ModelConfig:
+class Config:
     path: Path = DEFAULT_CONFIG_PATH
     _cached_data: dict[str, Any] | None = field(default=None, init=False, repr=False)
 
@@ -43,4 +43,4 @@ class ModelConfig:
         self._cached_data = self._load_data()
 
 
-model_config = ModelConfig()
+config = Config()

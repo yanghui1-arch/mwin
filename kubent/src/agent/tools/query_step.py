@@ -9,7 +9,7 @@ from .toolkits import Tool
 from ...repository.models import Step, StepMeta
 from ...repository.db.conn import SessionLocal
 from ...repository.step_meta import select_step_metadata
-from ...config import model_config
+from ...config import config
 
 load_dotenv()
 _BASE_URL = os.getenv("BASE_URL") or os.getenv("base_url")
@@ -107,7 +107,7 @@ def _step_overview(openai_client, step: Step, step_meta: StepMeta | None) -> str
     step_inputs = str(step.input) if step.input else None
     step_outputs = str(step.output) if step.output else None
     
-    llm_model = model_config.get("query_step.model", "qwen/qwen3-4b:free")
+    llm_model = config.get("query_step.model", "qwen/qwen3-4b:free")
     if step_inputs or step_outputs:
         # Model best context is about 40K.
         # Keep inputs and outputs are both less 20K tokens.

@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 from openai import OpenAI
-from ..config import model_config
+from ..config import config
 
 load_dotenv()
 _BASE_URL = os.getenv("BASE_URL") or os.getenv("base_url")
@@ -20,7 +20,7 @@ TITLE_PROMPT = (
 
 def title(message: str):
     openai_client: OpenAI = OpenAI(**_OPENAI_CLIENT_KWARGS)
-    model = model_config.get("service.chat.model", "openai/gpt-oss-120b:free")
+    model = config.get("service.chat.model", "openai/gpt-oss-120b:free")
 
     completion = openai_client.chat.completions.create(
         model=model,

@@ -13,7 +13,7 @@ from .tools.kubent_think import KubentThink
 from .tools import QueryStep
 from .tools import ConsultRobin
 from .runtime import current_project_name, current_user_id
-from ..config import model_config
+from ..config import config
 from ..utils.llm_context import solve_exceed_context, NewMessage
 
 class Result(BaseModel):
@@ -64,7 +64,7 @@ Encourage you to use more tools to get more information in the real world.
 
 class Kubent(ReActAgent):
     name: str = "Kubent"
-    model: str = model_config.get("kubent.model", "anthropic/claude-haiku-4.5")
+    model: str = config.get("kubent.model", "anthropic/claude-haiku-4.5")
     tools: List[ChatCompletionFunctionToolParam] = Field(..., default_factory=list)
     engine: OpenAI = OpenAI(**_OPENAI_CLIENT_KWARGS)
     attempt: int = 15

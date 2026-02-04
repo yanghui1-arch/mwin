@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from openai import OpenAI, pydantic_function_tool
 from openai.types.chat import ChatCompletionFunctionToolParam, ChatCompletion
 from .toolkits import Tool
-from ...config import model_config
+from ...config import config
 
 load_dotenv()
 _BASE_URL = os.getenv("BASE_URL") or os.getenv("base_url")
@@ -17,7 +17,7 @@ if _API_KEY:
     _OPENAI_CLIENT_KWARGS["api_key"] = _API_KEY
 
 engine: OpenAI = OpenAI(**_OPENAI_CLIENT_KWARGS)
-model = model_config.get("kubent.think.model", "x-ai/grok-4.1-fast")
+model = config.get("kubent.think.model", "x-ai/grok-4.1-fast")
 
 system_bg = """You are the brain of Kubent. Kubent is a useful assistant to keep improve agent performance better.
 You are the best thinker. 
