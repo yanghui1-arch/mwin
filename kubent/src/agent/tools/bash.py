@@ -22,10 +22,16 @@ def bash(command: str):
     project_name = get_current_project_name()
 
     home_path = Path.home()
-    conversation_path = home_path / config.get("agent.host.data_dir", "data") / config.get(f"agent.host.{agent_name}.conversations_dir", f"{agent_name}/conversations")
-    conversation_path.mkdir(parents=True, exist_ok=True)
-    pattern = f"conversation_{user_id}_{project_name}*.md"
-    matched_files = list(conversation_path.glob(pattern=pattern))
+    conversation_path = (home_path 
+                         / config.get("agent.host.data_dir", "data") 
+                         / config.get(f"agent.host.{agent_name}.conversations_dir", f"{agent_name}/conversations") 
+                         / f"user-{user_id}" 
+                         / f"{project_name}"
+                        )
+    matched_files = []
+    if conversation_path.exists() and conversation_path.is_dir():
+        pattern = f"conversation_*.md"
+        matched_files = list(conversation_path.glob(pattern=pattern))
 
     docker_volumns = []
     for file in matched_files:
@@ -55,8 +61,9 @@ def bash(command: str):
     stdout, stderr = bash_result.output
     # Execute bash successfully
     if bash_result.exit_code == 0:
-        result = stdout.decode("utf-8")
-        return result
+        if stdout is not None:
+            return stdout.decode("utf-8")
+        return stdout
 
     else:
         return f"Fail to execute bash. {stdout.decode("utf-8") if stdout is not None else stderr}"

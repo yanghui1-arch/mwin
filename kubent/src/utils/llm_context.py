@@ -305,12 +305,12 @@ def _save_conversation_to_file(
     # Determine save directory
     home_dir = Path.home()
     # Currently only support Kubent.
-    save_dir = home_dir / config.get("agent.host.data_dir", "data") / config.get("agent.host.kubent.conversations_dir", "kubent/conversations")
+    save_dir = home_dir / config.get("agent.host.data_dir", "data") / config.get("agent.host.kubent.conversations_dir", "kubent/conversations") / f"user-{user_uuid}" / f"{project_name}"
     save_dir.mkdir(parents=True, exist_ok=True)
 
-    # Generate filename with format: conversation_{user_uuid}_{project_name}_{timestamp}.md
+    # Generate filename with format: conversation_{timestamp}.md
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"conversation_{user_uuid}_{project_name}_{timestamp}.md"
+    filename = f"conversation_{timestamp}.md"
     filepath = save_dir / filename
 
     # Build Markdown content
