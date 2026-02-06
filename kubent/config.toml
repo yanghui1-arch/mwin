@@ -1,7 +1,9 @@
 [agent.host]
 # it is under the Path.home() use relative path
-data_dir = "data"
+data_dir = "kubent/data"
 [agent.host.kubent]
+# the first kubent is project name and the second kubent is the agent name
+# relative path: home()/kubent/data/kubent/conversations
 conversations_dir = "kubent/conversations"
 
 [agent.docker]
@@ -31,4 +33,4 @@ model = "openai/gpt-oss-120b:free"
 
 [utils.solve_context_length]
 model = "openai/gpt-oss-120b:free"
-context_length = 64 * 1024
+context_length = 65536

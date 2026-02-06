@@ -19,8 +19,10 @@ class Config:
             with self.path.open("rb") as file_handle:
                 return tomllib.load(file_handle)
         except FileNotFoundError:
+            print(f"file not found.")
             return {}
-        except tomllib.TOMLDecodeError:
+        except tomllib.TOMLDecodeError as decoder_error:
+            print(decoder_error)
             return {}
 
     def _data(self) -> dict[str, Any]:
