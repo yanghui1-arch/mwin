@@ -11,7 +11,7 @@ from .react import ReActAgent
 from .tools import SearchGoogle, KubentThink, QueryStep, ConsultRobin, Bash
 from .runtime import current_project_name, current_user_id
 from ..config import config
-from ..utils.llm_context import solve_exceed_context, NewMessage
+from ..utils.llm_context import build_save_dir, solve_exceed_context, NewMessage
 
 class Result(BaseModel):
     answer: str
@@ -29,7 +29,7 @@ if _BASE_URL:
 if _API_KEY:
     _OPENAI_CLIENT_KWARGS["api_key"] = _API_KEY
 
-system_bg = """Your name is "Kubent". Kubent is a useful assistant to keep improve agent performance better.
+system_bg: str = """Your name is "Kubent". Kubent is a useful assistant to keep improve agent performance better.
 Generally, Kubent will recieve one or multiple abstract agent process flow graphs which will be closure in <Agent> XML tags. 
 These graphs reflects how agent system works. It's possible that more than two graphs works as the same. Kubent can think them as a pattern or a fixed route.
 Kubent's task is to response user's question based on agent system workflow.
@@ -116,17 +116,36 @@ class Kubent(ReActAgent):
             llm chat completion
         """
         
+        kubent_system_prompt = system_bg
         if chat_hist is None:
             chat_hist = []
         user_content = question
+        conversation_dir = build_save_dir(agent_name=self.name, user_uuid=str(current_user_id.get()), project_name=current_project_name.get())
+        # Previous conversation with this user in the session is existing.
+        # Add a system prompt to tell kubent that he can search history content of this file path.
+        if conversation_dir.exists() and conversation_dir.is_dir():
+            pattern = f"conversation_*.md"
+            matched_files = list(conversation_dir.glob(pattern))
+            matched_files.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+
+            kubent_system_prompt += dedent(
+                f"""
+                # Stored Conversation Path
+                {config.get("agent.docker.conversations_dir")}
+                
+                ## Some latest conversation files name
+                {"\n".join([ file.name for file in matched_files[:3] ])}
+                """
+            )
+
         if agent_workflows is not None and len(agent_workflows) > 0:
             workflows_desc = [f"<AgentExecutionGraph>\n{workflow}\n</AgentExecutionGraph>" for workflow in agent_workflows]
-            system_bg += f"<Agent>\n{"\n".join(workflows_desc)}\n</Agent>"
+            kubent_system_prompt += f"<Agent>\n{"\n".join(workflows_desc)}\n</Agent>"
 
         try:
             completion:ChatCompletion = self.engine.chat.completions.create(
                 model=self.model,
-                messages=[{"role": "system", "content": system_bg}] + chat_hist + [{"role": "user", "content": user_content}] + obs,
+                messages=[{"role": "system", "content": kubent_system_prompt}] + chat_hist + [{"role": "user", "content": user_content}] + obs,
                 tools=self.tools,
                 parallel_tool_calls=True,
             )
@@ -153,22 +172,22 @@ class Kubent(ReActAgent):
                 )
 
                 if new_message.summary_obs:
-                    system_bg += dedent(f"""
+                    kubent_system_prompt += dedent(f"""
                     # Summary of What You've Done in the current turn.
                     {new_message.summary_obs}
                     """)
 
-                system_bg += dedent(f"""
+                # TODO: 1. Judge whether a conversation is existed before badrequesterror
+                #       2. If it's existing, add the system prompt of `# Stored Conversation Path`
+                #       3. Add latest 3 conversation files to prompt.
+                kubent_system_prompt: str = kubent_system_prompt + dedent(f"""
                 # Summary of What You've Done So Far
                 {new_message.summary_conversation}
-
-                # Stored Conversation Path
-                {str(new_message.saved_path.resolve())}
                 """)
 
                 completion:ChatCompletion = self.engine.chat.completions.create(
                     model=self.model,
-                    messages=[{"role": "system", "content": system_bg}] + new_message.pairs + [{"role": "user", "content": user_content}],
+                    messages=[{"role": "system", "content": kubent_system_prompt}] + new_message.pairs + [{"role": "user", "content": user_content}],
                     tools=self.tools,
                     parallel_tool_calls=True,
                 )
