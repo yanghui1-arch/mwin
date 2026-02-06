@@ -22,27 +22,23 @@ def bash(command: str):
     project_name = get_current_project_name()
 
     home_path = Path.home()
-    conversation_path = (home_path 
-                         / config.get("agent.host.data_dir", "data") 
-                         / config.get(f"agent.host.{agent_name}.conversations_dir", f"{agent_name}/conversations") 
-                         / f"user-{user_id}" 
+    conversation_path = (home_path
+                         / config.get("agent.host.data_dir", "data")
+                         / config.get(f"agent.host.{agent_name}.conversations_dir", f"{agent_name}/conversations")
+                         / f"user-{user_id}"
                          / f"{project_name}"
                         )
-    matched_files = []
-    if conversation_path.exists() and conversation_path.is_dir():
-        pattern = f"conversation_*.md"
-        matched_files = list(conversation_path.glob(pattern=pattern))
-
-    docker_volumns = []
-    for file in matched_files:
-        file_name = file.name
-        docker_volumns.append(
-            VolumeMount(
-                host_path=file.resolve(),
-                container_path=config.get("agent.docker.conversations_dir", "/workspace/conversations") + "/" + f"{file_name}",
-                read_only=True
-            )
+    
+    # Mount the whole directory to sandbox
+    conversation_path.mkdir(parents=True, exist_ok=True)
+    docker_volumns = [
+        VolumeMount(
+            host_path=conversation_path.resolve(),
+            container_path=config.get("agent.docker.conversations_dir", "/workspace/conversations"),
+            read_only=True,
+            create_if_missing=False,
         )
+    ]
 
     sandbox_manager = get_sandbox_manager()
     sandbox = sandbox_manager.get_sandbox(
