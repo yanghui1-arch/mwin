@@ -5,6 +5,7 @@ from .kubent_think import KubentThink
 from .robin_think import RobinThink
 from .query_step import QueryStep
 from .robin import ConsultRobin
+from .bash import Bash
 
 __all__ = ["Tool"]
 
@@ -16,6 +17,7 @@ TOOL_KITS:Dict[str, Tool] = {
     "think_process": KubentThink(),
     "robin_think_process": RobinThink(),
     "query_step": QueryStep(),
+    "bash_command": Bash(),
     
     # tool that offers by agent
     "consult_robin": ConsultRobin(),

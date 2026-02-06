@@ -71,5 +71,5 @@ class Bash(Tool):
     type: str = "command"
     json_schema: ChatCompletionFunctionToolParam  = pydantic_function_tool(BashParams, name="bash_command", description="""
                                          Bash Command based on linux Ubuntu 22.04.
-                                         If you need to search, write, execute files or execute some bash commands to implement task, you should call bash tool.
+                                         If you need to search, write, execute files or execute some bash commands to finish task, you should call bash tool.
                                          """)

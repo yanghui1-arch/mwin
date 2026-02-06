@@ -8,10 +8,7 @@ from openai import OpenAI, BadRequestError
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletion, ChatCompletionFunctionToolParam
 from mwin import track, LLMProvider
 from .react import ReActAgent
-from .tools.search import SearchGoogle
-from .tools.kubent_think import KubentThink
-from .tools import QueryStep
-from .tools import ConsultRobin
+from .tools import SearchGoogle, KubentThink, QueryStep, ConsultRobin, Bash
 from .runtime import current_project_name, current_user_id
 from ..config import config
 from ..utils.llm_context import solve_exceed_context, NewMessage
@@ -79,6 +76,7 @@ class Kubent(ReActAgent):
             KubentThink().json_schema,
             QueryStep().json_schema,
             ConsultRobin().json_schema,
+            Bash().json_schema,
         ]
         return self
 
