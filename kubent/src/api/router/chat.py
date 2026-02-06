@@ -74,7 +74,7 @@ async def optimize_agent_system(
         # Get some project's traces and then push them to kubent to analyze.
         traces_id: List[UUID] = await trace.select_latest_traces_id_by_project_id(db=db, project_id=req.project_id)
         steps_in_traces: List[List[Step]] = [await step.select_steps_by_trace_id(db=db, trace_id=trace_id) for trace_id in traces_id]
-        exec_graphs: List[str] = [mermaid.steps_to_mermaid(steps=steps) for steps in steps_in_traces]
+        exec_graphs: List[str] = [str(mermaid.steps_to_mermaid(steps=steps)) for steps in steps_in_traces]
         selected_project: Project | None = await project.query_project_by_id(db=db, project_id=req.project_id)
 
         if not selected_project:
