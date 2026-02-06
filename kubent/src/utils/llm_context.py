@@ -15,7 +15,8 @@ from ..config import config
 
 __all__ = [
     "NewMessage",
-    "solve_exceed_context"
+    "solve_exceed_context",
+    "build_save_dir",
 ]
 
 SUMMARY_SYSTEM_PROMPT = """You are a conversation summarizer. Your task is to create a concise but comprehensive summary of the conversation between a user and Kubent (an AI assistant).
@@ -302,10 +303,8 @@ def _save_conversation_to_file(
     Returns:
         Path to the saved Markdown file
     """
-    # Determine save directory
-    home_dir = Path.home()
     # Currently only support Kubent.
-    save_dir = home_dir / config.get("agent.host.data_dir", "data") / config.get("agent.host.kubent.conversations_dir", "kubent/conversations") / f"user-{user_uuid}" / f"{project_name}"
+    save_dir = build_save_dir(agent_name="kubent", user_uuid=user_uuid, project_name=project_name)
     save_dir.mkdir(parents=True, exist_ok=True)
 
     # Generate filename with format: conversation_{timestamp}.md
@@ -501,6 +500,15 @@ def solve_exceed_context(
         summary_obs=summary_obs,
         saved_path=saved_path
     )
+
+def build_save_dir(agent_name: str, user_uuid: str, project_name: str):
+    home_dir = Path.home()
+    return (home_dir 
+            / config.get("agent.host.data_dir", "kubent/data") 
+            / config.get(f"agent.host.{agent_name}.conversations_dir", f"{agent_name}/conversations") 
+            / f"user-{user_uuid}" 
+            / f"{project_name}")
+    
 
 if __name__ == "__main__":
     from uuid import uuid4
