@@ -2,7 +2,7 @@ import asyncio
 
 import pytest
 
-from mwin import track
+from mwin import context, track
 from mwin.models import StepType
 
 
@@ -118,7 +118,7 @@ def test_track_exception_is_logged_and_raised(fake_client):
 
 def test_track_async_records_output(fake_client):
     """Test async function output is right."""
-    
+
     @track(tags=["unit"])
     async def fetch():
         return "ok"
@@ -129,3 +129,33 @@ def test_track_async_records_output(fake_client):
     assert len(fake_client.steps) == 1
     assert len(fake_client.traces) == 1
     assert fake_client.steps[0]["output"]["func_output"] == "ok"
+
+
+def test_two_requests_have_different_traces(fake_client):
+    """Two separate HTTP requests should produce two different traces."""
+
+    @track(tags=["unit"])
+    def handle_request(value):
+        return value
+
+    # First request
+    handle_request("first")
+
+    # Simulate context reset between HTTP requests
+    while context.pop_storage_step() is not None:
+        pass
+    context.pop_storage_trace()
+
+    # Second request
+    handle_request("second")
+
+    assert len(fake_client.traces) == 2
+    assert len(fake_client.steps) == 2
+
+
+    # Two traces should have different trace IDs
+    assert fake_client.traces[0]["trace_id"] != fake_client.traces[1]["trace_id"]
+
+    # Each step should reference its own trace
+    assert fake_client.steps[0]["trace_id"] == fake_client.traces[0]["trace_id"]
+    assert fake_client.steps[1]["trace_id"] == fake_client.traces[1]["trace_id"]
