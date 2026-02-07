@@ -141,3 +141,15 @@ class AITraceStorageContext:
         return current_trace
 
 aitrace_storage_context = AITraceStorageContext()
+
+"""
+Celery task is running in the thread. The contextvar is the same value.
+"""
+try:
+    from celery.signals import task_prerun
+
+    @task_prerun.connect
+    def _clear_trace_on_celery_task(**kwargs):
+        aitrace_storage_context.set_trace(None)
+except ImportError:
+    pass
