@@ -17,13 +17,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-type Session = {
-  id: string;
-  userId: string;
-  title: string | undefined;
-  lastUpdateTimestamp: string;
-};
+import type { Session } from "../types";
 
 interface SiderbarMoreActionsProps {
   session: Session;
