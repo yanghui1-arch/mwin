@@ -1,8 +1,14 @@
 {
     "common": {
-        
+        "cancel": "Cancel",
+        "create": "Create",
+        "close": "Close",
+        "reset": "Reset",
+        "somethingErrors": "Something errors.",
+        "noContent": "No content."
     },
     "siderbar": {
+        "title": "Optimizer",
         "observability": "Observability",
         "projects": "Projects",
         "optimizer": "Optimizer",
@@ -13,6 +19,11 @@
         "getHelp": "Get Help",
         "search": "Search"
     },
+    "nodeSearch": {
+        "placeholder": "Search nodes...",
+        "noResults": "No results found. {{searchString}}",
+        "nodes": "Nodes"
+    },
     "main": {
         "projects": {
             "title": "Projects",
@@ -22,20 +33,169 @@
                 "avgDuration": "Duration (avg.)",
                 "cost": "Cost",
                 "lastUpdate": "Last Update"
+            },
+            "toolbar": {
+                "createProject": "Create Project",
+                "createProjectDescription": "Create a new project for Mwin",
+                "projectName": "Project Name",
+                "newProjectName": "New project name",
+                "description": "Description",
+                "briefDescription": "Brief description",
+                "filterProjects": "Filter projects...",
+                "congratsCreate": "Congrats to create project: {{name}}",
+                "failedCreate": "Failed to create project: {{name}}"
             }
         },
         "kubent": {
             "title": "Kubent",
             "titleDescription": "Chatting about {{ projectName }}",
             "select": "Select one project",
+            "selectProjectDescription": "Select a project to chat with Kubent to optimize your agent system.",
+            "selectPlaceholder": "Select a project to optimize",
+            "projects": "Projects",
             "siderbar": {
                 "recent": "recent"
+            },
+            "moreActions": {
+                "delete": "Delete",
+                "deleteSession": "Delete session?",
+                "deleteSessionDescription": "This will delete the session and all its messages.",
+                "deleting": "Deleting..."
             }
         },
         "apiKey": {
             "title": "Get your Mwin API Key",
             "checkApiKey": "Check your API key",
-            "changeApiKey": "Change another"
+            "changeApiKey": "Change another",
+            "dialogTitle": "Mwin API Key"
         }
+    },
+    "navUser": {
+        "account": "Account",
+        "billing": "Billing",
+        "notifications": "Notifications",
+        "logOut": "Log out"
+    },
+    "dataTable": {
+        "filterProjects": "Filter projects...",
+        "view": "View",
+        "toggleColumns": "Toggle columns",
+        "rowsPerPage": "Rows per page",
+        "pageInfo": "Page {{current}} of {{total}}",
+        "rowsSelected": "{{selected}} of {{total}} row(s) selected.",
+        "goToFirstPage": "Go to first page",
+        "goToPreviousPage": "Go to previous page",
+        "goToNextPage": "Go to next page",
+        "goToLastPage": "Go to last page"
+    },
+    "login": {
+        "welcomeBack": "Welcome back",
+        "signInDescription": "Sign in with your Github or Google account",
+        "signingIn": "Signing in...",
+        "signInWithGithub": "Sign in with Github",
+        "signInWithGoogle": "Sign in with Google",
+        "orContinueWith": "Or continue with",
+        "email": "Email",
+        "emailPlaceholder": "m@example.com",
+        "password": "Password",
+        "forgotPassword": "Forgot your password?",
+        "login": "Login",
+        "dontHaveAccount": "Don't have an account?",
+        "signUp": "Sign up",
+        "termsNote": "By clicking continue, you agree to our",
+        "termsOfService": "Terms of Service",
+        "and": "and",
+        "privacyPolicy": "Privacy Policy",
+        "missingGithubClientId": "Missing GitHub Client ID",
+        "setClientId": "Set VITE_GITHUB_CLIENT_ID in your environment."
+    },
+    "chart": {
+        "totalVisitors": "Total Visitors",
+        "totalLast3Months": "Total for the last 3 months",
+        "last3Months": "Last 3 months",
+        "last30Days": "Last 30 days",
+        "last7Days": "Last 7 days",
+        "visitors": "Visitors",
+        "desktop": "Desktop",
+        "mobile": "Mobile"
+    },
+    "sectionCards": {
+        "totalRevenue": "Total Revenue",
+        "trendingUpMonth": "Trending up this month",
+        "visitorsLast6Months": "Visitors for the last 6 months",
+        "newCustomers": "New Customers",
+        "down20Period": "Down 20% this period",
+        "acquisitionAttention": "Acquisition needs attention",
+        "activeAccounts": "Active Accounts",
+        "strongRetention": "Strong user retention",
+        "engagementExceed": "Engagement exceed targets",
+        "growthRate": "Growth Rate",
+        "steadyIncrease": "Steady performance increase",
+        "meetsProjections": "Meets growth projections"
+    },
+    "projectRowAction": {
+        "edit": "Edit",
+        "delete": "Delete",
+        "editProject": "Edit project: {{name}}",
+        "projectName": "Project Name",
+        "description": "Description",
+        "close": "Close",
+        "update": "Update",
+        "confirmDelete": "Confirm Delete",
+        "deleteWarning": "Delete action can't be reversed. Are you sure to delete?",
+        "updateSuccess": "Update project successfully.",
+        "unknownError": "Unknown Error"
+    },
+    "tokensPanel": {
+        "title": "Token Usage",
+        "cost": "Cost",
+        "totalTokens": "Total tokens",
+        "promptTokens": "Prompt tokens",
+        "completionTokens": "Completion tokens",
+        "prompt": "Prompt",
+        "completion": "Completion",
+        "noUsage": "No usage available for this step.",
+        "promptDetail": "Prompt: {{count}} ({{pct}}%)",
+        "completionDetail": "Completion: {{count}} ({{pct}}%)"
+    },
+    "stepTable": {
+        "functionInput": "Function Input",
+        "functionOutput": "Function Output",
+        "llmInput": "LLM Input",
+        "llmOutput": "LLM Output",
+        "noLLMParams": "No parameters are passed to call LLM model.",
+        "llmError": "Happening some errors when calling LLM. But no error information due to something break. Please report it! Thanks."
+    },
+    "track": {
+        "backToProjects": "Back to Projects",
+        "step": "Step",
+        "trace": "Trace",
+        "conversation": "Conversation",
+        "unknown": "Unknown",
+        "columns": {
+            "name": "Name",
+            "functionInput": "Function Input",
+            "functionOutput": "Function Output",
+            "startTime": "Start Time",
+            "endTime": "End Time",
+            "input": "Input",
+            "output": "Output",
+            "lastUpdate": "Last Update"
+        }
+    },
+    "traceDialog": {
+        "inputOutput": "Input/Output",
+        "processFlow": "Process Flow",
+        "input": "Input",
+        "output": "Output",
+        "step": "Step",
+        "llmInputOutput": "LLM Input/Output",
+        "stepFunctionInputOutput": "Step Function Input/Output",
+        "noLLMTracked": "No llm function is tracked in `{{title}}`.",
+        "noFunctionTracked": "No function is tracked in `{{title}}`."
+    },
+    "chat": {
+        "placeholder": "Ask Kubent about your project",
+        "thinking": "Kubent is thinking"
     }
 }

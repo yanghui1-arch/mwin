@@ -4,6 +4,7 @@ import { Trash, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
+import { useTranslation } from "react-i18next";
 
 /**
  * @param table tanstack table
@@ -20,6 +21,7 @@ export function DataTableToolbar<TData>({
 }: DataTableToolbarProps<TData>) {
   const isFiltered = table.getState().columnFilters.length > 0;
   const isSelected = table.getSelectedRowModel().rows.length > 0;
+  const { t } = useTranslation();
 
   const deleteRows = async () => {
     const idsToDelete: string[] = table.getSelectedRowModel().rows.map((row) => row.id);
@@ -37,7 +39,7 @@ export function DataTableToolbar<TData>({
     <div className="flex items-center justify-between">
       <div className="flex flex-1 items-center space-x-2">
         <Input
-          placeholder="Filter projects..."
+          placeholder={t("dataTable.filterProjects")}
           value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
           onChange={(event) =>
             table.getColumn("name")?.setFilterValue(event.target.value)
@@ -50,7 +52,7 @@ export function DataTableToolbar<TData>({
             onClick={() => table.resetColumnFilters()}
             className="h-8 px-2 lg:px-3"
           >
-            Reset
+            {t("common.reset")}
             <X />
           </Button>
         )}

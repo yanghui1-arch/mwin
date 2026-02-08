@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { stepColumns, type Step } from "./step-columns";
 import { Separator } from "@/components/ui/separator";
 import { StepTable } from "@/components/step-table";
@@ -14,6 +15,7 @@ export default function ProjectDetailPage() {
   const { name } = useParams<{ name: string }>();
   const location = useLocation();
   const projectDescription = location.state.description;
+  const { t } = useTranslation();
 
   const [navButtonType, setNavButtonType] = useState<
     "step" | "trace" | "conversation"
@@ -95,7 +97,7 @@ export default function ProjectDetailPage() {
       </p>
       <div className="mt-4">
         <Link to="/projects" className="underline">
-          Back to Projects
+          {t("track.backToProjects")}
         </Link>
       </div>
       <div className="flex gap-4 py-2">
@@ -109,7 +111,7 @@ export default function ProjectDetailPage() {
             setNavButtonType("step");
           }}
         >
-          Step
+          {t("track.step")}
         </Button>
         <Button
           variant="link"
@@ -121,7 +123,7 @@ export default function ProjectDetailPage() {
             setNavButtonType("trace");
           }}
         >
-          Trace
+          {t("track.trace")}
         </Button>
         <Button
           variant="link"
@@ -135,7 +137,7 @@ export default function ProjectDetailPage() {
             setNavButtonType("conversation");
           }}
         >
-          Conversation
+          {t("track.conversation")}
         </Button>
       </div>
       <Separator />
@@ -146,7 +148,7 @@ export default function ProjectDetailPage() {
           <TraceTable table={traceTable} />
         </div>
       ) : (
-        "Unknow"
+        t("track.unknown")
       )}
     </div>
   );

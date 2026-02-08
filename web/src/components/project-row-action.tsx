@@ -23,6 +23,7 @@ import { Label } from "./ui/label";
 import { useForm } from "react-hook-form";
 import { projectApi } from "@/api/project";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 interface ProjectRowActionsProps {
   project: Project;
@@ -36,6 +37,7 @@ type UpdateParams = {
 export function ProjectRowActions({ project, onRefresh }: ProjectRowActionsProps) {
   const [openEdit, setOpenEdit] = useState(false);
   const [openDelete, setOpenDelete] = useState(false);
+  const { t } = useTranslation();
   const form = useForm<UpdateParams>({
     defaultValues: {
       projectDescription: project.description,
@@ -48,7 +50,7 @@ export function ProjectRowActions({ project, onRefresh }: ProjectRowActionsProps
     try {
       const response = await projectApi.updateProjects({projectId: project.id, newDescription: data.projectDescription})
       if (response.data.code == 200) {
-        toast.success("Update project successfully.")
+        toast.success(t("projectRowAction.updateSuccess"))
       } else {
         toast.error(response.data.message)
       }
@@ -56,7 +58,7 @@ export function ProjectRowActions({ project, onRefresh }: ProjectRowActionsProps
       onRefresh();
     } catch (e){
       console.error("UNKNOWN ERROR: " + e)
-      toast.error("<|UNKNOWN ERROR|>")
+      toast.error(t("projectRowAction.unknownError"))
     } finally {
       form.reset();
     }
@@ -83,14 +85,14 @@ export function ProjectRowActions({ project, onRefresh }: ProjectRowActionsProps
         <DropdownMenuContent className="w-40" align="end">
           <DropdownMenuGroup>
             <DropdownMenuItem onClick={() => setOpenEdit(true)}>
-              Edit
+              {t("projectRowAction.edit")}
               <Pencil className="ml-auto h-4 w-4" />
             </DropdownMenuItem>
 
             <DropdownMenuSeparator />
 
             <DropdownMenuItem onClick={() => setOpenDelete(true)}>
-              <span className="text-red-400">Delete</span>
+              <span className="text-red-400">{t("projectRowAction.delete")}</span>
               <Trash2 className="ml-auto h-4 w-4" />
             </DropdownMenuItem>
           </DropdownMenuGroup>
@@ -101,13 +103,13 @@ export function ProjectRowActions({ project, onRefresh }: ProjectRowActionsProps
       <Dialog open={openEdit} onOpenChange={setOpenEdit}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit project: {project.name}</DialogTitle>
+            <DialogTitle>{t("projectRowAction.editProject", { name: project.name })}</DialogTitle>
           </DialogHeader>
           <form onSubmit={form.handleSubmit(editUpdateSubmit)}>
             <div className="flex flex-col gap-2">
               <div className="grid gap-2">
                 <div className="grid gap-2">
-                  <Label>Project Name</Label>
+                  <Label>{t("projectRowAction.projectName")}</Label>
                   <Input
                     id="name-1"
                     className="cursor-not-allowed"
@@ -116,7 +118,7 @@ export function ProjectRowActions({ project, onRefresh }: ProjectRowActionsProps
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label>Description</Label>
+                  <Label>{t("projectRowAction.description")}</Label>
                   <Input
                     id="description-1"
                     {...form.register("projectDescription")}
@@ -124,9 +126,9 @@ export function ProjectRowActions({ project, onRefresh }: ProjectRowActionsProps
                 </div>
               </div>
               <DialogFooter>
-                <Button type="button" onClick={() => setOpenEdit(false)}>Close</Button>
+                <Button type="button" onClick={() => setOpenEdit(false)}>{t("projectRowAction.close")}</Button>
                 <Button type="submit" variant="destructive">
-                  Update
+                  {t("projectRowAction.update")}
                 </Button>
               </DialogFooter>
             </div>
@@ -138,20 +140,20 @@ export function ProjectRowActions({ project, onRefresh }: ProjectRowActionsProps
       <Dialog open={openDelete} onOpenChange={setOpenDelete}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-red-500">Confirm Delete</DialogTitle>
+            <DialogTitle className="text-red-500">{t("projectRowAction.confirmDelete")}</DialogTitle>
             <DialogDescription>
-              Delete action can't be reversed. Are you sure to delete?
+              {t("projectRowAction.deleteWarning")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="secondary" onClick={() => setOpenDelete(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               variant="destructive"
               onClick={() => deleteProject(project.name)}
             >
-              Delete
+              {t("projectRowAction.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

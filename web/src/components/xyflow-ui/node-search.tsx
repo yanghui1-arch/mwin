@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import {
   type BuiltInEdge,
@@ -39,6 +40,7 @@ export function NodeSearchInternal({
   const [searchResults, setSearchResults] = useState<Node[]>([]);
   const [searchString, setSearchString] = useState<string>("");
   const { getNodes, fitView, setNodes } = useReactFlow<Node, BuiltInEdge>();
+  const { t } = useTranslation();
 
   const defaultOnSearch = useCallback(
     (searchString: string) => {
@@ -86,7 +88,7 @@ export function NodeSearchInternal({
   return (
     <>
       <CommandInput
-        placeholder="Search nodes..."
+        placeholder={t("nodeSearch.placeholder")}
         onValueChange={onChange}
         value={searchString}
         onFocus={() => onOpenChange?.(true)}
@@ -95,9 +97,9 @@ export function NodeSearchInternal({
       {open && (
         <CommandList>
           {searchResults.length === 0 ? (
-            <CommandEmpty>No results found. {searchString}</CommandEmpty>
+            <CommandEmpty>{t("nodeSearch.noResults", { searchString })}</CommandEmpty>
           ) : (
-            <CommandGroup heading="Nodes">
+            <CommandGroup heading={t("nodeSearch.nodes")}>
               {searchResults.map((node) => {
                 return (
                   <CommandItem key={node.id} onSelect={() => onSelect(node)}>

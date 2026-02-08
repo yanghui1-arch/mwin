@@ -136,6 +136,33 @@
   --process-flow-main-rgb: 56 103 163;
 }
 
+@layer components {
+  .tag-blue {
+    @apply bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800;
+  }
+  .tag-emerald {
+    @apply bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800;
+  }
+  .tag-amber {
+    @apply bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800;
+  }
+  .tag-violet {
+    @apply bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-950 dark:text-violet-300 dark:border-violet-800;
+  }
+  .tag-rose {
+    @apply bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-800;
+  }
+  .tag-cyan {
+    @apply bg-cyan-100 text-cyan-700 border-cyan-200 dark:bg-cyan-950 dark:text-cyan-300 dark:border-cyan-800;
+  }
+  .tag-orange {
+    @apply bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800;
+  }
+  .tag-teal {
+    @apply bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-950 dark:text-teal-300 dark:border-teal-800;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

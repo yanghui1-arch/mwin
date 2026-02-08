@@ -8,6 +8,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import type { CompletionUsage } from "openai/resources/completions.mjs";
+import { useTranslation } from "react-i18next";
 
 export interface TokensPanelProps extends React.ComponentProps<"div"> {
   model?: string;
@@ -30,9 +31,10 @@ export function TokensPanel({
   usage,
   cost,
   currency = "USD",
-  title = "Token Usage",
+  title,
   ...props
 }: TokensPanelProps) {
+  const { t } = useTranslation()
   const total = React.useMemo(() => toInt(usage?.total_tokens), [usage]);
   const prompt = React.useMemo(() => toInt(usage?.prompt_tokens), [usage]);
   const completion = React.useMemo(
@@ -57,7 +59,7 @@ export function TokensPanel({
     <div className={cn("flex flex-col gap-3", className)} {...props}>
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 text-base font-bold leading-none truncate">
-          {title}
+          {title ?? t("tokensPanel.title")}
         </div>
         {model ? (
           <Badge variant="secondary" className="font-mono text-xs">
@@ -73,7 +75,7 @@ export function TokensPanel({
             <div className="ring-1 ring-border/60 overflow-hidden rounded-lg">
               <div className="px-3 py-2">
                 <div className="text-[11px] tracking-wide text-muted-foreground">
-                  Cost
+                  {t("tokensPanel.cost")}
                 </div>
                 <div className="text-xl font-semibold tabular-nums">
                   {formattedCost}
@@ -83,7 +85,7 @@ export function TokensPanel({
             <div className="ring-1 ring-border/60 overflow-hidden rounded-lg cursor-default">
               <div className="px-3 py-2">
                 <div className="text-[11px] tracking-wide text-muted-foreground">
-                  Total tokens
+                  {t("tokensPanel.totalTokens")}
                 </div>
                 <div className="text-xl font-semibold tabular-nums">
                   {safeTotal.toLocaleString()}
@@ -93,7 +95,7 @@ export function TokensPanel({
             <div className="ring-1 ring-border/60 rounded-md">
               <div className="px-3 py-1.5">
                 <div className="text-[11px] tracking-wide text-muted-foreground">
-                  Prompt tokens
+                  {t("tokensPanel.promptTokens")}
                 </div>
                 <div className="text-lg font-semibold tabular-nums">
                   {prompt.toLocaleString()}
@@ -103,7 +105,7 @@ export function TokensPanel({
             <div className="ring-1 ring-border/60 rounded-md">
               <div className="px-3 py-1.5">
                 <div className="text-[11px] tracking-wide text-muted-foreground">
-                  Completion tokens
+                  {t("tokensPanel.completionTokens")}
                 </div>
                 <div className="text-lg font-semibold tabular-nums">
                   {completion.toLocaleString()}
@@ -142,13 +144,13 @@ export function TokensPanel({
                 <div className="flex items-center gap-2">
                   <span className="inline-block size-2 rounded-sm bg-primary/70" />
                   <span className="text-xs">
-                    Prompt: {prompt.toLocaleString()} ({promptPct}%)
+                    {t("tokensPanel.promptDetail", { count: prompt.toLocaleString(), pct: promptPct })}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="inline-block size-2 rounded-sm bg-emerald-500/70" />
                   <span className="text-xs">
-                    Completion: {completion.toLocaleString()} ({completionPct}%)
+                    {t("tokensPanel.completionDetail", { count: completion.toLocaleString(), pct: completionPct })}
                   </span>
                 </div>
               </div>
@@ -157,17 +159,17 @@ export function TokensPanel({
           <div className="-mt-1 flex items-center gap-3 text-[11px] text-muted-foreground">
             <div className="flex items-center gap-2">
               <span className="inline-block size-2 rounded-sm bg-primary/70" />
-              <span>Prompt</span>
+              <span>{t("tokensPanel.prompt")}</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="inline-block size-2 rounded-sm bg-emerald-500/70" />
-              <span>Completion</span>
+              <span>{t("tokensPanel.completion")}</span>
             </div>
           </div>
         </div>
       ) : (
         <div className="text-sm text-muted-foreground">
-          No usage available for this step.
+          {t("tokensPanel.noUsage")}
         </div>
       )}
     </div>

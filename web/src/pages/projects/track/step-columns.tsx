@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { ArrowDown, ArrowUp, List } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import i18n from "@/i18n";
 
 /* style as the same as openai */
 export interface FilteredFieldsOpenAIChatCompletionsOutput extends Record<string, unknown>{
@@ -120,7 +121,7 @@ export const stepColumns: ColumnDef<Step>[] = [
             <span className="w-4 inline-flex justify-end">
               <List className="h-4 w-4" />
             </span>
-            <span className="font-semibold">Name</span>
+            <span className="font-semibold">{i18n.t("track.columns.name")}</span>
             <span className="w-4 inline-flex justify-start">
               {column.getIsSorted() === "asc" ? (
                 <ArrowDown className="h-4 w-4" />
@@ -137,7 +138,7 @@ export const stepColumns: ColumnDef<Step>[] = [
     accessorKey: "fn_input",
     header: () => (
       <div className="w-full flex justify-center">
-        <span className="font-semibold">Function Input</span>
+        <span className="font-semibold">{i18n.t("track.columns.functionInput")}</span>
       </div>
     ),
     cell: ({ row }) => {
@@ -158,7 +159,7 @@ export const stepColumns: ColumnDef<Step>[] = [
     accessorKey: "fn_output",
     header: () => (
       <div className="w-full flex justify-center">
-        <span className="font-semibold">Function Output</span>
+        <span className="font-semibold">{i18n.t("track.columns.functionOutput")}</span>
       </div>
     ),
     cell: ({ row }) => {
@@ -179,7 +180,7 @@ export const stepColumns: ColumnDef<Step>[] = [
     accessorKey: "startTime",
     header: () => (
       <div className="w-full flex justify-center">
-        <span className="font-semibold">Start Time</span>
+        <span className="font-semibold">{i18n.t("track.columns.startTime")}</span>
       </div>
     ),
     cell: ({ row }) => {
@@ -191,7 +192,7 @@ export const stepColumns: ColumnDef<Step>[] = [
     accessorKey: "endTime",
     header: () => (
       <div className="w-full flex justify-center">
-        <span className="font-semibold">End Time</span>
+        <span className="font-semibold">{i18n.t("track.columns.endTime")}</span>
       </div>
     ),
     cell: ({ row }) => {

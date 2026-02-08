@@ -1,6 +1,7 @@
 import type { Trace } from "@/pages/projects/track/trace-columns";
 import { LLMJsonCard } from "../llm-json-card";
 import { FunctionIOCard } from "../fn-io-card";
+import { useTranslation } from "react-i18next";
 
 interface TraceDialogIOPanelProps {
   data: Trace;
@@ -23,7 +24,8 @@ interface TraceDialogInputProps {
 }
 
 function TraceDialogInputPanel({ input }: TraceDialogInputProps) {
-  return <LLMJsonCard labelTitle="Input" jsonObject={input} />;
+  const { t } = useTranslation();
+  return <LLMJsonCard labelTitle={t("traceDialog.input")} jsonObject={input} />;
 }
 
 interface TraceDialogOutputProps {
@@ -32,7 +34,8 @@ interface TraceDialogOutputProps {
 }
 
 function TraceDialogOutputPanel({ output, errorInfo }: TraceDialogOutputProps) {
+  const { t } = useTranslation();
   return (
-    <FunctionIOCard labelTitle="Output" data={output} errorInfo={errorInfo} />
+    <FunctionIOCard labelTitle={t("traceDialog.output")} data={output} errorInfo={errorInfo} />
   );
 }

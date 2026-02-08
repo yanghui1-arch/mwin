@@ -17,6 +17,7 @@ import { FunctionIOCard } from "../fn-io-card";
 import { TraceIONode } from "./trace-process-io-node";
 import { NodeSearch } from "../xyflow-ui/node-search";
 import type { Track } from "@/api/trace";
+import { useTranslation } from "react-i18next";
 
 interface TraceDialogProcessPanelProps {
   input?: Record<string, unknown> | undefined;
@@ -57,6 +58,7 @@ export function TraceDialogProcessPanel({
   output,
   errorInfo,
 }: TraceDialogProcessPanelProps) {
+  const { t } = useTranslation()
   const nodeWidth = 100;
   const nodeHeight = 40;
   const ioWidth = 200;
@@ -308,7 +310,7 @@ export function TraceDialogProcessPanel({
             <SheetContent className="p-4 max-w-[40vw] md:max-w-[480px] max-h-[calc(100vh-2rem)] overflow-auto">
               <SheetHeader>
                 <SheetTitle>
-                  {(selectedNode.data.title ?? "Step") as string}
+                  {(selectedNode.data.title ?? t("traceDialog.step")) as string}
                 </SheetTitle>
               </SheetHeader>
               <div className="flex gap-2">
@@ -323,7 +325,7 @@ export function TraceDialogProcessPanel({
                     setNodeDetailDisplayType("llm");
                   }}
                 >
-                  <Label>LLM Input/Output</Label>
+                  <Label>{t("traceDialog.llmInputOutput")}</Label>
                 </Button>
                 <Button
                   variant="link"
@@ -336,7 +338,7 @@ export function TraceDialogProcessPanel({
                     setNodeDetailDisplayType("fn");
                   }}
                 >
-                  <Label>Step Function Input/Output</Label>
+                  <Label>{t("traceDialog.stepFunctionInputOutput")}</Label>
                 </Button>
               </div>
               {nodeDetailDisplayType === "llm" &&
@@ -347,17 +349,17 @@ export function TraceDialogProcessPanel({
                       jsonObject={
                         selectedNode.data.llm_inputs as Record<string, unknown>
                       }
-                      labelTitle="Input"
+                      labelTitle={t("traceDialog.input")}
                     />
                     <LLMJsonCard
                       jsonObject={
                         selectedNode.data.llm_outputs as Record<string, unknown>
                       }
-                      labelTitle="Output"
+                      labelTitle={t("traceDialog.output")}
                     />
                   </div>
                 ) : (
-                  `No llm function is tracked in \`${selectedNode.data.title}\`.`
+                  t("traceDialog.noLLMTracked", { title: selectedNode.data.title })
                 ))}
               {nodeDetailDisplayType === "fn" &&
                 (selectedNode.data.fn_inputs || selectedNode.data.fn_output ? (
@@ -368,7 +370,7 @@ export function TraceDialogProcessPanel({
                           | Record<string, unknown>
                           | undefined
                       }
-                      labelTitle="Input"
+                      labelTitle={t("traceDialog.input")}
                     />
                     <FunctionIOCard
                       data={
@@ -377,14 +379,14 @@ export function TraceDialogProcessPanel({
                           | Record<string, unknown>
                           | undefined
                       }
-                      labelTitle="Output"
+                      labelTitle={t("traceDialog.output")}
                       errorInfo={
                         selectedNode.data.errorInfo as string | undefined
                       }
                     />
                   </div>
                 ) : (
-                  `No function is tracked in \`${selectedNode.data.title}\`.`
+                  t("traceDialog.noFunctionTracked", { title: selectedNode.data.title })
                 ))}
             </SheetContent>
           )}

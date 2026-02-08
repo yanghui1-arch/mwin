@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { Session } from "../types";
+import { useTranslation } from "react-i18next";
 
 interface SiderbarMoreActionsProps {
   session: Session;
@@ -30,6 +31,7 @@ export default function SiderbarMoreActions({
 }: SiderbarMoreActionsProps) {
   const [open, setOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const { t } = useTranslation();
 
   const handleConfirmDelete = async () => {
     setIsDeleting(true);
@@ -70,22 +72,22 @@ export default function SiderbarMoreActions({
               }}
             >
               <Trash2 className="h-4 w-4 text-red-400" />
-              <span>Delete</span>
+              <span>{t("main.kubent.moreActions.delete")}</span>
             </DropdownMenuItem>
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
       <DialogContent showCloseButton={!isDeleting}>
         <DialogHeader>
-          <DialogTitle>Delete session?</DialogTitle>
+          <DialogTitle>{t("main.kubent.moreActions.deleteSession")}</DialogTitle>
           <DialogDescription>
-            This will delete the session and all its messages.
+            {t("main.kubent.moreActions.deleteSessionDescription")}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline" disabled={isDeleting}>
-              Cancel
+              {t("common.cancel")}
             </Button>
           </DialogClose>
           <Button
@@ -94,7 +96,7 @@ export default function SiderbarMoreActions({
             onClick={handleConfirmDelete}
             disabled={isDeleting}
           >
-            {isDeleting ? "Deleting..." : "Delete"}
+            {isDeleting ? t("main.kubent.moreActions.deleting") : t("main.kubent.moreActions.delete")}
           </Button>
         </DialogFooter>
       </DialogContent>

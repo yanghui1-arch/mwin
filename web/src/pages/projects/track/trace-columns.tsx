@@ -3,6 +3,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { ArrowDown, ArrowUp, List } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import i18n from "@/i18n";
 
 interface TraceOutput {
   llm_outputs: Record<string, unknown>;
@@ -85,7 +86,7 @@ export const traceColumns: ColumnDef<Trace>[] = [
             <span className="w-4 inline-flex justify-end">
               <List className="h-4 w-4" />
             </span>
-            <span className="font-semibold">Name</span>
+            <span className="font-semibold">{i18n.t("track.columns.name")}</span>
             <span className="w-4 inline-flex justify-start">
               {column.getIsSorted() === "asc" ? (
                 <ArrowDown className="h-4 w-4" />
@@ -102,7 +103,7 @@ export const traceColumns: ColumnDef<Trace>[] = [
     accessorKey: "input",
     header: () => (
       <div className="w-full flex justify-center">
-        <span className="font-semibold">Input</span>
+        <span className="font-semibold">{i18n.t("track.columns.input")}</span>
       </div>
     ),
     cell: ({ row }) => {
@@ -123,7 +124,7 @@ export const traceColumns: ColumnDef<Trace>[] = [
     accessorKey: "output",
     header: () => (
       <div className="w-full flex justify-center">
-        <span className="font-semibold">Output</span>
+        <span className="font-semibold">{i18n.t("track.columns.output")}</span>
       </div>
     ),
     cell: ({ row }) => {
@@ -177,7 +178,7 @@ export const traceColumns: ColumnDef<Trace>[] = [
     accessorKey: "startTime",
     header: () => (
       <div className="w-full flex justify-center">
-        <span className="font-semibold">Start Time</span>
+        <span className="font-semibold">{i18n.t("track.columns.startTime")}</span>
       </div>
     ),
     cell: ({ row }) => {
@@ -189,7 +190,7 @@ export const traceColumns: ColumnDef<Trace>[] = [
     accessorKey: "lastUpdateTimestamp",
     header: () => (
       <div className="w-full flex justify-center">
-        <span className="font-semibold">Last Update</span>
+        <span className="font-semibold">{i18n.t("track.columns.lastUpdate")}</span>
       </div>
     ),
     cell: ({ row }) => {

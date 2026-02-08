@@ -11,6 +11,7 @@ import { stepApi } from "@/api/step";
 import { Badge } from "./ui/badge";
 import { useState } from "react";
 import { Button } from "./ui/button";
+import { useTranslation } from "react-i18next";
 
 interface StepTableProps {
   table: Table<Step>;
@@ -27,6 +28,7 @@ export function StepTable({ table }: StepTableProps) {
   const [displayPanel, setDisplayPanel] = useState<Display>(
     Display.FunctionInput
   );
+  const { t } = useTranslation();
 
   const onDelete = async (deleteIds: string[]): Promise<number> => {
     const count = (await stepApi.deleteSteps({ deleteIds })).data.data.length;
@@ -39,8 +41,18 @@ export function StepTable({ table }: StepTableProps) {
       <DataTable table={table}>
         <RowPanelContent<Step>>
           {(rowData) => {
-            const tags = rowData.tags.map((tag) => (
-              <Badge className="bg-sidebar-primary" variant="outline">
+            const tagColors = [
+              "tag-blue",
+              "tag-emerald",
+              "tag-amber",
+              "tag-violet",
+              "tag-rose",
+              "tag-cyan",
+              "tag-orange",
+              "tag-teal",
+            ];
+            const tags = rowData.tags.map((tag, i) => (
+              <Badge className={tagColors[i % tagColors.length]} variant="outline">
                 {tag}
               </Badge>
             ));
@@ -80,7 +92,7 @@ export function StepTable({ table }: StepTableProps) {
                         : ""
                     }
                   >
-                    Function Input
+                    {t("stepTable.functionInput")}
                   </Button>
                   <Button
                     variant="link"
@@ -91,7 +103,7 @@ export function StepTable({ table }: StepTableProps) {
                         : ""
                     }
                   >
-                    Function Output
+                    {t("stepTable.functionOutput")}
                   </Button>
                   <Button
                     variant="link"
@@ -102,7 +114,7 @@ export function StepTable({ table }: StepTableProps) {
                         : ""
                     }
                   >
-                    LLM Input
+                    {t("stepTable.llmInput")}
                   </Button>
                   <Button
                     variant="link"
@@ -113,7 +125,7 @@ export function StepTable({ table }: StepTableProps) {
                         : ""
                     }
                   >
-                    LLM Ouput
+                    {t("stepTable.llmOutput")}
                   </Button>
                 </div>
 
@@ -135,7 +147,7 @@ export function StepTable({ table }: StepTableProps) {
                               {JSON.stringify(
                                 rowData.output.func_output
                                   ? rowData.output.func_output
-                                  : rowData.errorInfo ?? "Something errors.",
+                                  : rowData.errorInfo ?? t("common.somethingErrors"),
                                 null,
                                 2
                               )}
@@ -164,7 +176,7 @@ export function StepTable({ table }: StepTableProps) {
                       />
                     </div>
                   ) : (
-                    <LLMJsonCard errorInfo="No parameters are passed to call LLM model."/>
+                    <LLMJsonCard errorInfo={t("stepTable.noLLMParams")}/>
                   ))}
 
                 {displayPanel === Display.LLMOutput &&
@@ -178,14 +190,7 @@ export function StepTable({ table }: StepTableProps) {
                               {JSON.stringify(
                                 rowData.output.llm_outputs
                                   ? rowData.output.llm_outputs
-                                  : rowData.errorInfo ?? (
-                                      <p>
-                                        Happening some errors when calling LLM.
-                                        But no error information due to
-                                        something break. Please report it!
-                                        Thanks.
-                                      </p>
-                                    ),
+                                  : rowData.errorInfo ?? t("stepTable.llmError"),
                                 null,
                                 2
                               )}

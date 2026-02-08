@@ -19,6 +19,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { MWIN_JWT } from "@/types/storage-const";
+import { useTranslation } from "react-i18next";
 
 export function LoginForm({
   className,
@@ -26,6 +27,7 @@ export function LoginForm({
 }: React.ComponentProps<"div">) {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const redirectUri = useMemo(() => {
     return import.meta.env.VITE_GITHUB_REDIRECT_URI;
@@ -51,8 +53,8 @@ export function LoginForm({
       | string
       | undefined;
     if (!clientId) {
-      toast.warning("Missing GitHub Client ID", {
-        description: "Set VITE_GITHUB_CLIENT_ID in your environment.",
+      toast.warning(t("login.missingGithubClientId"), {
+        description: t("login.setClientId"),
       });
       return;
     }
@@ -68,9 +70,9 @@ export function LoginForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader className="text-center">
-          <CardTitle className="text-xl">Welcome back</CardTitle>
+          <CardTitle className="text-xl">{t("login.welcomeBack")}</CardTitle>
           <CardDescription>
-            Sign in with your Github or Google account
+            {t("login.signInDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -89,7 +91,7 @@ export function LoginForm({
                       fill="currentColor"
                     />
                   </svg>
-                  {isAuthenticating ? "Signing in..." : "Sign in with Github"}
+                  {isAuthenticating ? t("login.signingIn") : t("login.signInWithGithub")}
                 </Button>
                 <Button variant="outline" type="button">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
@@ -98,37 +100,37 @@ export function LoginForm({
                       fill="currentColor"
                     />
                   </svg>
-                  Sign in with Google
+                  {t("login.signInWithGoogle")}
                 </Button>
               </Field>
               <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
-                Or continue with
+                {t("login.orContinueWith")}
               </FieldSeparator>
               <Field>
-                <FieldLabel htmlFor="email">Email</FieldLabel>
+                <FieldLabel htmlFor="email">{t("login.email")}</FieldLabel>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="m@example.com"
+                  placeholder={t("login.emailPlaceholder")}
                   required
                 />
               </Field>
               <Field>
                 <div className="flex items-center">
-                  <FieldLabel htmlFor="password">Password</FieldLabel>
+                  <FieldLabel htmlFor="password">{t("login.password")}</FieldLabel>
                   <a
                     href="#"
                     className="ml-auto text-sm underline-offset-4 hover:underline"
                   >
-                    Forgot your password?
+                    {t("login.forgotPassword")}
                   </a>
                 </div>
                 <Input id="password" type="password" required />
               </Field>
               <Field>
-                <Button type="submit">Login</Button>
+                <Button type="submit">{t("login.login")}</Button>
                 <FieldDescription className="text-center">
-                  Don&apos;t have an account? <a href="#">Sign up</a>
+                  {t("login.dontHaveAccount")} <a href="#">{t("login.signUp")}</a>
                 </FieldDescription>
               </Field>
             </FieldGroup>
@@ -136,8 +138,8 @@ export function LoginForm({
         </CardContent>
       </Card>
       <FieldDescription className="px-6 text-center">
-        By clicking continue, you agree to our <a href="#">Terms of Service</a>{" "}
-        and <a href="#">Privacy Policy</a>.
+        {t("login.termsNote")} <a href="#">{t("login.termsOfService")}</a>{" "}
+        {t("login.and")} <a href="#">{t("login.privacyPolicy")}</a>.
       </FieldDescription>
     </div>
   );

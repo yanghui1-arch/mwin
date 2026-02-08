@@ -2,6 +2,7 @@ import { LLMJsonHighlight } from "./json-highlight";
 import { Card, CardContent } from "./ui/card";
 import { Label } from "./ui/label";
 import { ScrollArea } from "./ui/scroll-area";
+import { useTranslation } from "react-i18next";
 
 interface StepDetailProp {
   labelTitle?: string;
@@ -16,6 +17,7 @@ export function LLMJsonCard({
   errorInfo,
   llmJsonLight = true,
 }: StepDetailProp) {
+  const { t } = useTranslation()
   return (
     <div className="flex flex-col gap-4">
       <Label>{labelTitle}</Label>
@@ -31,7 +33,7 @@ export function LLMJsonCard({
                     <>{JSON.stringify(jsonObject, null, 2)}</>
                   )
                 ) : (
-                  errorInfo ? errorInfo : "No content."
+                  errorInfo ? errorInfo : t("common.noContent")
                 )}
               </code>
             </pre>

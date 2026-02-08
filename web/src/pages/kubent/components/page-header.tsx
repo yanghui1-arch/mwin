@@ -31,7 +31,7 @@ export function PageHeader({
         <p className="text-muted-foreground mt-1 text-sm">
           {selectedProject?.name
             ? `${t("main.kubent.titleDescription", { projectName: selectedProject.name })}`
-            : "Select a project to chat with Kubent to optimize your agent system."}
+            : t("main.kubent.selectProjectDescription")}
         </p>
       </div>
 
@@ -39,11 +39,11 @@ export function PageHeader({
         <Label>{t("main.kubent.select")}</Label>
         <Select onValueChange={onSelectProject} value={selectedProject?.name}>
           <SelectTrigger className="w-full lg:w-[150px]">
-            <SelectValue placeholder="Select a project to optimize" />
+            <SelectValue placeholder={t("main.kubent.selectPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              <SelectLabel>Projects</SelectLabel>
+              <SelectLabel>{t("main.kubent.projects")}</SelectLabel>
               {projects.map((project: Project) => (
                 <SelectItem key={project.id} value={project.name}>
                   {project.name}

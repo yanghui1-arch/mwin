@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { projectApi } from "@/api/project";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 interface ProjectDataTableToolbarProps<TData> {
   table: Table<TData>;
@@ -34,6 +35,7 @@ export function ProjectDataTableToolbar<TData>({
   const isFiltered = table.getState().columnFilters.length > 0;
   const form = useForm<Inputs>();
   const [openCreateProjectDialog, setOpenCreateProjectDialog] = useState(false);
+  const { t } = useTranslation();
 
   const createProjectSubmit: SubmitHandler<Inputs> = async (data) => {
     try {
@@ -42,10 +44,10 @@ export function ProjectDataTableToolbar<TData>({
       if (response.data.code == 200) {
         table.options.meta?.onRefresh?.();
         setOpenCreateProjectDialog(false);
-        toast.success(`Congrats to create project: ${form.getValues("projectName")}`)
+        toast.success(t("main.projects.toolbar.congratsCreate", { name: form.getValues("projectName") }))
       }
     } catch (error) {
-      toast.error(`Failed to create project: ${form.getValues("projectName")}`)
+      toast.error(t("main.projects.toolbar.failedCreate", { name: form.getValues("projectName") }))
       console.error(error);
     }
   };
@@ -54,7 +56,7 @@ export function ProjectDataTableToolbar<TData>({
     <div className="flex items-center justify-between">
       <div className="flex flex-1 items-center space-x-2">
         <Input
-          placeholder="Filter projects..."
+          placeholder={t("main.projects.toolbar.filterProjects")}
           value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
           onChange={(event) =>
             table.getColumn("name")?.setFilterValue(event.target.value)
@@ -67,7 +69,7 @@ export function ProjectDataTableToolbar<TData>({
             onClick={() => table.resetColumnFilters()}
             className="h-8 px-2 lg:px-3"
           >
-            Reset
+            {t("common.reset")}
             <X />
           </Button>
         )}
@@ -75,7 +77,7 @@ export function ProjectDataTableToolbar<TData>({
       <div className="flex items-center gap-2">
         <DataTableViewOptions table={table} />
         <Button size="sm" onClick={() => setOpenCreateProjectDialog(true)}>
-          Create Project
+          {t("main.projects.toolbar.createProject")}
         </Button>
         <Dialog
           open={openCreateProjectDialog}
@@ -85,25 +87,25 @@ export function ProjectDataTableToolbar<TData>({
             <form onSubmit={form.handleSubmit(createProjectSubmit)}>
               <div className="flex flex-col gap-2">
                 <DialogHeader>
-                  <DialogTitle>Create Project</DialogTitle>
+                  <DialogTitle>{t("main.projects.toolbar.createProject")}</DialogTitle>
                   <DialogDescription>
-                    Create a new project for Mwin
+                    {t("main.projects.toolbar.createProjectDescription")}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4">
                   <div className="grid gap-3">
-                    <Label>Project Name</Label>
+                    <Label>{t("main.projects.toolbar.projectName")}</Label>
                     <Input
                       id="name-1"
-                      placeholder="New project name"
+                      placeholder={t("main.projects.toolbar.newProjectName")}
                       {...form.register("projectName")}
                     />
                   </div>
                   <div className="grid gap-3">
-                    <Label>Description</Label>
+                    <Label>{t("main.projects.toolbar.description")}</Label>
                     <Input
                       id="username-1"
-                      placeholder="Brief description"
+                      placeholder={t("main.projects.toolbar.briefDescription")}
                       {...form.register("projectDescription")}
                     />
                   </div>
@@ -112,11 +114,11 @@ export function ProjectDataTableToolbar<TData>({
                 <DialogFooter className="justify-between">
                   <DialogClose asChild>
                     <Button type="button" variant="destructive">
-                      Cancel
+                      {t("common.cancel")}
                     </Button>
                   </DialogClose>
                   <Button type="submit" variant="secondary">
-                    Create
+                    {t("common.create")}
                   </Button>
                 </DialogFooter>
               </div>

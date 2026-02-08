@@ -3,6 +3,7 @@ import { Card, CardContent } from "./ui/card";
 import { Label } from "./ui/label";
 import { ScrollArea } from "./ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface FunctionIOCardProps {
   labelTitle: string;
@@ -26,6 +27,7 @@ export function FunctionIOCard({
   errorInfo,
   className,
 }: FunctionIOCardProps) {
+  const { t } = useTranslation()
   return (
     <div className={cn("flex flex-col flex-1 gap-4", className)}>
       {data && typeof data === "string" ? (
@@ -37,7 +39,7 @@ export function FunctionIOCard({
                 <pre className="text-sm font-mono whitespace-pre-wrap wrap-break-words [overflow-wrap:anywhere] text-left">
                   <code>
                     {JSON.stringify(
-                      data ? data : errorInfo ?? "Something errors.",
+                      data ? data : errorInfo ?? t("common.somethingErrors"),
                       null,
                       2
                     )}

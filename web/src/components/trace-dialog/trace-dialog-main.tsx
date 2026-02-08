@@ -5,6 +5,7 @@ import type { Trace } from "@/pages/projects/track/trace-columns";
 import { TraceDialogIOPanel } from "./trace-dialog-io";
 import { TraceDialogProcessPanel } from "./trace-dailog-process-flow";
 import { type Track } from "@/api/trace";
+import { useTranslation } from "react-i18next";
 
 interface TraceDialogMainProps {
   data: Trace;
@@ -13,6 +14,7 @@ interface TraceDialogMainProps {
 
 export function TraceDialogMain({ data, tracks }: TraceDialogMainProps) {
   const [displayType, setDisplayType] = useState<"io" | "process">("io");
+  const { t } = useTranslation();
 
   return (
     <div className="flex gap-4 flex-col">
@@ -24,7 +26,7 @@ export function TraceDialogMain({ data, tracks }: TraceDialogMainProps) {
             setDisplayType("io");
           }}
         >
-          <Label>Input/Output</Label>
+          <Label>{t("traceDialog.inputOutput")}</Label>
         </Button>
         <Button
           variant="link"
@@ -35,7 +37,7 @@ export function TraceDialogMain({ data, tracks }: TraceDialogMainProps) {
             setDisplayType("process");
           }}
         >
-          <Label>Process Flow</Label>
+          <Label>{t("traceDialog.processFlow")}</Label>
         </Button>
       </div>
       <div>

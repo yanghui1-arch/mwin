@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowUp } from "lucide-react";
 import { useRef } from "react";
+import { useTranslation } from "react-i18next";
 
 type ChatInputProps = {
   onSend: (value: string) => void;
@@ -33,6 +34,7 @@ export function ChatInputToolBar({ onSend, disabled }: ChatInputToolBarProps) {
 
 export function ChatInput({ onSend, placeholder, disabled }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { t } = useTranslation();
   const handleSend = () => {
     const value = textareaRef.current?.value?.trim();
     if (!value) return;
@@ -66,7 +68,7 @@ export function ChatInput({ onSend, placeholder, disabled }: ChatInputProps) {
       <Textarea
         ref={textareaRef}
         onKeyDown={handleKeyDown}
-        placeholder={placeholder || "Ask Kubent about your project"}
+        placeholder={placeholder || t("chat.placeholder")}
         disabled={disabled}
         rows={1}
         onInput={autoResize}

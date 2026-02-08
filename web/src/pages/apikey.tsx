@@ -65,7 +65,7 @@ export function APIKeyPage() {
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Mwin API Key</DialogTitle>
+                <DialogTitle>{t("main.apiKey.dialogTitle")}</DialogTitle>
               </DialogHeader>
               <div className="flex gap-2">
                 <div className="flex gap-2 h-9 items-center rounded-md border border-input bg-background px-3 text-sm">
