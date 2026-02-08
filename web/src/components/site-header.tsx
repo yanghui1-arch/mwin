@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/select"
 import { Languages } from "lucide-react"
 import { useTranslation } from "react-i18next"
+import { ModeToggle } from "@/components/ui/theme-provider/mode-toggle"
 
 const languageOptions = [
   { value: "zh", label: "中文" },
@@ -41,6 +42,7 @@ export function SiteHeader() {
         />
         <h1 className="text-base font-medium">Temporary space in site-header.tsx</h1>
         <div className="ml-auto flex items-center gap-2">
+          <ModeToggle />
           <Select value={currentLang} onValueChange={handleLanguageChange}>
             <SelectTrigger size="sm" className="hidden sm:flex">
               <Languages className="size-4" />
