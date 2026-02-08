@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Markdown } from "../markdown";
+import { useTranslation } from "react-i18next";
 
 type ChatBubbleProps = {
   content: string;
@@ -54,6 +55,26 @@ export function ToolChatBubble({ content }: ToolChatBubbleProps) {
         <div className="rounded-2xl bg-muted/30 px-4 py-3">
           <div className="animate-pulse">
             <Markdown content={displayedContent} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function ThinkingBubble() {
+  const { t } = useTranslation()
+  return (
+    <div className="flex w-full justify-center">
+      <div className="w-full max-w-5xl text-left text-sm leading-relaxed">
+        <div className="rounded-2xl bg-muted/30 px-4 py-3">
+          <div className="flex items-center gap-1.5">
+            <span className="text-muted-foreground text-sm">{t("chat.thinking")}</span>
+            <span className="flex items-center gap-0.5">
+              <span className="bg-muted-foreground/60 h-1.5 w-1.5 animate-bounce rounded-full [animation-delay:0ms]" />
+              <span className="bg-muted-foreground/60 h-1.5 w-1.5 animate-bounce rounded-full [animation-delay:150ms]" />
+              <span className="bg-muted-foreground/60 h-1.5 w-1.5 animate-bounce rounded-full [animation-delay:300ms]" />
+            </span>
           </div>
         </div>
       </div>

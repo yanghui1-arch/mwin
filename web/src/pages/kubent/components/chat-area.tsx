@@ -1,6 +1,7 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   AssistantChatBubble,
+  ThinkingBubble,
   ToolChatBubble,
   UserChatBubble,
 } from "@/components/chat/bubble";
@@ -35,6 +36,7 @@ export function ChatArea({
               <UserChatBubble content={message.content} />
             )
           )}
+          {taskId && !callingToolInformation && <ThinkingBubble />}
           {taskId && callingToolInformation && (
             <ToolChatBubble content={callingToolInformation} />
           )}
