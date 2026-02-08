@@ -76,7 +76,7 @@ export function StepTable({ table }: StepTableProps) {
                     onClick={() => setDisplayPanel(Display.FunctionInput)}
                     className={
                       displayPanel === Display.FunctionInput
-                        ? "bg-foreground text-black"
+                        ? "bg-primary text-primary-foreground"
                         : ""
                     }
                   >
@@ -87,7 +87,7 @@ export function StepTable({ table }: StepTableProps) {
                     onClick={() => setDisplayPanel(Display.FunctionOutput)}
                     className={
                       displayPanel === Display.FunctionOutput
-                        ? "bg-foreground text-black"
+                        ? "bg-primary text-primary-foreground"
                         : ""
                     }
                   >
@@ -98,7 +98,7 @@ export function StepTable({ table }: StepTableProps) {
                     onClick={() => setDisplayPanel(Display.LLMInput)}
                     className={
                       displayPanel === Display.LLMInput
-                        ? "bg-foreground text-black"
+                        ? "bg-primary text-primary-foreground"
                         : ""
                     }
                   >
@@ -109,7 +109,7 @@ export function StepTable({ table }: StepTableProps) {
                     onClick={() => setDisplayPanel(Display.LLMOutput)}
                     className={
                       displayPanel === Display.LLMOutput
-                        ? "bg-foreground text-black"
+                        ? "bg-primary text-primary-foreground"
                         : ""
                     }
                   >
