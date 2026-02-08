@@ -150,32 +150,32 @@
         "title": "Token 使用情况",
         "cost": "费用",
         "totalTokens": "总 Token",
-        "promptTokens": "提示 Token",
-        "completionTokens": "完成 Token",
+        "promptTokens": "Prompt Token",
+        "completionTokens": "Completion Token",
         "prompt": "提示",
         "completion": "完成",
         "noUsage": "该步骤没有可用的使用情况。",
-        "promptDetail": "提示：{{count}} ({{pct}}%)",
-        "completionDetail": "完成：{{count}} ({{pct}}%)"
+        "promptDetail": "Prompt: {{count}} ({{pct}}%)",
+        "completionDetail": "Completion: {{count}} ({{pct}}%)"
     },
     "stepTable": {
-        "functionInput": "函数输入",
-        "functionOutput": "函数输出",
+        "functionInput": "Function 输入",
+        "functionOutput": "Function 输出",
         "llmInput": "LLM 输入",
         "llmOutput": "LLM 输出",
         "noLLMParams": "没有参数传入 LLM 模型。",
-        "llmError": "调用 LLM 时发生了一些错误，但由于某些原因没有错误信息。请报告此问题！谢谢。"
+        "llmError": "调用 LLM 时发生了一些错误，但由于某些原因没有错误信息。你可以向我们报告此问题进行修复。谢谢你的帮助。"
     },
     "track": {
         "backToProjects": "返回项目列表",
         "step": "步骤",
-        "trace": "追踪",
+        "trace": "追踪链路",
         "conversation": "对话",
         "unknown": "未知",
         "columns": {
             "name": "名称",
-            "functionInput": "函数输入",
-            "functionOutput": "函数输出",
+            "functionInput": "Function 输入",
+            "functionOutput": "Function 输出",
             "startTime": "开始时间",
             "endTime": "结束时间",
             "input": "输入",
@@ -190,9 +190,9 @@
         "output": "输出",
         "step": "步骤",
         "llmInputOutput": "LLM 输入/输出",
-        "stepFunctionInputOutput": "步骤函数输入/输出",
-        "noLLMTracked": "在 `{{title}}` 中没有追踪到 LLM 函数。",
-        "noFunctionTracked": "在 `{{title}}` 中没有追踪到函数。"
+        "stepFunctionInputOutput": "Function 输入/输出",
+        "noLLMTracked": "在 `{{title}}` 中没有追踪到 LLM 调用。",
+        "noFunctionTracked": "在 `{{title}}` 中没有追踪到Function。"
     },
     "chat": {
         "placeholder": "向 Kubent 询问关于您的项目",
