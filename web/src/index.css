@@ -88,11 +88,11 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
-  /* llm json highlight color */
-  --json-1: oklch(0.3583 0.0798 275.11);
-  --json-2: oklch(0.4375 0.1395 287.44);
-  --json-3: oklch(0.5642 0.1824 310.64);
-  --json-4: oklch(0.6157 0.2057 332.72);
+  /* llm json highlight color — light mode (soft pastel backgrounds) */
+  --json-1: oklch(0.94 0.035 235);   /* user: soft sky blue */
+  --json-2: oklch(0.94 0.035 155);   /* assistant: soft mint green */
+  --json-3: oklch(0.94 0.040 80);    /* tool: soft warm gold */
+  --json-4: oklch(0.94 0.015 265);   /* system: soft cool slate */
   --process-flow-main-rgb: 56 162 255;
 }
 
@@ -128,11 +128,11 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
-  /* llm json highlight color */
-  --json-1: oklch(0.3583 0.0798 275.11);
-  --json-2: oklch(0.4375 0.1395 287.44);
-  --json-3: oklch(0.5642 0.1824 310.64);
-  --json-4: oklch(0.6157 0.2057 332.72);
+  /* llm json highlight color — dark mode (subtle tinted backgrounds) */
+  --json-1: oklch(0.25 0.040 235);   /* user: deep blue tint */
+  --json-2: oklch(0.25 0.040 155);   /* assistant: deep green tint */
+  --json-3: oklch(0.27 0.040 80);    /* tool: deep amber tint */
+  --json-4: oklch(0.24 0.015 265);   /* system: deep slate tint */
   --process-flow-main-rgb: 56 103 163;
 }
 
