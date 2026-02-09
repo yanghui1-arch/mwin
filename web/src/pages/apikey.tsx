@@ -9,34 +9,47 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { IconCheck, IconCopy, IconKey } from "@tabler/icons-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export function APIKeyPage() {
-  const [apikey, setApiKey] = useState<string>("");
-  const [completeApiKey, setCompleteApiKey] = useState<string>("");
   const [copyCompleteApiKeyFlag, setCopyCompleteApiKeyFlag] =
     useState<boolean>(false);
 
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const getApiKey = async () => {
+  const { data: apikey } = useQuery({
+    queryKey: ["apikey"],
+    queryFn: async () => {
       const response = await http.get("/apikey/get");
-      setApiKey(response.data.data);
-    };
-    getApiKey();
-  }, []);
+      return response.data.data;
+    },
+  });
 
-  const changeAnotherApiKey = async () => {
-    const response = await http.post("/apikey/change");
-    setApiKey(response.data.data);
-  };
+  const { data: completeApiKey = "", refetch: fetchCompleteApiKey } = useQuery({
+    queryKey: ["completeApiKey"],
+    queryFn: async () => {
+      const response = await http.get("/apikey/get_complete_apikey");
+      return response.data.data as string;
+    },
+    enabled: false,
+  });
+
+  const { mutate: changeAnotherApiKey } = useMutation({
+    mutationFn: async () => {
+      const response = await http.post("/apikey/change");
+      return response.data.data;
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(["apikey"], data);
+    },
+  });
 
   const getCompleteApiKey = async () => {
-    const response = await http.get("/apikey/get_complete_apikey");
-    setCompleteApiKey(response.data.data);
+    await fetchCompleteApiKey();
     setCopyCompleteApiKeyFlag(false);
   };
 
@@ -86,7 +99,7 @@ export function APIKeyPage() {
             </DialogContent>
           </Dialog>
 
-          <Button variant="outline" onClick={changeAnotherApiKey}>
+          <Button variant="outline" onClick={() => changeAnotherApiKey()}>
             <Label>{t("main.apiKey.changeApiKey")}</Label>
           </Button>
         </div>
