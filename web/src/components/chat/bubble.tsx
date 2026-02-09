@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Markdown } from "../markdown";
@@ -63,17 +63,36 @@ export function ToolChatBubble({ content }: ToolChatBubbleProps) {
 }
 
 export function ThinkingBubble() {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
+  const [elapsed, setElapsed] = useState(0);
+  const startTimeRef = useRef(Date.now());
+
+  useEffect(() => {
+    startTimeRef.current = Date.now();
+    setElapsed(0);
+
+    const interval = setInterval(() => {
+      setElapsed((Date.now() - startTimeRef.current) / 1000);
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="flex w-full justify-center">
       <div className="w-full max-w-5xl text-left text-sm leading-relaxed">
         <div className="rounded-2xl bg-muted/30 px-4 py-3">
-          <div className="flex items-center gap-1.5">
-            <span className="text-muted-foreground text-sm">{t("chat.thinking")}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground text-sm">
+              {t("chat.thinking")}
+            </span>
             <span className="flex items-center gap-0.5">
               <span className="bg-muted-foreground/60 h-1.5 w-1.5 animate-bounce rounded-full [animation-delay:0ms]" />
               <span className="bg-muted-foreground/60 h-1.5 w-1.5 animate-bounce rounded-full [animation-delay:150ms]" />
               <span className="bg-muted-foreground/60 h-1.5 w-1.5 animate-bounce rounded-full [animation-delay:300ms]" />
+            </span>
+            <span className="text-muted-foreground/50 ml-auto text-xs tabular-nums">
+              {elapsed.toFixed(1)}s
             </span>
           </div>
         </div>

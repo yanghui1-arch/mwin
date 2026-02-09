@@ -36,7 +36,7 @@ export function ChatArea({
               <UserChatBubble content={message.content} />
             )
           )}
-          {taskId && !callingToolInformation && <ThinkingBubble />}
+          {taskId && <ThinkingBubble />}
           {taskId && callingToolInformation && (
             <ToolChatBubble content={callingToolInformation} />
           )}
