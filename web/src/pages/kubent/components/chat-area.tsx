@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   AssistantChatBubble,
@@ -17,6 +18,8 @@ interface ChatAreaProps {
   onSend: (inputValue: string) => Promise<void>;
 }
 
+const SCROLL_BOTTOM_THRESHOLD = 50;
+
 export function ChatArea({
   messages,
   taskId,
@@ -25,9 +28,42 @@ export function ChatArea({
   disabled,
   onSend,
 }: ChatAreaProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+
+  const getViewport = useCallback(
+    () =>
+      scrollRef.current?.querySelector<HTMLElement>(
+        '[data-slot="scroll-area-viewport"]'
+      ),
+    []
+  );
+
+  // Track whether the user is scrolled to the bottom
+  useEffect(() => {
+    const viewport = getViewport();
+    if (!viewport) return;
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = viewport;
+      setIsAtBottom(
+        scrollHeight - scrollTop - clientHeight < SCROLL_BOTTOM_THRESHOLD
+      );
+    };
+    viewport.addEventListener("scroll", handleScroll, { passive: true });
+    return () => viewport.removeEventListener("scroll", handleScroll);
+  }, [getViewport]);
+
+  // Auto-scroll to bottom when content changes, only if user was at bottom
+  useEffect(() => {
+    if (!isAtBottom) return;
+    const viewport = getViewport();
+    if (!viewport) return;
+    viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
+  }, [messages, taskId, callingToolInformation, isAtBottom, getViewport]);
+
   return (
     <div className="flex h-[69vh] w-[80%] min-w-0 flex-col gap-4 p-2">
-      <ScrollArea className="flex-1 min-h-0">
+      <ScrollArea ref={scrollRef} className="flex-1 min-h-0">
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 py-2">
           {messages.map((message) =>
             message.role === "assistant" ? (
