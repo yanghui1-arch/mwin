@@ -29,8 +29,8 @@ model = "x-ai/grok-4.1-fast"
 model = "qwen/qwen3-4b:free"
 
 [service.chat]
-model = "openai/gpt-oss-120b:free"
+model = "openai/gpt-oss-20b"
 
 [utils.solve_context_length]
-model = "openai/gpt-oss-120b:free"
+model = "openai/gpt-oss-20b"
 context_length = 65536
