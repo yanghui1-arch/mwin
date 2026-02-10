@@ -29,7 +29,7 @@ class LogStepRequest(BaseModel):
     def serialize_datetime(self, value: datetime | None):
         if value is None:
             return None
-        return value.strftime("%Y-%m-%d %H:%M:%S")
+        return value.strftime("%Y-%m-%d %H:%M:%S.%f")
 
 class LogTraceRequest(BaseModel):
     project_name: str
@@ -49,4 +49,4 @@ class LogTraceRequest(BaseModel):
     
     @field_serializer("start_time", "last_update_timestamp")
     def serialize_datetime(self, value: datetime):
-        return value.strftime("%Y-%m-%d %H:%M:%S")
+        return value.strftime("%Y-%m-%d %H:%M:%S.%f")

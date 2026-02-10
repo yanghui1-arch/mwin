@@ -73,11 +73,11 @@ public class Step {
     private Long projectId;
 
     @NotNull
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss.SSSSSS")
     @Column(name = "start_time")
     private LocalDateTime startTime;
 
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss.SSSSSS")
     @Column(name = "end_time")
     private LocalDateTime endTime;
 

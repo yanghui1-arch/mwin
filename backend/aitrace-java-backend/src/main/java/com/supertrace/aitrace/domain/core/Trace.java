@@ -68,10 +68,10 @@ public class Trace {
     private String errorInfo;
 
     @Column(name = "start_time")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss.SSSSSS")
     private LocalDateTime startTime;
 
     @Column(name = "last_update_timestamp")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss.SSSSSS")
     private LocalDateTime lastUpdateTimestamp;
 }

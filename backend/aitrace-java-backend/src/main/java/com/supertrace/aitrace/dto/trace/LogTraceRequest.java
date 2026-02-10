@@ -35,11 +35,11 @@ public class LogTraceRequest {
     private String errorInfo;
 
     @NotNull
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss[.SSSSSS]")
     private LocalDateTime startTime;
 
     @NotNull
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss[.SSSSSS]")
     private LocalDateTime lastUpdateTimestamp;
 
 }

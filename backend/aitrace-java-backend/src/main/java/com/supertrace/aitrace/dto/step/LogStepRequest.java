@@ -48,10 +48,10 @@ public class LogStepRequest {
     private Map<String, Object> usage;
 
     @NotNull
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss[.SSSSSS]")
     private LocalDateTime startTime;
 
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss[.SSSSSS]")
     private LocalDateTime endTime;
 
     private String description;
