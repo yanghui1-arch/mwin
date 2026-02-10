@@ -3,8 +3,10 @@ from uuid import UUID
 import os
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
+from textwrap import dedent
 from openai import OpenAI, pydantic_function_tool
 from openai.types.chat import ChatCompletionFunctionToolParam
+from sqlalchemy import select
 from .toolkits import Tool
 from ...repository.models import Step, StepMeta
 from ...repository.db.conn import SessionLocal
@@ -49,7 +51,7 @@ class StepOverview(BaseModel):
     status: Literal["success", "failed"]
     """Step is error or right"""
 
-    reports: str
+    reports: str = ""
     """A summary of step inputs and outputs."""
 
     description: str | None = None
@@ -69,7 +71,7 @@ def _build_overview(overview: StepOverview):
     model = overview.llm_model
 
     if status == "failed":
-        return f"""
+        return dedent(f"""
         # {name}
         {description}
         # Execute status
@@ -77,20 +79,21 @@ def _build_overview(overview: StepOverview):
         ```
         {error_info}
         ```
-        """
+        """)
     else:
-        result = f"""
-        # {name}
-        {description}
-        ## Input and output report
-        {overview["reports"]}\n
+        result = dedent(
+        f"""# {name}
+{description}
+## Input and output report
+{overview.reports}\n
         """
+        )
 
         if model:
             result = result + f"## LLM Model used\n{model}"
-        return result
+        return dedent(result)
 
-def _step_overview(openai_client, step: Step, step_meta: StepMeta | None) -> str:
+def _step_overview(openai_client: OpenAI, step: Step, step_meta: StepMeta | None) -> str:
 
     status = "success" if step.error_info is None else "failed"
     overview = StepOverview(
@@ -137,23 +140,27 @@ def _step_overview(openai_client, step: Step, step_meta: StepMeta | None) -> str
 def query_step(step_ids: List[str]) -> str:
     overview_step_info: List[str] = []
     openai_cli: OpenAI = OpenAI(**_OPENAI_CLIENT_KWARGS)
+    error_step_id: str | None = None
     try:
         for step_id in step_ids:
             with SessionLocal() as db:
                 step_uuid = UUID(step_id)
-                query_step_stmt = db.query(Step).where(Step.id == step_uuid)
+                query_step_stmt = select(Step).where(Step.id == step_uuid)
                 result = db.execute(query_step_stmt)
                 step: Step | None = result.scalar_one_or_none()
                 if step is None:
-                    raise ValueError(f"{step_id}")
+                    error_step_id = step_id
+                    raise ValueError(f"An invalid step id.")
                 step_meta: StepMeta | None = select_step_metadata(db=db, step_id=step_id)
                 overview = _step_overview(openai_client=openai_cli, step=step, step_meta=step_meta)
                 overview_step_info.append(overview)
             
         return "\n\n".join(overview_step_info)
     except ValueError as ve:
-        # VE is step id here.
-        overview_step_info.append(f"Step[{str(ve)}] doesn't exist in database. You pass an invalid step id.")
+        if error_step_id is not None:
+            overview_step_info.append(f"Step[{error_step_id}] doesn't exist in database. You pass an invalid step id.")
+        else:
+            overview_step_info.append(str(ve))
         return "\n\n".join(overview_step_info)
     
 
