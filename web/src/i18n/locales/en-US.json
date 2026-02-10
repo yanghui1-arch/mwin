@@ -192,7 +192,9 @@
         "llmInputOutput": "LLM Input/Output",
         "stepFunctionInputOutput": "Step Function Input/Output",
         "noLLMTracked": "No llm function is tracked in `{{title}}`.",
-        "noFunctionTracked": "No function is tracked in `{{title}}`."
+        "noFunctionTracked": "No function is tracked in `{{title}}`.",
+        "enterExecution": "Enter Execution",
+        "root": "Root"
     },
     "chat": {
         "placeholder": "Ask Kubent about your project",

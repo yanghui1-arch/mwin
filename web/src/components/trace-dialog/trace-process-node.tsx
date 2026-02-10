@@ -5,33 +5,102 @@ import {
   BaseNodeHeaderTitle,
 } from "@/components/xyflow-ui/base-node";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
+import { Brain, Wrench, Search, Settings, AlertCircle, Clock, Repeat, ChevronRight } from "lucide-react";
+
+const typeConfig: Record<
+  string,
+  { icon: typeof Brain; color: string; bg: string; label: string }
+> = {
+  llm_response: {
+    icon: Brain,
+    color: "border-l-blue-500",
+    bg: "bg-blue-500/5 dark:bg-blue-500/10",
+    label: "LLM",
+  },
+  tool: {
+    icon: Wrench,
+    color: "border-l-amber-500",
+    bg: "bg-amber-500/5 dark:bg-amber-500/10",
+    label: "Tool",
+  },
+  retrieve: {
+    icon: Search,
+    color: "border-l-emerald-500",
+    bg: "bg-emerald-500/5 dark:bg-emerald-500/10",
+    label: "Retrieve",
+  },
+  customized: {
+    icon: Settings,
+    color: "border-l-violet-500",
+    bg: "bg-violet-500/5 dark:bg-violet-500/10",
+    label: "Custom",
+  },
+};
 
 export const TraceProcessNode = memo(({ data }: NodeProps) => {
   const hasPrev = data.hasPrev as boolean;
-  const hasNext= data.hasNext as boolean;
+  const hasNext = data.hasNext as boolean;
+  const trackType = (data.trackType as string) || "customized";
+  const hasError = !!(data.errorInfo as string | undefined);
+  const durationLabel = data.durationLabel as string | undefined;
+  const isRecursive = data.isRecursive as boolean | undefined;
+  const hasChildren = data.hasChildren as boolean | undefined;
+
+  const config = typeConfig[trackType] || typeConfig.customized;
+  const Icon = config.icon;
 
   return (
-    /* first node doesn't contain input handle and the last node doesn't contain output handle */
-    <BaseNode className="w-[100px] h-[40px]">
+    <BaseNode
+      className={`w-[220px] border-l-4 ${config.color} ${config.bg} ${hasError ? "ring-1 ring-destructive/50" : ""}`}
+    >
       {hasPrev && (
         <Handle
           type="target"
           position={Position.Top}
-          className="bg-blue-400! hover:bg-blue-500!"
+          className="bg-muted-foreground! w-2! h-2! border-2! border-background!"
         />
       )}
 
-      <BaseNodeHeader className="justify-center">
-        <BaseNodeHeaderTitle className="wrap-break-words text-sm truncate">
-          {data.title as string}
-        </BaseNodeHeaderTitle>
+      <BaseNodeHeader className="gap-2 py-2 px-3">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <BaseNodeHeaderTitle className="text-xs truncate">
+            {data.title as string}
+          </BaseNodeHeaderTitle>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {hasError && <AlertCircle className="h-3 w-3 text-destructive" />}
+          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+            {config.label}
+          </span>
+        </div>
       </BaseNodeHeader>
+
+      <div className="flex items-center gap-2 px-3 pb-1.5 text-[10px] text-muted-foreground">
+        {durationLabel && (
+          <span className="flex items-center gap-0.5 font-mono">
+            <Clock className="h-3 w-3" />
+            {durationLabel}
+          </span>
+        )}
+        {isRecursive && (
+          <span className="flex items-center gap-0.5">
+            <Repeat className="h-3 w-3" />
+            recursive
+          </span>
+        )}
+        {hasChildren && (
+          <span className="flex items-center gap-0.5 ml-auto">
+            <ChevronRight className="h-3 w-3" />
+          </span>
+        )}
+      </div>
 
       {hasNext && (
         <Handle
           type="source"
           position={Position.Bottom}
-          className="bg-blue-400! hover:bg-blue-500!"
+          className="bg-muted-foreground! w-2! h-2! border-2! border-background!"
         />
       )}
     </BaseNode>

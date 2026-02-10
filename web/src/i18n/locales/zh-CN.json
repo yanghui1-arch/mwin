@@ -192,7 +192,9 @@
         "llmInputOutput": "LLM 输入/输出",
         "stepFunctionInputOutput": "Function 输入/输出",
         "noLLMTracked": "在 `{{title}}` 中没有追踪到 LLM 调用。",
-        "noFunctionTracked": "在 `{{title}}` 中没有追踪到Function。"
+        "noFunctionTracked": "在 `{{title}}` 中没有追踪到Function。",
+        "enterExecution": "进入执行详情",
+        "root": "根节点"
     },
     "chat": {
         "placeholder": "向 Kubent 询问关于您的项目",
