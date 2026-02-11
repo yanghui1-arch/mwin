@@ -11,7 +11,7 @@ from collections.abc import Hashable
 def parse_args():
     parser = argparse.ArgumentParser(description="AI Track parser")
     parser.add_argument('--log-level', type=str, default='INFO', help='Set log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)')
-    return parser.parse_args()
+    return parser.parse_known_args()[0]
 
 # Identify log level
 LOG_LEVEL = 'INFO'
