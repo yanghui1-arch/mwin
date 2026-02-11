@@ -11,11 +11,12 @@ import inspect
 from datetime import datetime
 from types import TracebackType
 from typing import Any, List, Dict
-from typing_extensions import Self, override
+from typing_extensions import override
 from openai import resources, Stream
 from openai.types.completion_usage import CompletionUsage
 from openai.types.chat import ChatCompletion
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk, Choice, ChoiceDelta, ChoiceDeltaToolCall
+from ..llm_patch_config import LLMPatchConfig, get_llm_patch_config
 from ..std import PatchStreamResponse, ToolFunctionCall, Function, patch_std_output
 from ...track.options import TrackerOptions
 from ...models import Step, LLMProvider
@@ -23,27 +24,36 @@ from ...helper import inspect_helper
 from ...helper.llm import openai_helper
 from ...context.func_context import current_function_name_context
 from ...client import get_cached_sync_client, SyncClient
+from ...logger import logger
+
 
 raw_openai_create = resources.chat.completions.Completions.create
 
-def patch_openai_chat_completions(step: Step, tracker_options: TrackerOptions, func_name: str):
+def patch_openai_chat_completions():
     """Patch openai chat completions in the step.
     The function is convenient to track llm output in the step which is seperate with the `ATTracker` class.
     Before calling tracked function AITrace has to decide which step's openai call should be patched to track.
-    
-    Args:
-        step(Step): step which need to patch openai chat completions
-        tracker_options(TrackerOptions): tracker options.
-        func_name(str): tracked func_name
     """
     
     def patched_create(self, *args, **kwargs):
         frame = inspect.currentframe()
         caller = frame.f_back if frame else None
         caller_name = caller.f_code.co_name if caller else None
-        # if caller function name is not func name.
+        # If caller function name is not current tracked function's name.
+        # no tracked function then current_function_name_context.get() is None.
+        # It prevents untracked function from logging step of the tracked function.
         if caller_name != current_function_name_context.get():
             return raw_openai_create(self, *args, **kwargs)
+
+        config: LLMPatchConfig | None = get_llm_patch_config()
+        if not config:
+            logger.warning(
+                "Patch config is not set when patch openai.chat.completions.create(). " \
+                "It affects logging step."
+            )
+            return raw_openai_create(self, *args, **kwargs)
+        step = config.step
+        tracker_options = config.tracker_options
 
         resp:ChatCompletion | Stream = raw_openai_create(self, *args, **kwargs)
         raw_openai_inputs = inspect_helper.parse_to_dict_input(raw_openai_create, args=(self, *args), kwargs=kwargs)
@@ -83,7 +93,23 @@ def patch_openai_chat_completions(step: Step, tracker_options: TrackerOptions, f
             )
         return resp
     
-    resources.chat.completions.Completions.create = patched_create
+    # Only patch once.
+    if not hasattr(resources.chat.completions.Completions.create, "_is_patched"):
+        resources.chat.completions.Completions.create = patched_create
+        resources.chat.completions.Completions.create._is_patched = True
+
+
+# def unpatch_openai_chat_completions(token: Token):
+#     """unpatch config and restore the tracked step information
+#     It's safe in thread and coroutine. But it doesn't restore the resources.chat.completions.Completions.create()
+#     It doesn't matter for not restoring original function. Because if use calls openai function without using @track
+#     Its behaviou is as the same as the original due to return raw_original_function(self, *args, **kwargs)
+
+#     Args:
+#         token(Token): patch config token.
+#     """
+
+#     _patch_openai_chat_completions_config.reset(token)
 
 class ProxyStream(Stream):
     def __init__(

@@ -1,10 +1,10 @@
 import inspect
+from contextvars import Token
 from typing import Callable, Any, Tuple, Dict, List
 from abc import ABC, abstractmethod
-from datetime import datetime, timezone, timedelta
+from datetime import datetime
 import functools
 
-from ._types import STREAM_CONSUMED
 from .options import TrackerOptions
 from .. import context
 from ..context.func_context import current_function_name_context 
@@ -12,6 +12,7 @@ from ..models.key_models import StepType, Step, Trace
 from ..models.common import LLMProvider
 from ..helper import args_helper, inspect_helper, exception_helper
 from ..client import sync_client
+from ..patches.llm_patch_config import set_llm_patch_config, reset_llm_patch_config
 
 
 class BaseTracker(ABC):
@@ -124,8 +125,10 @@ class BaseTracker(ABC):
             result = None
             func_exception: Exception | None = None
             error_info: str | None = None
+            patched_token: Token | None =  None
+            
             # before track
-            self._before_calling_function(
+            patched_token = self._before_calling_function(
                 func=func,
                 tracker_options=tracker_options,
                 args=args,
@@ -145,7 +148,8 @@ class BaseTracker(ABC):
                     func=func, 
                     output=result, 
                     error_info=error_info, 
-                    tracker_options=tracker_options
+                    tracker_options=tracker_options,
+                    patched_token=patched_token,
                 )
                 current_function_name_context.reset(token)
                 if func_exception is not None:
@@ -173,8 +177,10 @@ class BaseTracker(ABC):
             result = None
             func_exception: Exception | None = None
             error_info: str | None = None
+            patched_token: Token | None = None
+
             # before track
-            self._before_calling_function(
+            patched_token = self._before_calling_function(
                 func=func,
                 tracker_options=tracker_options,
                 args=args,
@@ -194,7 +200,8 @@ class BaseTracker(ABC):
                     func=func, 
                     output=result, 
                     error_info=error_info, 
-                    tracker_options=tracker_options
+                    tracker_options=tracker_options,
+                    patched_token=patched_token
                 )
                 current_function_name_context.reset(token)
                 if func_exception is not None:
@@ -210,15 +217,21 @@ class BaseTracker(ABC):
         tracker_options: TrackerOptions,
         args:Tuple,
         kwargs:Dict[str, Any]
-    ):
-        """ prepare and store input into storage context before calling function.
+    ) -> Token | None:
+        """ Prepare and store input into storage context before calling function.
+        Create a new step and patch llm method.
 
         Args:
             func(Callable): func
             tracker_options(TrackerOptions): tracker options
             args(Tuple): passing func arguments. If no arguments, the dictionary is empty.
             kwargs(Dict[str, Any]): passing func keywords arguements. If no keywords arguments, the dictionary is empty.
+
+        Returns:
+            A patch token or None if track_options not point out provider.
         """
+
+        patch_token = None
         
         try:
             start_arguments:args_helper.StartArguments = self.start_inputs_args_preprocess(
@@ -259,24 +272,33 @@ class BaseTracker(ABC):
         context.add_storage_step(new_step=new_step)
 
         # start patch
-        from ..patches.openai import completions, async_completions
+        if tracker_options.track_llm is not None:
+            patch_token = set_llm_patch_config(step=new_step, tracker_options=tracker_options, func_name=func.__name__)
+        
         if tracker_options.track_llm == LLMProvider.OPENAI:
-            completions.patch_openai_chat_completions(step=new_step, tracker_options=tracker_options, func_name=func.__name__)
-            async_completions.patch_async_openai_chat_completions(step=new_step, tracker_options=tracker_options)
+            from ..patches.openai import completions, async_completions
+            completions.patch_openai_chat_completions()
+            async_completions.patch_async_openai_chat_completions()
+
+        return patch_token
 
     def _after_calling_function(
         self,
         func: Callable,
         output: Any,
         error_info: str | None,
-        tracker_options: TrackerOptions
+        tracker_options: TrackerOptions,
+        patched_token: Token | None,
     ):
-        """ prepare and log output after track function
+        """ Prepare and log output after track function
+        Log step, trace and then restore llm patched token which guarantees step-in and step-out.
+        Restore patched_token is very important and neccessary.
         
         Arg:
             output(Any): output from decorated function.
             error_info(str | None): error information during executing decorated function.
             tracker_options(TrackerOption): tracker options.
+            patched_token(token | None): llm patched token to reset.
         """
 
         try:
@@ -374,6 +396,11 @@ class BaseTracker(ABC):
             start_time=current_trace.start_time,
             last_update_timestamp=current_trace.last_update_timestamp,
         )
+
+
+        # Reset llm patch config.
+        if patched_token is not None:
+            reset_llm_patch_config(token=patched_token)
  
     @abstractmethod
     def start_inputs_args_preprocess(

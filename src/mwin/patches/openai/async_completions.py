@@ -9,6 +9,7 @@ from openai.types.completion_usage import CompletionUsage
 from openai.types.chat import ChatCompletion
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk, Choice, ChoiceDelta, ChoiceDeltaToolCall
 
+from ..llm_patch_config import LLMPatchConfig, get_llm_patch_config
 from ..std import PatchStreamResponse, ToolFunctionCall, Function, patch_std_output
 from ...models import Step, LLMProvider
 from ...track.options import TrackerOptions
@@ -16,10 +17,11 @@ from ...context.func_context import current_function_name_context
 from ...helper import inspect_helper
 from ...helper.llm import openai_helper
 from ...client import SyncClient, get_cached_sync_client
+from ...logger import logger
 
 raw_async_openai_create = resources.chat.completions.AsyncCompletions.create
 
-def patch_async_openai_chat_completions(step: Step, tracker_options: TrackerOptions):
+def patch_async_openai_chat_completions():
     async def patched_create(self, *args, **kwargs):
         frame = inspect.currentframe()
         caller = frame.f_back if frame else None
@@ -27,6 +29,17 @@ def patch_async_openai_chat_completions(step: Step, tracker_options: TrackerOpti
         # if caller function name is not func name.
         if caller_name != current_function_name_context.get():
             return await raw_async_openai_create(self, *args, **kwargs)
+
+        config: LLMPatchConfig | None = get_llm_patch_config()
+        if not config:
+            logger.warning(
+                "Patch config is not set when patch async openai.chat.completions.create()." \
+                " It affects logging step."
+            )
+            return await raw_async_openai_create(self, *args, **kwargs)
+        
+        step = config.step
+        tracker_options = config.tracker_options
 
         resp:ChatCompletion | AsyncStream = await raw_async_openai_create(self, *args, **kwargs)
         raw_openai_inputs = inspect_helper.parse_to_dict_input(raw_async_openai_create, args=(self, *args), kwargs=kwargs)
@@ -61,7 +74,10 @@ def patch_async_openai_chat_completions(step: Step, tracker_options: TrackerOpti
             )
         return resp
     
-    resources.chat.completions.AsyncCompletions.create = patched_create
+    # Only patch once
+    if not hasattr(resources.chat.completions.AsyncCompletions.create, "_is_patched"):
+        resources.chat.completions.AsyncCompletions.create = patched_create
+        resources.chat.completions.AsyncCompletions.create._is_patched = True
 
 class ProxyAsyncStream(AsyncStream):
     def __init__(
