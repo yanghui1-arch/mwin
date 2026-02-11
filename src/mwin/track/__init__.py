@@ -1,8 +1,7 @@
 from .at_track import AITraceTracker
 
 __all__ = [
-    'track_step',
-    'track_trace',
+    "track"
 ]
 
 tracker = AITraceTracker()
