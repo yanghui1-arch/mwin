@@ -8,6 +8,7 @@ What's here
 -----------
 - test_track_decorator_base.py: core decorator behavior (sync/async, errors, inputs/outputs).
 - test_track_openai_chat_completions.py: OpenAI chat.completions tracking (stream and non-stream).
+- test_track_project_name.py: project_name parameter handling in the track decorator.
 - conftest.py: fake client + context cleanup to keep tests isolated and offline.
 
 Why the split
@@ -22,4 +23,7 @@ From the repo root:
 ```bash
 pytest test/track/test_track_decorator_base.py
 pytest test/track/test_track_openai_chat_completions.py
+pytest test/track/test_track_project_name.py
+# Or run all track tests together
+pytest test/track/
 ```

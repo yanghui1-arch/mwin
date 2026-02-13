@@ -21,14 +21,14 @@ def fake_client(monkeypatch):
 
     monkeypatch.setattr(
         "mwin.client.sync_client.get_cached_sync_client",
-        lambda: client,
+        lambda **kwargs: client,
     )
 
     import mwin.patches.openai.completions as openai_completions
     import mwin.patches.openai.async_completions as openai_async_completions
 
-    monkeypatch.setattr(openai_completions, "get_cached_sync_client", lambda: client)
-    monkeypatch.setattr(openai_async_completions, "get_cached_sync_client", lambda: client)
+    monkeypatch.setattr(openai_completions, "get_cached_sync_client", lambda **kwargs: client)
+    monkeypatch.setattr(openai_async_completions, "get_cached_sync_client", lambda **kwargs: client)
 
     return client
 
