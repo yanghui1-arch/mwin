@@ -32,6 +32,7 @@ class BaseTracker(ABC):
     def track(
         self,
         func_name: str | Callable | None = None,
+        project_name: str | None = None,
         tags: List[str] | None = None,
         step_type: StepType = StepType.CUSTOMIZED,
         model: str | None = None,
@@ -45,6 +46,7 @@ class BaseTracker(ABC):
 
         Args:
             func_name(str | Callable | None): caller can set it they want to name with 'str' type. If caller doesn't set, it will be `Callable`.
+            project_name(str | None): project name of this function. Default to `None`. It is set only when you deploys two or more programs which are using mwin to track.
             tags(List[str] | None): tags of tracking steps. Default to `None`.
             step_type(StepType): step type. Default to `StepType.CUSTOMIZED`.
             model(str | None): using model name. Default to `None`. If you are using llama you can set the field to `llama`.
@@ -64,6 +66,7 @@ class BaseTracker(ABC):
             track_llm=track_llm,
             llm_ignore_fields=llm_ignore_fields,
             description=description,
+            project_name=project_name,
         )
     
         if callable(func_name):
@@ -365,8 +368,10 @@ class BaseTracker(ABC):
 
         context.set_storage_trace(current_trace=current_trace)
 
-        # TODO: Post a request to server
-        client: sync_client.SyncClient = sync_client.get_cached_sync_client()
+        
+        client: sync_client.SyncClient = sync_client.get_cached_sync_client(
+            project_name=tracker_options.project_name
+        )
 
         client.log_step(
             step_name=current_step.name,

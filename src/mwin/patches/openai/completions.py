@@ -74,7 +74,7 @@ def patch_openai_chat_completions():
 
         if tracker_options.track_llm == LLMProvider.OPENAI:
             # log
-            client: SyncClient = get_cached_sync_client()
+            client: SyncClient = get_cached_sync_client(project_name=tracker_options.project_name)
             client.log_step(
                 step_name=step.name,
                 step_id=step.id,
@@ -151,7 +151,7 @@ class ProxyStream(Stream):
                 content=llm_output,
                 tool_calls=llm_tool_calls_output,
             )
-            client: SyncClient = get_cached_sync_client()
+            client: SyncClient = get_cached_sync_client(project_name=self.tracker_options.project_name)
             client.log_step(
                 step_name=self.step.name,
                 step_id=self.step.id,
@@ -189,7 +189,7 @@ class ProxyStream(Stream):
                     content=llm_output,
                     tool_calls=llm_tool_calls_output,
                 )
-                client: SyncClient = get_cached_sync_client()
+                client: SyncClient = get_cached_sync_client(project_name=self.tracker_options.project_name)
                 client.log_step(
                     step_name=self.step.name,
                     step_id=self.step.id,

@@ -20,6 +20,10 @@ class TrackerOptions:
                                         If `track_llm` is not `None`, AITrace will track provider's api.
         llm_ignore_fields(List[str] | None): a list of llm ignore fields name. Default to `None`.
         description(str | None): track step description. Default to `None`.
+        project_name(str | None): project name which is the tracked step's project. 
+                                    If it's None, then use the config. It is set to specialize the project
+                                    OR deploy two or more programs which use mwin that it can help you
+                                    specialize different projects.
     """
 
     tags: List[str] | None = None
@@ -30,3 +34,4 @@ class TrackerOptions:
     track_llm: LLMProvider | None = None
     llm_ignore_fields: List[str] | None = None
     description: str | None = None
+    project_name: str | None = None

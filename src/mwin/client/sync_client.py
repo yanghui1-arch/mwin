@@ -5,7 +5,7 @@ from typing import Any, List, Dict
 
 from openai.types.completion_usage import CompletionUsage
 
-from .config import ClientConfig, build_client_config
+from .config import build_client_config
 from .schemas.request.log_request import LogStepRequest, LogTraceRequest
 from .schemas.response.log_response import LogStepResponse, LogTraceResponse
 
@@ -181,7 +181,11 @@ class SyncClient:
 
 
 @functools.lru_cache()
-def get_cached_sync_client() -> SyncClient:
-    client = SyncClient()
+def get_cached_sync_client(
+    project_name: str | None = None,
+) -> SyncClient:
+    client = SyncClient(
+        project_name=project_name
+    )
 
     return client
