@@ -55,10 +55,8 @@
                 "recent": "Recents"
             },
             "welcome": {
-                "title": "Welcome to Kubent",
-                "readyToExplore": "Ready to explore",
-                "description": "Your intelligent Kubent assistant. Ask questions, analyze your projects, and get instant insights.",
-                "footer": "Start typing below or click a suggestion to begin",
+                "title": "Improve Your Agent System",
+                "readyToExplore": "Analyzing",
                 "suggestions": {
                     "analyzeProject": {
                         "title": "Analyze Project",

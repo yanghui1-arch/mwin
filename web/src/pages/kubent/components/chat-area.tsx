@@ -7,7 +7,8 @@ import {
   UserChatBubble,
 } from "@/components/chat/bubble";
 import { ChatInput } from "@/components/chat/input";
-import { WelcomePage } from "./welcome-page";
+import { WelcomePage } from "./welcome";
+import { SuggestedPrompts } from "./suggested-prompts";
 import type { ChatMessage } from "../types";
 
 interface ChatAreaProps {
@@ -31,11 +32,22 @@ export function ChatArea({
 }: ChatAreaProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   const hasMessages = messages.length > 0;
 
-  const handleSuggestedPrompt = (prompt: string) => {
-    onSend(prompt);
+  const handleSuggestedPrompt = async (prompt: string) => {
+    setIsTransitioning(true);
+    // Wait for animation to complete before sending
+    await new Promise(resolve => setTimeout(resolve, 500));
+    await onSend(prompt);
+  };
+
+  const handleSend = async (inputValue: string) => {
+    setIsTransitioning(true);
+    // Wait for animation to complete before sending
+    await new Promise(resolve => setTimeout(resolve, 500));
+    await onSend(inputValue);
   };
 
   const getViewport = useCallback(
@@ -68,44 +80,79 @@ export function ChatArea({
     viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
   }, [messages, taskId, callingToolInformation, isAtBottom, getViewport]);
 
+  // Reset transition state when messages appear
+  useEffect(() => {
+    if (hasMessages) {
+      setIsTransitioning(false);
+    }
+  }, [hasMessages]);
+
   return (
     <div className="flex h-[69vh] w-[80%] min-w-0 flex-col gap-4 p-2">
-      <ScrollArea ref={scrollRef} className="flex-1 min-h-0">
-        <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 py-2 h-full">
-          {!hasMessages ? (
-            <WelcomePage
-              onSuggestedPrompt={handleSuggestedPrompt}
+      {!hasMessages && !isTransitioning ? (
+        // Initial centered layout
+        <div className="flex-1 flex flex-col items-center justify-center gap-8 px-6 py-8">
+          <WelcomePage projectName={selectedProjectName} />
+
+          <div className="w-full max-w-4xl animate-in fade-in duration-700 delay-100">
+            <ChatInput
+              onSend={handleSend}
+              placeholder={
+                selectedProjectName
+                  ? `Ask Kubent about ${selectedProjectName}`
+                  : "Select a project to start chatting with Kubent"
+              }
+              disabled={disabled}
+            />
+          </div>
+
+          <div className="animate-in fade-in duration-700 delay-200">
+            <SuggestedPrompts
+              onPromptClick={handleSuggestedPrompt}
               projectName={selectedProjectName}
             />
-          ) : (
-            <div className="flex flex-col gap-4 animate-in fade-in duration-500">
-              {messages.map((message, index) =>
-                message.role === "assistant" ? (
-                  <AssistantChatBubble key={index} content={message.content} />
-                ) : (
-                  <UserChatBubble key={index} content={message.content} />
-                )
-              )}
-              {taskId && <ThinkingBubble />}
-              {taskId && callingToolInformation && (
-                <ToolChatBubble content={callingToolInformation} />
+          </div>
+        </div>
+      ) : (
+        // Chat layout with animation transition
+        <>
+          <ScrollArea ref={scrollRef} className="flex-1 min-h-0">
+            <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 py-2 h-full">
+              {hasMessages && (
+                <div className="flex flex-col gap-4 animate-in fade-in duration-500">
+                  {messages.map((message, index) =>
+                    message.role === "assistant" ? (
+                      <AssistantChatBubble key={index} content={message.content} />
+                    ) : (
+                      <UserChatBubble key={index} content={message.content} />
+                    )
+                  )}
+                  {taskId && <ThinkingBubble />}
+                  {taskId && callingToolInformation && (
+                    <ToolChatBubble content={callingToolInformation} />
+                  )}
+                </div>
               )}
             </div>
-          )}
-        </div>
-      </ScrollArea>
+          </ScrollArea>
 
-      <div className="mx-auto w-full max-w-4xl">
-        <ChatInput
-          onSend={onSend}
-          placeholder={
-            selectedProjectName
-              ? `Ask Kubent about ${selectedProjectName}`
-              : "Select a project to start chatting with Kubent"
-          }
-          disabled={disabled}
-        />
-      </div>
+          <div
+            className={`mx-auto w-full max-w-4xl transition-all duration-500 ease-in-out ${
+              isTransitioning ? 'animate-in slide-in-from-top-10' : ''
+            }`}
+          >
+            <ChatInput
+              onSend={onSend}
+              placeholder={
+                selectedProjectName
+                  ? `Ask Kubent about ${selectedProjectName}`
+                  : "Select a project to start chatting with Kubent"
+              }
+              disabled={disabled}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }

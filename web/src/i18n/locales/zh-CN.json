@@ -56,9 +56,8 @@
                 "recent": "最近"
             },
             "welcome": {
-                "title": "欢迎使用 Kubent",
-                "readyToExplore": "准备探索",
-                "description": "你的智能 Kubent 助手。提问、分析项目，并获得即时洞察。",
+                "title": "优化你的 Agent 系统",
+                "readyToExplore": "正在分析",
                 "footer": "在下方输入或点击建议开始对话",
                 "suggestions": {
                     "analyzeProject": {
