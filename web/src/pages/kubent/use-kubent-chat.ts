@@ -124,6 +124,14 @@ export function useKubentChat() {
     }
   };
 
+  const handleNewChat = () => {
+    setSelectedSession(undefined);
+    setMessages([]);
+    setTaskId(null);
+    setEnabled(false);
+    setCallingToolInformation(undefined);
+  };
+
   const handleSend = async (inputValue: string) => {
     if (!selectedProject) return;
     if (!inputValue.trim()) return;
@@ -135,6 +143,7 @@ export function useKubentChat() {
     };
     setMessages((prev) => [...prev, userMessage]);
     let session: Session | undefined = selectedSession;
+    let isNewSession = false;
     if (!session) {
       const createSessionResponse = await kubentChatApi.createSession();
       if (createSessionResponse.data.code === 200) {
@@ -145,6 +154,8 @@ export function useKubentChat() {
           title: newSession.title,
           lastUpdateTimestamp: newSession.last_update_timestamp,
         };
+        isNewSession = true;
+        setSelectedSession(session);
       } else {
         throw new Error(
           "Failed to create a new chat. Please retry after a moment."
@@ -177,6 +188,9 @@ export function useKubentChat() {
       const title: string = titleResponse.data.data;
       session = { ...session, title };
       setSelectedSession(session);
+      if (isNewSession) {
+        setSessions((prev) => [session!, ...prev]);
+      }
     }
   };
 
@@ -241,6 +255,7 @@ export function useKubentChat() {
     selectedSession,
     selectSession,
     handleDeleteSession,
+    handleNewChat,
     messages,
     taskId,
     callingToolInformation,

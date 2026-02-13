@@ -12,6 +12,7 @@ export default function KubentPage() {
     selectedSession,
     selectSession,
     handleDeleteSession,
+    handleNewChat,
     messages,
     taskId,
     callingToolInformation,
@@ -31,6 +32,7 @@ export default function KubentPage() {
           selectedSession={selectedSession}
           onSelectSession={selectSession}
           onDeleteSession={handleDeleteSession}
+          onNewChat={handleNewChat}
         />
         <ChatArea
           messages={messages}

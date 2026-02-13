@@ -1,5 +1,7 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import SiderbarMoreActions from "./more-actions";
@@ -10,6 +12,7 @@ interface SessionSidebarProps {
   selectedSession: Session | undefined;
   onSelectSession: (sessionId: string) => void;
   onDeleteSession: (sessionId: string) => Promise<void>;
+  onNewChat: () => void;
 }
 
 export function SessionSidebar({
@@ -17,12 +20,27 @@ export function SessionSidebar({
   selectedSession,
   onSelectSession,
   onDeleteSession,
+  onNewChat,
 }: SessionSidebarProps) {
   const { t } = useTranslation();
 
   return (
-    <div className="flex h-[69vh] w-[20%] flex-col min-w-0 gap-1 p-2">
-      <Label className="text-muted-foreground text-xs font-bold px-1">
+    <div className="flex h-[69vh] w-[20%] flex-col min-w-0 gap-2">
+      {/* New Chat Button */}
+      <Button
+        onClick={onNewChat}
+        variant="ghost"
+        className={cn(
+          "w-full gap-2 group justify-start",
+          "hover:bg-accent",
+          "transition-colors duration-200"
+        )}
+      >
+        <Plus className="h-4 w-4" />
+        <span className="font-medium">{t("main.kubent.siderbar.newChat")}</span>
+      </Button>
+
+      <Label className="text-muted-foreground text-sm px-1 mt-1">
         {t("main.kubent.siderbar.recent")}
       </Label>
       <ScrollArea className="w-full h-full rounded-md  [&>[data-radix-scroll-area-viewport]>div]:block! [&>[data-radix-scroll-area-viewport]>div]:w-full!">

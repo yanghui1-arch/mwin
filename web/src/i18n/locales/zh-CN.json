@@ -52,7 +52,28 @@
             "selectPlaceholder": "选择一个项目来优化",
             "projects": "项目",
             "siderbar": {
+                "newChat": "新对话",
                 "recent": "最近"
+            },
+            "welcome": {
+                "title": "欢迎使用 Kubent",
+                "readyToExplore": "准备探索",
+                "description": "你的智能 Kubent 助手。提问、分析项目，并获得即时洞察。",
+                "footer": "在下方输入或点击建议开始对话",
+                "suggestions": {
+                    "analyzeProject": {
+                        "title": "分析项目",
+                        "prompt": "给我一个 {{projectName}} 的结构概览"
+                    },
+                    "codeReview": {
+                        "title": "代码审查",
+                        "prompt": "审查这个项目的最近变更"
+                    },
+                    "findIssues": {
+                        "title": "查找问题",
+                        "prompt": "帮我识别潜在的错误或性能问题"
+                    }
+                }
             },
             "moreActions": {
                 "delete": "删除",

@@ -51,7 +51,28 @@
             "selectPlaceholder": "Select a project to optimize",
             "projects": "Projects",
             "siderbar": {
-                "recent": "recent"
+                "newChat": "New Chat",
+                "recent": "Recents"
+            },
+            "welcome": {
+                "title": "Welcome to Kubent",
+                "readyToExplore": "Ready to explore",
+                "description": "Your intelligent Kubent assistant. Ask questions, analyze your projects, and get instant insights.",
+                "footer": "Start typing below or click a suggestion to begin",
+                "suggestions": {
+                    "analyzeProject": {
+                        "title": "Analyze Project",
+                        "prompt": "Give me an overview of the {{projectName}} structure"
+                    },
+                    "codeReview": {
+                        "title": "Code Review",
+                        "prompt": "Review the recent changes in this project"
+                    },
+                    "findIssues": {
+                        "title": "Find Issues",
+                        "prompt": "Help me identify potential bugs or performance issues"
+                    }
+                }
             },
             "moreActions": {
                 "delete": "Delete",

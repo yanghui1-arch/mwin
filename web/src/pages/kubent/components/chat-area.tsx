@@ -7,6 +7,7 @@ import {
   UserChatBubble,
 } from "@/components/chat/bubble";
 import { ChatInput } from "@/components/chat/input";
+import { WelcomePage } from "./welcome-page";
 import type { ChatMessage } from "../types";
 
 interface ChatAreaProps {
@@ -30,6 +31,12 @@ export function ChatArea({
 }: ChatAreaProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
+
+  const hasMessages = messages.length > 0;
+
+  const handleSuggestedPrompt = (prompt: string) => {
+    onSend(prompt);
+  };
 
   const getViewport = useCallback(
     () =>
@@ -64,17 +71,26 @@ export function ChatArea({
   return (
     <div className="flex h-[69vh] w-[80%] min-w-0 flex-col gap-4 p-2">
       <ScrollArea ref={scrollRef} className="flex-1 min-h-0">
-        <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 py-2">
-          {messages.map((message) =>
-            message.role === "assistant" ? (
-              <AssistantChatBubble content={message.content} />
-            ) : (
-              <UserChatBubble content={message.content} />
-            )
-          )}
-          {taskId && <ThinkingBubble />}
-          {taskId && callingToolInformation && (
-            <ToolChatBubble content={callingToolInformation} />
+        <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 py-2 h-full">
+          {!hasMessages ? (
+            <WelcomePage
+              onSuggestedPrompt={handleSuggestedPrompt}
+              projectName={selectedProjectName}
+            />
+          ) : (
+            <div className="flex flex-col gap-4 animate-in fade-in duration-500">
+              {messages.map((message, index) =>
+                message.role === "assistant" ? (
+                  <AssistantChatBubble key={index} content={message.content} />
+                ) : (
+                  <UserChatBubble key={index} content={message.content} />
+                )
+              )}
+              {taskId && <ThinkingBubble />}
+              {taskId && callingToolInformation && (
+                <ToolChatBubble content={callingToolInformation} />
+              )}
+            </div>
           )}
         </div>
       </ScrollArea>
