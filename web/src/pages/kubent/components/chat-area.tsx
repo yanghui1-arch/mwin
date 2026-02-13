@@ -88,7 +88,7 @@ export function ChatArea({
   }, [hasMessages]);
 
   return (
-    <div className="flex h-[69vh] w-[80%] min-w-0 flex-col gap-4 p-2">
+    <div className="flex h-full w-full min-w-0 flex-col gap-4 p-2">
       {!hasMessages && !isTransitioning ? (
         // Initial centered layout
         <div className="flex-1 flex flex-col items-center justify-center gap-8 px-6 py-8">
@@ -117,7 +117,7 @@ export function ChatArea({
         // Chat layout with animation transition
         <>
           <ScrollArea ref={scrollRef} className="flex-1 min-h-0">
-            <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 py-2 h-full">
+            <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 py-2 pr-4 h-full">
               {hasMessages && (
                 <div className="flex flex-col gap-4 animate-in fade-in duration-500">
                   {messages.map((message, index) =>

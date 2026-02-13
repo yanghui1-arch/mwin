@@ -25,7 +25,7 @@ export function SessionSidebar({
   const { t } = useTranslation();
 
   return (
-    <div className="flex h-[69vh] w-[20%] flex-col min-w-0 gap-2">
+    <div className="flex h-full w-full flex-col min-w-0 gap-2">
       {/* New Chat Button */}
       <Button
         onClick={onNewChat}
@@ -43,7 +43,7 @@ export function SessionSidebar({
       <Label className="text-muted-foreground text-sm px-1 mt-1">
         {t("main.kubent.siderbar.recent")}
       </Label>
-      <ScrollArea className="w-full h-full rounded-md  [&>[data-radix-scroll-area-viewport]>div]:block! [&>[data-radix-scroll-area-viewport]>div]:w-full!">
+      <ScrollArea className="w-full flex-1 min-h-0 rounded-md  [&>[data-radix-scroll-area-viewport]>div]:block! [&>[data-radix-scroll-area-viewport]>div]:w-full!">
         <div className="flex flex-col gap-1">
           {sessions.map((session) => (
             <div

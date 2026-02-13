@@ -20,28 +20,33 @@ export default function KubentPage() {
   } = useKubentChat();
 
   return (
-    <div className="flex flex-col gap-4 px-4 lg:px-6">
+    <div className="flex flex-col gap-4 px-4 lg:px-6 h-[calc(100vh-7rem)] overflow-hidden">
       <PageHeader
         selectedProject={selectedProject}
         projects={projects}
         onSelectProject={selectProject}
       />
-      <div className="flex gap-2 w-full">
-        <SessionSidebar
-          sessions={sessions}
-          selectedSession={selectedSession}
-          onSelectSession={selectSession}
-          onDeleteSession={handleDeleteSession}
-          onNewChat={handleNewChat}
-        />
-        <ChatArea
-          messages={messages}
-          taskId={taskId}
-          callingToolInformation={callingToolInformation}
-          selectedProjectName={selectedProject?.name}
-          disabled={!selectedProject}
-          onSend={handleSend}
-        />
+      {/* Main content area: 2:8 ratio for sidebar:chat */}
+      <div className="flex gap-2 w-full flex-1 overflow-hidden">
+        <div className="flex-2 min-w-0 h-full">
+          <SessionSidebar
+            sessions={sessions}
+            selectedSession={selectedSession}
+            onSelectSession={selectSession}
+            onDeleteSession={handleDeleteSession}
+            onNewChat={handleNewChat}
+          />
+        </div>
+        <div className="flex-8 min-w-0 h-full">
+          <ChatArea
+            messages={messages}
+            taskId={taskId}
+            callingToolInformation={callingToolInformation}
+            selectedProjectName={selectedProject?.name}
+            disabled={!selectedProject}
+            onSend={handleSend}
+          />
+        </div>
       </div>
     </div>
   );
