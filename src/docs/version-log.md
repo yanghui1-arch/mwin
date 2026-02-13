@@ -1,6 +1,16 @@
 # Version log
 Every version updates, fixes and removings could be checked here.
 
+## 0.1.7
+### Feature
+- Support tracking for two or more project in one PC. - by @yanghui1-arch [e6474dc
+](https://github.com/yanghui1-arch/mwin/commit/e6474dc0c387b809be058eeb9ff9fe3cb9507758)
+
+### Fix
+- Fix unexpected current trace id in the celery server. - by @yanghui1-arch [bf51268](https://github.com/yanghui1-arch/mwin/commit/bf512684cae9f25f712f6318d6abafc62616ae9a)
+- Fix macos step execution graph visualization. - by @yanghui1-arch [d103cc8](https://github.com/yanghui1-arch/mwin/commit/d103cc87d9d9df86dd7f6a5c07c21733855009ec)
+- Fix inner tracked step's llm input and output is replaced by the outer tracked step. - by @yanghui1-arch [cf3228c](https://github.com/yanghui1-arch/mwin/commit/cf3228c84c48fedd635a493e23239893405dd6ca)
+
 ## 0.1.6
 ### Feature
 - Add step discription which allows user to pass or just write python docstring. - by @yanghui1-arch [(45b3efa)](https://github.com/yanghui1-arch/mwin/commit/45b3efaffee5d2ded1a85d26effd6b4126a05ed7)
