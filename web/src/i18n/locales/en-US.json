@@ -47,10 +47,7 @@
             }
         },
         "kubent": {
-            "title": "Kubent",
-            "titleDescription": "Chatting about {{ projectName }}",
             "select": "Select one project",
-            "selectProjectDescription": "Select a project to chat with Kubent to optimize your agent system.",
             "selectPlaceholder": "Select a project to optimize",
             "projects": "Projects",
             "siderbar": {

@@ -25,34 +25,23 @@ export function PageHeader({
   const { t } = useTranslation();
 
   return (
-    <>
-      <div>
-        <h2 className="text-xl font-semibold">{t("main.kubent.title")}</h2>
-        <p className="text-muted-foreground mt-1 text-sm">
-          {selectedProject?.name
-            ? `${t("main.kubent.titleDescription", { projectName: selectedProject.name })}`
-            : t("main.kubent.selectProjectDescription")}
-        </p>
-      </div>
-
-      <div className="flex gap-2 lg:flex-row lg:items-center">
-        <Label>{t("main.kubent.select")}</Label>
-        <Select onValueChange={onSelectProject} value={selectedProject?.name}>
-          <SelectTrigger className="w-full lg:w-[150px]">
-            <SelectValue placeholder={t("main.kubent.selectPlaceholder")} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectLabel>{t("main.kubent.projects")}</SelectLabel>
-              {projects.map((project: Project) => (
-                <SelectItem key={project.id} value={project.name}>
-                  {project.name}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      </div>
-    </>
+    <div className="flex gap-2 lg:flex-row lg:items-center">
+      <Label>{t("main.kubent.select")}</Label>
+      <Select onValueChange={onSelectProject} value={selectedProject?.name}>
+        <SelectTrigger className="w-full lg:w-[150px]">
+          <SelectValue placeholder={t("main.kubent.selectPlaceholder")} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            <SelectLabel>{t("main.kubent.projects")}</SelectLabel>
+            {projects.map((project: Project) => (
+              <SelectItem key={project.id} value={project.name}>
+                {project.name}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+    </div>
   );
 }

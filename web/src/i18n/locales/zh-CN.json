@@ -47,8 +47,6 @@
             }
         },
         "kubent": {
-            "title": "Kubent",
-            "titleDescription": "优化你的系统 - {{ projectName }}",
             "select": "选择一个项目",
             "selectProjectDescription": "选择一个项目来与 Kubent 对话以优化你的 Agent 系统。",
             "selectPlaceholder": "选择一个项目来优化",
