@@ -388,6 +388,7 @@ class BaseTracker(ABC):
             start_time=current_step.start_time,
             end_time=current_step.end_time,
             description=tracker_options.description,
+            llm_provider=tracker_options.track_llm,
         )
 
         client.log_trace(

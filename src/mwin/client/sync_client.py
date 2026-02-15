@@ -8,6 +8,7 @@ from openai.types.completion_usage import CompletionUsage
 from .config import build_client_config
 from .schemas.request.log_request import LogStepRequest, LogTraceRequest
 from .schemas.response.log_response import LogStepResponse, LogTraceResponse
+from ..models import LLMProvider
 
 class SyncClient:
     """SyncClient is to communicate with server.
@@ -53,12 +54,15 @@ class SyncClient:
         start_time: datetime,
         end_time: datetime | None,
         description: str | None,
+        llm_provider: LLMProvider | None,
     ) -> LogStepResponse:
         """Create a step and log it in server."""
         
         # Convert string "None" to actual None for parent_step_id
         if parent_step_id == "None":
             parent_step_id = None
+        
+        llm_provider = None if llm_provider is None else llm_provider.value
             
         log_step_req = LogStepRequest(
             project_name=self._project_name,
@@ -76,6 +80,7 @@ class SyncClient:
             start_time=start_time,
             end_time=end_time,
             description=description,
+            llm_provider=llm_provider,
         )
         
         try:

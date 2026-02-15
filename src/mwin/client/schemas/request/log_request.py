@@ -6,20 +6,52 @@ from ....helper import serialize_helper
 
 class LogStepRequest(BaseModel):
     project_name: str
+    """Project name"""
+
     step_name: str
+    """Step name. Usually it's the functio name"""
+    
     step_id: str
+    """Step id"""
+
     trace_id: str
+    """This step's trace"""
+
     parent_step_id: str | None
+    """This step's parent id"""
+
     step_type: str
+    """Step type"""
+
     tags: List[str]
+    """Step tags"""
+
     input: Dict[str, Any] | None
+    """Step function and llm input"""
+
     output: Any | None
+    """Step function and llm output"""
+
     error_info: str | None
+    """Step error information"""
+
     model: str | None
+    """LLM model"""
+
     usage: CompletionUsage | None
+    """Step token usage"""
+
     start_time: datetime
+    """Step start time"""
+
     end_time: datetime | None
+    """Step end time"""
+
     description: str | None
+    """Step python docs"""
+
+    llm_provider: str | None
+    """llm inference provider"""
 
     @field_serializer('input', 'output')
     def serialize_any_field(self, value: Any):
