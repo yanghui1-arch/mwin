@@ -215,5 +215,12 @@
     "chat": {
         "placeholder": "Ask Kubent about your project",
         "thinking": "Kubent is thinking"
+    },
+    "breadcrumb": {
+        "home": "Home",
+        "overview": "Overview",
+        "projects": "Projects",
+        "kubent": "Kubent",
+        "apiKey": "API Key"
     }
 }

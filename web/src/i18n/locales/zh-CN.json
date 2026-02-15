@@ -217,5 +217,12 @@
     "chat": {
         "placeholder": "向 Kubent 询问关于您的项目",
         "thinking": "Kubent 正在思考"
+    },
+    "breadcrumb": {
+        "home": "首页",
+        "overview": "概览",
+        "projects": "项目",
+        "kubent": "Kubent",
+        "apiKey": "API Key"
     }
 }

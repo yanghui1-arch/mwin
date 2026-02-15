@@ -8,9 +8,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbSeparator,
+  BreadcrumbPage,
+} from "@/components/ui/breadcrumb"
 import { Languages } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { ModeToggle } from "@/components/ui/theme-provider/mode-toggle"
+import { Link } from "react-router-dom"
+import { useBreadcrumb } from "@/hooks/use-breadcrumb"
 
 const languageOptions = [
   { value: "zh", label: "中文" },
@@ -26,6 +36,7 @@ function normalizeLanguage(value?: string) {
 export function SiteHeader() {
   const { i18n } = useTranslation()
   const currentLang = normalizeLanguage(i18n.language)
+  const breadcrumbs = useBreadcrumb()
 
   const handleLanguageChange = (value: string) => {
     i18n.changeLanguage(value)
@@ -40,7 +51,24 @@ export function SiteHeader() {
           orientation="vertical"
           className="mx-2 data-[orientation=vertical]:h-4"
         />
-        <h1 className="text-base font-medium">Temporary space in site-header.tsx</h1>
+        <Breadcrumb>
+          <BreadcrumbList>
+            {breadcrumbs.map((breadcrumb, index) => (
+              <div key={index} className="flex items-center gap-1.5 sm:gap-2.5">
+                <BreadcrumbItem>
+                  {breadcrumb.isCurrentPage ? (
+                    <BreadcrumbPage>{breadcrumb.label}</BreadcrumbPage>
+                  ) : (
+                    <BreadcrumbLink asChild>
+                      <Link to={breadcrumb.href!}>{breadcrumb.label}</Link>
+                    </BreadcrumbLink>
+                  )}
+                </BreadcrumbItem>
+                {index < breadcrumbs.length - 1 && <BreadcrumbSeparator />}
+              </div>
+            ))}
+          </BreadcrumbList>
+        </Breadcrumb>
         <div className="ml-auto flex items-center gap-2">
           <ModeToggle />
           <Select value={currentLang} onValueChange={handleLanguageChange}>
