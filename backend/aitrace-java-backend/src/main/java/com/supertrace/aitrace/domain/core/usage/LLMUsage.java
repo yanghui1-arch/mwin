@@ -1,72 +1,99 @@
 package com.supertrace.aitrace.domain.core.usage;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
 
 /**
- * Common interface for all LLM provider usage tracking.
- * Defines the contract that all provider-specific usage implementations must fulfill.
+ * Base class for all LLM provider usage tracking.
+ * Contains common fields shared by OpenAI, OpenRouter, Gemini, etc.
  * <p>
- * Implementations: OpenAIUsage, OpenRouterUsage, GeminiUsage, etc.
+ * For OpenAI-compatible providers (OpenAI, Azure, DeepSeek, vLLM, Ollama),
+ * this class can be used directly.
+ * For providers with extra fields, use subclasses: OpenRouterUsage, GeminiUsage, etc.
+ * </p>
+ * <p>
+ * {@code @JsonTypeInfo} with {@code @type} property is used for Hibernate JSONB
+ * serialization/deserialization so that subclass type information is preserved in the database.
  * </p>
  */
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
-    include = JsonTypeInfo.As.EXTERNAL_PROPERTY,
-    property = "llm_provider",
-    visible = true
+    include = JsonTypeInfo.As.PROPERTY,
+    property = "@type",
+    defaultImpl = LLMUsage.class
 )
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = OpenAIUsage.class, names = "openai"),
+    @JsonSubTypes.Type(value = LLMUsage.class, name = "base"),
     @JsonSubTypes.Type(value = OpenRouterUsage.class, name = "open_router"),
+    @JsonSubTypes.Type(value = GeminiUsage.class, name = "google")
 })
-public interface LLMUsage {
-    /**
-     * Get the number of tokens in the prompt/input.
-     *
-     * @return prompt tokens count, or null if not available
-     */
-    Integer getPromptTokens();
+@JsonIgnoreProperties(ignoreUnknown = true)
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class LLMUsage {
+    @JsonProperty("prompt_tokens")
+    private Integer promptTokens;
 
-    /**
-     * Get the number of tokens in the completion/output.
-     *
-     * @return completion tokens count, or null if not available
-     */
-    Integer getCompletionTokens();
+    @JsonProperty("completion_tokens")
+    private Integer completionTokens;
 
-    /**
-     * Get the total number of tokens used (prompt + completion).
-     *
-     * @return total tokens count, or null if not available
-     */
-    Integer getTotalTokens();
+    @JsonProperty("total_tokens")
+    private Integer totalTokens;
 
-    /**
-     * Get the number of audio tokens (input or output).
-     * Returns null if audio is not applicable or not available.
-     *
-     * @return audio tokens count, or null if not available
-     */
-    Integer getAudioTokens();
+    @JsonProperty("prompt_tokens_details")
+    private PromptTokensDetails promptTokensDetails;
 
-    /**
-     * Get the cost of this API call in the provider's currency (usually USD or credits).
-     * Returns null if cost information is not available.
-     *
-     * @return cost amount, or null if not available
-     */
-    Double getCost();
+    @JsonProperty("completion_tokens_details")
+    private CompletionTokensDetails completionTokensDetails;
 
-    /**
-     * Check if the usage data is valid (e.g., total = prompt + completion).
-     *
-     * @return true if valid, false otherwise
-     */
-    default boolean isValid() {
-        if (getTotalTokens() == null || getPromptTokens() == null || getCompletionTokens() == null) {
-            return true; // Allow null values
+    public Integer getAudioTokens() {
+        int audio = 0;
+        if (promptTokensDetails != null && promptTokensDetails.getAudioTokens() != null) {
+            audio += promptTokensDetails.getAudioTokens();
         }
-        return getTotalTokens().equals(getPromptTokens() + getCompletionTokens());
+        if (completionTokensDetails != null && completionTokensDetails.getAudioTokens() != null) {
+            audio += completionTokensDetails.getAudioTokens();
+        }
+        return audio > 0 ? audio : null;
+    }
+
+    public BigDecimal getCost() {
+        return null;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class PromptTokensDetails {
+        @JsonProperty("cached_tokens")
+        private Integer cachedTokens;
+
+        @JsonProperty("audio_tokens")
+        private Integer audioTokens;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class CompletionTokensDetails {
+        @JsonProperty("reasoning_tokens")
+        private Integer reasoningTokens;
+
+        @JsonProperty("audio_tokens")
+        private Integer audioTokens;
+
+        @JsonProperty("accepted_prediction_tokens")
+        private Integer acceptedPredictionTokens;
+
+        @JsonProperty("rejected_prediction_tokens")
+        private Integer rejectedPredictionTokens;
     }
 }

@@ -2,6 +2,7 @@ package com.supertrace.aitrace.service.application.impl;
 
 import com.supertrace.aitrace.domain.Project;
 import com.supertrace.aitrace.domain.core.step.metadata.StepMetadata;
+import com.supertrace.aitrace.domain.core.usage.LLMUsage;
 import com.supertrace.aitrace.dto.step.LogStepRequest;
 import com.supertrace.aitrace.dto.trace.LogTraceRequest;
 import com.supertrace.aitrace.repository.ProjectRepository;
@@ -14,8 +15,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -42,7 +42,9 @@ public class LogServiceImpl implements LogService {
         StepMetadata stepMetadata = StepMetadata.builder()
             .description(logStepRequest.getDescription())
             .build();
-        this.stepMetaService.addStepMeta(stepId, stepMetadata);
+        String llmProvider = logStepRequest.getLlmProvider();
+        LLMUsage llmUsage = logStepRequest.getUsage();
+        this.stepMetaService.addStepMeta(stepId, stepMetadata, llmProvider, llmUsage);
         return stepId;
     }
 

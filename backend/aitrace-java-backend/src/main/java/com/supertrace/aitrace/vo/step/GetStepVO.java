@@ -2,6 +2,7 @@ package com.supertrace.aitrace.vo.step;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.supertrace.aitrace.domain.core.step.StepOutput;
+import com.supertrace.aitrace.domain.core.usage.LLMUsage;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
@@ -36,7 +37,7 @@ public class GetStepVO {
 
     private String model;
 
-    private Map<String, Object> usage;
+    private LLMUsage usage;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss.SSSSSS")
     private LocalDateTime startTime;
