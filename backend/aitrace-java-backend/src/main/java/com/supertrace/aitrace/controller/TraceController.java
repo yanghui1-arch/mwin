@@ -104,7 +104,6 @@ public class TraceController {
     @PostMapping("/trace/get_tracks")
     public ResponseEntity<APIResponse<List<TrackVO>>> getTracks(@RequestBody GetTracksRequest request) {
         try {
-            System.out.println(request.getTraceId());
             List<Step> steps = this.stepService.findStepsByTraceId(UUID.fromString(request.getTraceId()));
             List<TrackVO> tracks = steps.stream()
                 .map(s -> TrackVO.builder()

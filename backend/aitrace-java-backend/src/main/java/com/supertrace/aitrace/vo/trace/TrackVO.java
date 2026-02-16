@@ -3,6 +3,7 @@ package com.supertrace.aitrace.vo.trace;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.supertrace.aitrace.domain.core.step.StepOutput;
+import com.supertrace.aitrace.domain.core.usage.LLMUsage;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
@@ -38,7 +39,7 @@ public class TrackVO {
 
     private String model;
 
-    private Map<String, Object> usage;
+    private LLMUsage usage;
 
     private LocalDateTime startTime;
 

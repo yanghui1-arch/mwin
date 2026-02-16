@@ -3,6 +3,7 @@ package com.supertrace.aitrace.domain.core.step;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.supertrace.aitrace.domain.core.usage.LLMUsage;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -62,7 +63,7 @@ public class Step {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
-    private Map<String, Object> usage;
+    private LLMUsage usage;
 
     @NotBlank
     @Column(name = "project_name")
@@ -101,7 +102,7 @@ public class Step {
         Map<String, Object> newStepInput,
         @NotNull StepOutput newStepOutput,
         String newModel,
-        Map<String, Object> newUsage
+        LLMUsage newUsage
     ) {
         // enrich tags first
         List<String> oldTags = this.getTags();
@@ -134,7 +135,7 @@ public class Step {
 
         // enrich llm model and usage
         String updatedModel = Optional.ofNullable(newModel).orElse(this.getModel());
-        Map<String, Object> updatedUsage = Optional.ofNullable(newUsage).orElse(this.getUsage());
+        LLMUsage updatedUsage = Optional.ofNullable(newUsage).orElse(this.getUsage());
 
         this.setTags(updatedTags);
         this.setInput(updatedInput);
