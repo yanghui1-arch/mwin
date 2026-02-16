@@ -11,6 +11,7 @@ import GitHubAuthPage from "./pages/auth/github";
 import { APIKeyPage } from "./pages/apikey";
 import { UserProvider } from "./components/user-provider";
 import KubentPage from "./pages/kubent";
+import { NotFoundPage } from "./pages/error";
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
             </Route>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/auth/github/callback" element={<GitHubAuthPage />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </UserProvider>
       </ThemeProvider>
