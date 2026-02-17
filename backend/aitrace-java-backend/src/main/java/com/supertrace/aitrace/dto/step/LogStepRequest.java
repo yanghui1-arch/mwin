@@ -6,7 +6,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.supertrace.aitrace.domain.core.step.StepOutput;
-import com.supertrace.aitrace.domain.core.usage.GeminiUsage;
 import com.supertrace.aitrace.domain.core.usage.LLMUsage;
 import com.supertrace.aitrace.domain.core.usage.OpenRouterUsage;
 import jakarta.validation.constraints.NotNull;
@@ -60,9 +59,8 @@ public class LogStepRequest {
         visible = true
     )
     @JsonSubTypes({
-        @JsonSubTypes.Type(value = LLMUsage.class, names = {"openai", "azure_openai", "azure", "deep_seek", "vllm", "ollama", "anthropic"}),
+        @JsonSubTypes.Type(value = LLMUsage.class, names = "openai"),
         @JsonSubTypes.Type(value = OpenRouterUsage.class, name = "open_router"),
-        @JsonSubTypes.Type(value = GeminiUsage.class, name = "google")
     })
     private LLMUsage usage;
 

@@ -19,20 +19,21 @@ import java.math.BigDecimal;
  * For providers with extra fields, use subclasses: OpenRouterUsage, GeminiUsage, etc.
  * </p>
  * <p>
- * {@code @JsonTypeInfo} with {@code @type} property is used for Hibernate JSONB
- * serialization/deserialization so that subclass type information is preserved in the database.
+ * The class-level {@code @JsonTypeInfo} embeds {@code "llm_provider"} inside the JSON
+ * so that the correct subclass is restored when deserializing from the database (JSONB).
+ * Field-level overrides in DTOs (e.g. {@code LogStepRequest}) take precedence over
+ * this annotation for HTTP request deserialization.
  * </p>
  */
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
     include = JsonTypeInfo.As.PROPERTY,
-    property = "@type",
+    property = "llm_provider",
     defaultImpl = LLMUsage.class
 )
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = LLMUsage.class, name = "base"),
+    @JsonSubTypes.Type(value = LLMUsage.class, name = "openai"),
     @JsonSubTypes.Type(value = OpenRouterUsage.class, name = "open_router"),
-    @JsonSubTypes.Type(value = GeminiUsage.class, name = "google")
 })
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Data
