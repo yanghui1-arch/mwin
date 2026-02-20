@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Callable, Literal, List
 from uuid import UUID
 import os
@@ -63,12 +64,15 @@ class StepOverview(BaseModel):
     llm_model: str | None = None
     """LLM model name in the step calling."""
 
+    cost: Decimal | None = None
+
 def _build_overview(overview: StepOverview):
     name = overview.name
     status = overview.status
     error_info = overview.error_info if overview.error_info else ""
     description = overview.description if overview.description else ""
     model = overview.llm_model
+    cost = overview.cost if overview.cost else Decimal("0")
 
     if status == "failed":
         return dedent(f"""
@@ -83,14 +87,20 @@ def _build_overview(overview: StepOverview):
     else:
         result = dedent(
         f"""# {name}
+## Description
 {description}
-## Input and output report
+## Input & output
 {overview.reports}\n
         """
         )
 
         if model:
-            result = result + f"## LLM Model used\n{model}"
+            result = result + dedent(f"""
+            ## LLM Model used
+            {model}
+            ### Model cost
+            {cost}$
+        """)
         return dedent(result)
 
 def _step_overview(openai_client: OpenAI, step: Step, step_meta: StepMeta | None) -> str:
@@ -104,6 +114,7 @@ def _step_overview(openai_client: OpenAI, step: Step, step_meta: StepMeta | None
     )
     
     if step_meta:
+        overview.cost = step_meta.cost
         if step_meta.meta["description"]:
             overview.description = step_meta.meta["description"]
     
@@ -142,6 +153,7 @@ def query_step(step_ids: List[str]) -> str:
     openai_cli: OpenAI = OpenAI(**_OPENAI_CLIENT_KWARGS)
     error_step_id: str | None = None
     try:
+        # In the future we have to implement async.
         for step_id in step_ids:
             with SessionLocal() as db:
                 step_uuid = UUID(step_id)
@@ -173,7 +185,8 @@ class QueryStep(Tool):
     json_schema:ChatCompletionFunctionToolParam = pydantic_function_tool(
         QueryStepParams,
         name="query_step",
-        description="""Query step information such as what the step does, its inputs and outputs.
+        description="""Query step information such as what the step does, a breif of its inputs and outputs, llm to be used in the step and its cost.
+        It's useful to get a brief of the step for the further advice.
         When you want to check the step information in overview you can call this tool.
         """
     )
