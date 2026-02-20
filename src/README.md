@@ -37,7 +37,7 @@ openai_apikey = 'YOUR API KEY'
 
 @track(
     tags=['test', 'demo'],
-    track_llm=LLMProvider.OPENAI,    
+    llm_provider=LLMProvider.OPENAI,    
 )
 def llm_classification(film_comment: str):
     prompt = "Please classify the film comment into happy, sad or others. Just tell me result. Don't output anything."
@@ -51,7 +51,7 @@ def llm_classification(film_comment: str):
 
 @track(
     tags=['test', 'demo', 'second_demo'],
-    track_llm=LLMProvider.OPENAI,
+    llm_provider=LLMProvider.OPENAI,
 )
 def llm_counts(film_comment: str):
     prompt = "Count the film comment words. just output word number. Don't output anything others."

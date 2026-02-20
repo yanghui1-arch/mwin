@@ -1,6 +1,15 @@
 # Version log
 Every version updates, fixes and removings could be checked here.
 
+## 0.1.8
+### BREAKING CHANGE
+- Use LLMProvider to specialize inference provider instead track_llm. - @yanghui1-arch [e3ab1b0](https://github.com/yanghui1-arch/mwin/commit/e3ab1b01de5e655954a8f904b9473fc794070d11)
+
+### Feature
+- Add llm provider into request to support accurately computing the cost of llm inference. - by @yanghui1-arch [aa3f07d](https://github.com/yanghui1-arch/mwin/commit/aa3f07d74bc8c81dffe7f68777fe5b19ad24299b)
+
+- Support OpenRouter for more accurate cost calculation. - @yanghui1-arch [614aa11](https://github.com/yanghui1-arch/mwin/commit/614aa11230ff865cdbb8cbe1825831fd9a4c482e) [e4385ac](https://github.com/yanghui1-arch/mwin/commit/e4385acf12b452298e702211da8fe391b48f3e35)
+
 ## 0.1.7
 ### Feature
 - Support tracking for two or more project in one PC. - by @yanghui1-arch [e6474dc
