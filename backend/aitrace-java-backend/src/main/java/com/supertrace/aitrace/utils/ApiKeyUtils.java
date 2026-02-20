@@ -3,7 +3,7 @@ package com.supertrace.aitrace.utils;
 public class ApiKeyUtils {
 
     public static String concealApiKey(String apiKey) {
-        if (apiKey == null || apiKey.length() <= 6) {
+        if (apiKey == null || apiKey.length() <= 32) {
             return apiKey;
         }
 
