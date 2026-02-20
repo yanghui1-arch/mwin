@@ -277,8 +277,13 @@ class BaseTracker(ABC):
         # start patch
         if tracker_options.track_llm is not None:
             patch_token = set_llm_patch_config(step=new_step, tracker_options=tracker_options, func_name=func.__name__)
-        
+
         if tracker_options.track_llm == LLMProvider.OPENAI:
+            from ..patches.openai import completions, async_completions
+            completions.patch_openai_chat_completions()
+            async_completions.patch_async_openai_chat_completions()
+
+        if tracker_options.track_llm == LLMProvider.OPEN_ROUTER:
             from ..patches.openai import completions, async_completions
             completions.patch_openai_chat_completions()
             async_completions.patch_async_openai_chat_completions()

@@ -22,6 +22,11 @@ from ...logger import logger
 raw_async_openai_create = resources.chat.completions.AsyncCompletions.create
 
 def patch_async_openai_chat_completions():
+    """Patch async openai.chat.completions.create()
+
+    **Note**: This function doesn't do anything check whether the tracker option is openai or not. Because almost
+    provider offers openai sdk. It's not nessary currently to check it.
+    """
     async def patched_create(self, *args, **kwargs):
         frame = inspect.currentframe()
         caller = frame.f_back if frame else None
@@ -52,27 +57,26 @@ def patch_async_openai_chat_completions():
         if isinstance(resp, AsyncStream):
             return ProxyAsyncStream(real_async_stream=resp, tracker_options=tracker_options, step=step, inputs=async_openai_inputs)
 
-        # Maybe here can be patched also.
-        if tracker_options.track_llm == LLMProvider.OPENAI:
-            # log
-            client: SyncClient = get_cached_sync_client(project_name=tracker_options.project_name)
-            client.log_step(
-                step_name=step.name,
-                step_id=step.id,
-                trace_id=step.trace_id,
-                parent_step_id=step.parent_step_id,
-                step_type=step.type,
-                tags=step.tags,
-                input={"llm_inputs": async_openai_inputs},
-                output={"llm_outputs": patch_std_output(resp)},
-                error_info=step.error_info,
-                model=step.model,
-                usage=resp.usage,
-                start_time=step.start_time,
-                end_time=datetime.now(),
-                description=tracker_options.description,
-                llm_provider=tracker_options.track_llm,
-            )
+        # log
+        client: SyncClient = get_cached_sync_client(project_name=tracker_options.project_name)
+        client.log_step(
+            step_name=step.name,
+            step_id=step.id,
+            trace_id=step.trace_id,
+            parent_step_id=step.parent_step_id,
+            step_type=step.type,
+            tags=step.tags,
+            input={"llm_inputs": async_openai_inputs},
+            output={"llm_outputs": patch_std_output(resp)},
+            error_info=step.error_info,
+            model=step.model,
+            usage=resp.usage,
+            start_time=step.start_time,
+            end_time=datetime.now(),
+            description=tracker_options.description,
+            llm_provider=tracker_options.track_llm,
+        )
+
         return resp
     
     # Only patch once

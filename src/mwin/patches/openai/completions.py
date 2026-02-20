@@ -33,6 +33,9 @@ def patch_openai_chat_completions():
     """Patch openai chat completions in the step.
     The function is convenient to track llm output in the step which is seperate with the `ATTracker` class.
     Before calling tracked function AITrace has to decide which step's openai call should be patched to track.
+    
+    **Note**: This function doesn't do anything check whether the tracker option is openai or not. Because almost
+    provider offers openai sdk. It's not nessary currently to check it.
     """
     
     def patched_create(self, *args, **kwargs):
@@ -72,26 +75,25 @@ def patch_openai_chat_completions():
         if model is not None:
             tags += [model]
 
-        if tracker_options.track_llm == LLMProvider.OPENAI:
-            # log
-            client: SyncClient = get_cached_sync_client(project_name=tracker_options.project_name)
-            client.log_step(
-                step_name=step.name,
-                step_id=step.id,
-                trace_id=step.trace_id,
-                parent_step_id=step.parent_step_id,
-                step_type=step.type,
-                tags=tags,
-                input={"llm_inputs": openai_inputs},
-                output={"llm_outputs": patch_std_output(resp)},
-                error_info=step.error_info,
-                model=model,
-                usage=resp.usage,
-                start_time=step.start_time,
-                end_time=datetime.now(),
-                description=tracker_options.description,
-                llm_provider=tracker_options.track_llm
-            )
+        client: SyncClient = get_cached_sync_client(project_name=tracker_options.project_name)
+        client.log_step(
+            step_name=step.name,
+            step_id=step.id,
+            trace_id=step.trace_id,
+            parent_step_id=step.parent_step_id,
+            step_type=step.type,
+            tags=tags,
+            input={"llm_inputs": openai_inputs},
+            output={"llm_outputs": patch_std_output(resp)},
+            error_info=step.error_info,
+            model=model,
+            usage=resp.usage,
+            start_time=step.start_time,
+            end_time=datetime.now(),
+            description=tracker_options.description,
+            llm_provider=tracker_options.track_llm
+        )
+
         return resp
     
     # Only patch once.
