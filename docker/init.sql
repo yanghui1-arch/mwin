@@ -130,7 +130,8 @@ create table step_meta
     id       uuid  not null
         constraint step_meta_pk
             primary key,
-    metadata jsonb not null
+    metadata jsonb not null,
+    cost     numeric(10, 6) default 0 not null
 );
 
 comment on table step_meta is 'It contains step metadata which is used for Kubent or other agents.';
@@ -138,6 +139,8 @@ comment on table step_meta is 'It contains step metadata which is used for Kuben
 comment on column step_meta.id is 'The id should be as the same as the step id.';
 
 comment on column step_meta.metadata is 'Step metadata in details';
+
+comment on column step_meta.cost is 'Step token usage cost';
 
 alter table step_meta
     owner to postgres;
