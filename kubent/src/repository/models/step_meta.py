@@ -1,6 +1,7 @@
+from decimal import Decimal
 from typing import TypedDict
 from uuid import UUID
-from sqlalchemy import text
+from sqlalchemy import text, Numeric
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID, JSONB
 from .base import Base
@@ -13,3 +14,4 @@ class StepMeta(Base):
     step_id: Mapped[UUID] = mapped_column("id", PG_UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"))
     # metadata is the key attribute in Base.
     meta: Mapped[MetaData] = mapped_column("metadata", JSONB, nullable=False)
+    cost: Mapped[Decimal] = mapped_column("cost", Numeric(10, 6), nullable=False)
