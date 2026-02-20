@@ -29,5 +29,6 @@ public class StepMeta {
     @Column(columnDefinition = "jsonb")
     private StepMetadata metadata;
 
+    @Column(precision = 10, scale = 6)
     private BigDecimal cost;
 }
