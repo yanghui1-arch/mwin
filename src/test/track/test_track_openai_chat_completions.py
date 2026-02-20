@@ -69,7 +69,7 @@ def test_track_openai_chat_completions_logs_llm_step(fake_client, monkeypatch):
     try:
         @track(
             tags=["unit"],
-            track_llm=LLMProvider.OPENAI,
+            llm_provider=LLMProvider.OPENAI,
             llm_ignore_fields=["temperature"],
         )
         def call_llm():
@@ -117,7 +117,7 @@ def test_track_openai_chat_completions_stream_logs_llm_step(fake_client, monkeyp
     original_create = resources.chat.completions.Completions.create
     original_async_create = resources.chat.completions.AsyncCompletions.create
     try:
-        @track(tags=["unit"], track_llm=LLMProvider.OPENAI)
+        @track(tags=["unit"], llm_provider=LLMProvider.OPENAI)
         def call_llm_stream():
             return resources.chat.completions.Completions.create(
                 object(),
@@ -153,7 +153,7 @@ def test_openai_chat_completions_not_logged_outside_tracked_call(fake_client, mo
     original_create = resources.chat.completions.Completions.create
     original_async_create = resources.chat.completions.AsyncCompletions.create
     try:
-        @track(tags=["unit"], track_llm=LLMProvider.OPENAI)
+        @track(tags=["unit"], llm_provider=LLMProvider.OPENAI)
         def install_patch():
             return "ok"
 
