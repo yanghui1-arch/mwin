@@ -36,7 +36,7 @@ class BaseTracker(ABC):
         tags: List[str] | None = None,
         step_type: StepType = StepType.CUSTOMIZED,
         model: str | None = None,
-        track_llm: LLMProvider | None = None,
+        llm_provider: LLMProvider | None = None,
         llm_ignore_fields: List[str] | None = None,
         description: str | None = None,
     ) -> Callable:
@@ -50,8 +50,8 @@ class BaseTracker(ABC):
             tags(List[str] | None): tags of tracking steps. Default to `None`.
             step_type(StepType): step type. Default to `StepType.CUSTOMIZED`.
             model(str | None): using model name. Default to `None`. If you are using llama you can set the field to `llama`.
-            track_llm(LLMProvider | None): track a certain llm. Default to `None`. 
-                                            If `track_llm` is not `None`, AITrace will track provider's api.
+            llm_provider(LLMProvider | None): track a certain llm. Default to `None`. 
+                                            If `llm_provider` is not `None`, AITrace will track provider's api.
             llm_ignore_fields(List[str] | None): a list of llm ignore fields name. Default to `None`.
             description(str | None): step description. Default to `None`.
             
@@ -63,7 +63,7 @@ class BaseTracker(ABC):
             tags=tags,
             step_type=step_type,
             model=model,
-            track_llm=track_llm,
+            llm_provider=llm_provider,
             llm_ignore_fields=llm_ignore_fields,
             description=description,
             project_name=project_name,
@@ -275,15 +275,15 @@ class BaseTracker(ABC):
         context.add_storage_step(new_step=new_step)
 
         # start patch
-        if tracker_options.track_llm is not None:
+        if tracker_options.llm_provider is not None:
             patch_token = set_llm_patch_config(step=new_step, tracker_options=tracker_options, func_name=func.__name__)
 
-        if tracker_options.track_llm == LLMProvider.OPENAI:
+        if tracker_options.llm_provider == LLMProvider.OPENAI:
             from ..patches.openai import completions, async_completions
             completions.patch_openai_chat_completions()
             async_completions.patch_async_openai_chat_completions()
 
-        if tracker_options.track_llm == LLMProvider.OPEN_ROUTER:
+        if tracker_options.llm_provider == LLMProvider.OPEN_ROUTER:
             from ..patches.openai import completions, async_completions
             completions.patch_openai_chat_completions()
             async_completions.patch_async_openai_chat_completions()
@@ -393,7 +393,7 @@ class BaseTracker(ABC):
             start_time=current_step.start_time,
             end_time=current_step.end_time,
             description=tracker_options.description,
-            llm_provider=tracker_options.track_llm,
+            llm_provider=tracker_options.llm_provider,
         )
 
         client.log_trace(

@@ -74,7 +74,7 @@ def patch_async_openai_chat_completions():
             start_time=step.start_time,
             end_time=datetime.now(),
             description=tracker_options.description,
-            llm_provider=tracker_options.track_llm,
+            llm_provider=tracker_options.llm_provider,
         )
 
         return resp
@@ -132,7 +132,7 @@ class ProxyAsyncStream(AsyncStream):
                 start_time=self.step.start_time,
                 end_time=datetime.now(),
                 description=self.tracker_options.description,
-                llm_provider=self.tracker_options.track_llm
+                llm_provider=self.tracker_options.llm_provider
             )
         return chat_completion_chunk
 
@@ -169,7 +169,7 @@ class ProxyAsyncStream(AsyncStream):
                     start_time=self.step.start_time,
                     end_time=datetime.now(),
                     description=self.tracker_options.description,
-                    llm_provider=self.tracker_options.track_llm,
+                    llm_provider=self.tracker_options.llm_provider,
                 )
             yield chunk
 
