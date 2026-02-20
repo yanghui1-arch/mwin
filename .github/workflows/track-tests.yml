@@ -2,7 +2,11 @@ name: track-tests
 
 on:
   push:
+    paths:
+      - 'src/mwin/**'
   pull_request:
+    paths:
+      - 'src/mwin/**'
 
 jobs:
   test:
