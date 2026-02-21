@@ -8,6 +8,7 @@ import com.supertrace.aitrace.response.APIResponse;
 import com.supertrace.aitrace.service.application.ApiKeyService;
 import com.supertrace.aitrace.service.application.LogService;
 import com.supertrace.aitrace.service.application.QueryService;
+import com.supertrace.aitrace.service.domain.StepMetaService;
 import com.supertrace.aitrace.service.domain.StepService;
 import com.supertrace.aitrace.utils.ApiKeyUtils;
 import com.supertrace.aitrace.vo.PageVO;
@@ -18,7 +19,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -29,6 +32,7 @@ public class StepController {
     private final QueryService queryService;
     private final ApiKeyService apiKeyService;
     private final StepService stepService;
+    private final StepMetaService stepMetaService;
 
     @PostMapping("/log/step")
     public ResponseEntity<APIResponse<UUID>> createAndLogStep(
@@ -62,6 +66,8 @@ public class StepController {
         try {
             UUID userId = (UUID) request.getAttribute("userId");
             Page<Step> steps = this.queryService.getSteps(userId, projectName, page, pageSize);
+            List<UUID> stepIds = steps.stream().map(Step::getId).toList();
+            Map<UUID, BigDecimal> costMap = this.stepMetaService.findCostsByStepIds(stepIds);
             List<GetStepVO> getStepVOs = steps.stream()
                 .map(step -> GetStepVO.builder()
                     .id(step.getId())
@@ -76,6 +82,7 @@ public class StepController {
                     .usage(step.getUsage())
                     .startTime(step.getStartTime())
                     .endTime(step.getEndTime())
+                    .cost(costMap.get(step.getId()))
                     .build()
                 )
                 .toList();

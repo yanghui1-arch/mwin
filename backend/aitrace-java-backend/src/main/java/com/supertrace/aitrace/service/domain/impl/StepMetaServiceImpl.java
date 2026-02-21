@@ -12,8 +12,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -76,5 +79,12 @@ public class StepMetaServiceImpl implements StepMetaService {
                 .cost(newCost)
                 .build())
         );
+    }
+
+    @Override
+    public Map<UUID, BigDecimal> findCostsByStepIds(Collection<UUID> stepIds) {
+        return stepMetaRepository.findAllById(stepIds)
+            .stream()
+            .collect(Collectors.toMap(StepMeta::getId, StepMeta::getCost));
     }
 }
