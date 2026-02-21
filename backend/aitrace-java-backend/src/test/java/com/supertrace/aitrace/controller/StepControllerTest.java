@@ -9,6 +9,7 @@ import com.supertrace.aitrace.dto.step.LogStepRequest;
 import com.supertrace.aitrace.service.application.ApiKeyService;
 import com.supertrace.aitrace.service.application.LogService;
 import com.supertrace.aitrace.service.application.QueryService;
+import com.supertrace.aitrace.service.domain.StepMetaService;
 import com.supertrace.aitrace.service.domain.StepService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,7 @@ class StepControllerTest {
     private QueryService queryService;
     private ApiKeyService apiKeyService;
     private StepService stepService;
+    private StepMetaService stepMetaService;
 
     private ObjectMapper mapper;
 
@@ -47,8 +49,9 @@ class StepControllerTest {
         queryService = mock(QueryService.class);
         apiKeyService = mock(ApiKeyService.class);
         stepService = mock(StepService.class);
+        stepMetaService = mock(StepMetaService.class);
 
-        StepController controller = new StepController(logService, queryService, apiKeyService, stepService);
+        StepController controller = new StepController(logService, queryService, apiKeyService, stepService, stepMetaService);
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
         mapper = new ObjectMapper();
