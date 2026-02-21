@@ -13,6 +13,21 @@ jobs:
     name: Java Unit Tests
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: aitrace
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: 123456
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -40,6 +55,10 @@ jobs:
       - name: Run unit tests
         run: ./gradlew test
         working-directory: backend/aitrace-java-backend
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/aitrace
+          SPRING_DATASOURCE_USERNAME: postgres
+          SPRING_DATASOURCE_PASSWORD: 123456
 
       - name: Upload test report
         if: always()

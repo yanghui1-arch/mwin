@@ -17,7 +17,7 @@ Then run docker container
 ```docker
 docker run -d --name aitrace-postgres -p 16432:5432 -v aitrace_pgdata:/var/lib/postgresql/data aitrace-postgres
 docker run -d --name aitrace-web -p 5173:80 -e BACKEND_HOST=host.docker.internal aitrace-web
-docker run -d --name aitrace-backend -e DB_URL=jdbc:postgresql://host.docker.internal:16432/aitrace -p 8080:8080 aitrace-backend
+docker run -d --name aitrace-backend -e SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:16432/aitrace -p 8080:8080 aitrace-backend
 ```
 ## Python-sdk
 Mwin python sdk need an api key. So you have to be sure that you deploys successfully. Then enter `http://localhost:5173/` to get your api key. <br/>
