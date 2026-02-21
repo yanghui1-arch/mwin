@@ -1,0 +1,88 @@
+{
+  "_comment_billing_model": [
+    "All prices are USD per 1,000,000 tokens.",
+    "Tiers are ordered smallest→largest context window.",
+    "The last tier has no max_context_tokens (catch-all).",
+    "thinking_output_price_per_million: omit when equal to output_price_per_million.",
+    "  Thinking-mode billing applies when reasoning_tokens > 0 in the API response.",
+    "  The ENTIRE output (reasoning + answer) is billed at one rate — not split.",
+    "Sources:",
+    "  OpenRouter  – https://openrouter.ai/<model-id>",
+    "  DashScope   – https://www.alibabacloud.com/help/en/model-studio/model-pricing"
+  ],
+  "open_router": {
+    "anthropic/claude-haiku-4.5": {
+      "tiers": [
+        {
+          "input_price_per_million": 1.00,
+          "cached_input_price_per_million": 0.10,
+          "output_price_per_million": 5.00
+        }
+      ]
+    },
+    "x-ai/grok-4.1-fast": {
+      "tiers": [
+        {
+          "max_context_tokens": 128000,
+          "input_price_per_million": 0.20,
+          "cached_input_price_per_million": 0.05,
+          "output_price_per_million": 0.50
+        },
+        {
+          "input_price_per_million": 0.40,
+          "output_price_per_million": 1.00
+        }
+      ]
+    },
+    "qwen/qwen3-14b": {
+      "tiers": [
+        {
+          "input_price_per_million": 0.06,
+          "output_price_per_million": 0.24
+        }
+      ]
+    },
+    "openai/gpt-oss-20b": {
+      "tiers": [
+        {
+          "input_price_per_million": 0.03,
+          "output_price_per_million": 0.14
+        }
+      ]
+    }
+  },
+  "dash_scope": {
+    "qwen3.5-plus": {
+      "tiers": [
+        {
+          "max_context_tokens": 262144,
+          "input_price_per_million": 0.40,
+          "output_price_per_million": 2.40
+        },
+        {
+          "input_price_per_million": 1.20,
+          "output_price_per_million": 7.20
+        }
+      ]
+    },
+    "qwen3-max": {
+      "tiers": [
+        {
+          "max_context_tokens": 32768,
+          "input_price_per_million": 1.20,
+          "output_price_per_million": 6.00
+        },
+        {
+          "max_context_tokens": 131072,
+          "input_price_per_million": 2.40,
+          "output_price_per_million": 12.00
+        },
+        {
+          "max_context_tokens": 258048,
+          "input_price_per_million": 3.00,
+          "output_price_per_million": 15.00
+        }
+      ]
+    }
+  }
+}
