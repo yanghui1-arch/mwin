@@ -34,7 +34,10 @@ export function TokensPanel({
   title,
   ...props
 }: TokensPanelProps) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const isZh = i18n.language.startsWith("zh");
+  const displayCost = isZh ? (cost ?? 0) * 7 : (cost ?? 0);
+  const displayCurrency = isZh ? "CNY" : currency;
   const total = React.useMemo(() => toInt(usage?.total_tokens), [usage]);
   const prompt = React.useMemo(() => toInt(usage?.prompt_tokens), [usage]);
   const completion = React.useMemo(
@@ -49,11 +52,12 @@ export function TokensPanel({
     : 0;
 
   const hasUsage = Boolean(safeTotal || prompt || completion);
-  const formattedCost = new Intl.NumberFormat("en-US", {
+  const formattedCost = new Intl.NumberFormat(isZh ? "zh-CN" : "en-US", {
     style: "currency",
-    currency,
-    maximumFractionDigits: 6,
-  }).format(cost ?? 0);
+    currency: displayCurrency,
+    maximumFractionDigits: 5,
+    maximumSignificantDigits: 10,
+  }).format(displayCost);
 
   return (
     <div className={cn("flex flex-col gap-3", className)} {...props}>
@@ -70,7 +74,7 @@ export function TokensPanel({
 
       {hasUsage ? (
         <div className="flex flex-col gap-3">
-          <div className="grid grid-cols-4 grid-flow-col gap-4">
+          <div className="grid grid-cols-4 grid-flow-col gap-2">
             {/* Cost tile */}
             <div className="ring-1 ring-border/60 overflow-hidden rounded-lg">
               <div className="px-3 py-2">
@@ -144,13 +148,13 @@ export function TokensPanel({
                 <div className="flex items-center gap-2">
                   <span className="inline-block size-2 rounded-sm bg-primary/70" />
                   <span className="text-xs">
-                    {t("tokensPanel.promptDetail", { count: prompt.toLocaleString(), pct: promptPct })}
+                    {t("tokensPanel.promptDetail", { count: prompt, pct: promptPct })}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="inline-block size-2 rounded-sm bg-emerald-500/70" />
                   <span className="text-xs">
-                    {t("tokensPanel.completionDetail", { count: completion.toLocaleString(), pct: completionPct })}
+                    {t("tokensPanel.completionDetail", { count: completion, pct: completionPct })}
                   </span>
                 </div>
               </div>

@@ -49,6 +49,7 @@ export type Step = {
   errorInfo?: string;
   model?: string;
   usage?: CompletionUsage;
+  cost?: number;
   startTime: string;
   endTime: string;
 };

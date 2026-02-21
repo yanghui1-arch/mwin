@@ -79,7 +79,7 @@ export function StepTable({ table }: StepTableProps) {
                 <TokensPanel
                   model={rowData.model}
                   usage={rowData.usage}
-                  cost={1}
+                  cost={rowData.cost}
                 />
 
                 <div className="flex gap-2">
