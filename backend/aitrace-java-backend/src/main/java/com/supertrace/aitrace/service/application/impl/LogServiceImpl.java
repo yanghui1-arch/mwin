@@ -1,7 +1,6 @@
 package com.supertrace.aitrace.service.application.impl;
 
 import com.supertrace.aitrace.domain.Project;
-import com.supertrace.aitrace.domain.core.step.metadata.StepMetadata;
 import com.supertrace.aitrace.domain.core.usage.LLMUsage;
 import com.supertrace.aitrace.dto.step.LogStepRequest;
 import com.supertrace.aitrace.dto.trace.LogTraceRequest;
@@ -39,12 +38,10 @@ public class LogServiceImpl implements LogService {
         String projectName = logStepRequest.getProjectName();
         Project projectOwnedByUserId = this.searchProject(userId, projectName);
         UUID stepId = this.stepService.logStep(userId, logStepRequest, projectOwnedByUserId.getId());
-        StepMetadata stepMetadata = StepMetadata.builder()
-            .description(logStepRequest.getDescription())
-            .build();
+        String description = logStepRequest.getDescription();
         String llmProvider = logStepRequest.getLlmProvider();
         LLMUsage llmUsage = logStepRequest.getUsage();
-        this.stepMetaService.addStepMeta(stepId, stepMetadata, llmProvider, llmUsage);
+        this.stepMetaService.addStepMeta(stepId, description, llmProvider, logStepRequest.getModel(), llmUsage);
         return stepId;
     }
 

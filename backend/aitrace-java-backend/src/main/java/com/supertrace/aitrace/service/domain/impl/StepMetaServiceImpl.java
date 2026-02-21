@@ -6,12 +6,12 @@ import com.supertrace.aitrace.domain.core.step.metadata.StepMetadata;
 import com.supertrace.aitrace.domain.core.usage.LLMUsage;
 import com.supertrace.aitrace.repository.StepMetaRepository;
 import com.supertrace.aitrace.service.domain.StepMetaService;
+import com.supertrace.aitrace.utils.llm.UsageCostCalcUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -20,36 +20,61 @@ import java.util.UUID;
 public class StepMetaServiceImpl implements StepMetaService {
     private final StepMetaRepository stepMetaRepository;
 
-    /**
-     * Add step meta in db
-     * This function have to handle the condition of provider is null or invalid
+     /**
+     * Upsert step meta.
      *
-     * @param stepId step id.
-     * @param stepMetadata step meta data.
-     * @param provider llm provider which is used in the step.
+     * <p>Because a step can be logged in two separate calls (e.g. once with input/llm data,
+     * once with output/usage data), this method merges rather than overwrites:
+     * <ul>
+     *   <li><b>description</b> — updated only when the incoming value is non-null.</li>
+     *   <li><b>cost</b> — updated only when the newly calculated cost is &gt; 0;
+     *       a zero cost never overwrites a previously stored non-zero cost.</li>
+     * </ul>
+     *
+     * <p>Cost resolution order for each call:
+     * <ol>
+     *   <li>Cost embedded in the usage object (e.g. OpenRouter returns it directly).</li>
+     *   <li>Calculated via {@link UsageCostCalcUtils} using the configured pricing table.</li>
+     *   <li>Zero when provider/model is unknown or usage is absent.</li>
+     * </ol>
+     *
+     * @param stepId      step id
+     * @param description step description; {@code null} leaves any existing value unchanged
+     * @param provider    LLM provider string (must match a {@link LLMProvider} enum name); null is allowed
+     * @param model       model name used in the step; null is allowed
+     * @param llmUsage    token usage reported by the provider; null is allowed
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void addStepMeta(UUID stepId, StepMetadata stepMetadata, String provider, LLMUsage llmUsage) {
-        // > llm provider is null -> null
-        // > llm provider is not null but not in LLMProvider enum -> null but have to log (log is not implement now)
-        // > llm provider is not null and in LLMProvider enum -> come in.
-        String llmProvider = Optional.ofNullable(provider)
-            .filter(
-                s -> Arrays.stream(LLMProvider.values())
-                    .anyMatch(e -> e.name().equals(s))
-            )
-            .orElse(null);
+    public void addStepMeta(UUID stepId, String description, String provider, String model, LLMUsage llmUsage) {
+        LLMProvider resolvedProvider = LLMProvider.fromString(provider);
 
-        StepMeta stepMeta = StepMeta.builder()
-            .id(stepId)
-            .metadata(stepMetadata)
-            .cost(
-                Optional.ofNullable(llmUsage)
-                    .map(LLMUsage::getCost)
-                    .orElse(BigDecimal.ZERO)
-            )
-            .build();
-        stepMetaRepository.save(stepMeta);
+        BigDecimal newCost = Optional.ofNullable(llmUsage)
+            .map(LLMUsage::getCost)
+            .orElseGet(() -> UsageCostCalcUtils.calcUsageCost(resolvedProvider, model, llmUsage));
+
+        stepMetaRepository.findById(stepId).ifPresentOrElse(
+            existing -> {
+                // Second call: merge — never regress description or cost with a weaker value
+                String mergedDescription = description != null
+                    ? description
+                    : (existing.getMetadata() != null ? existing.getMetadata().getDescription() : null);
+
+                BigDecimal mergedCost = newCost.compareTo(BigDecimal.ZERO) > 0
+                    ? newCost
+                    : existing.getCost();
+
+                stepMetaRepository.save(StepMeta.builder()
+                    .id(stepId)
+                    .metadata(StepMetadata.builder().description(mergedDescription).build())
+                    .cost(mergedCost)
+                    .build());
+            },
+            () -> stepMetaRepository.save(StepMeta.builder()
+                .id(stepId)
+                .metadata(StepMetadata.builder().description(description).build())
+                .cost(newCost)
+                .build())
+        );
     }
 }

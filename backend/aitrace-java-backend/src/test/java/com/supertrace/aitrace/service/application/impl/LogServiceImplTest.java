@@ -1,7 +1,6 @@
 package com.supertrace.aitrace.service.application.impl;
 
 import com.supertrace.aitrace.domain.Project;
-import com.supertrace.aitrace.domain.core.step.metadata.StepMetadata;
 import com.supertrace.aitrace.domain.core.usage.LLMUsage;
 import com.supertrace.aitrace.dto.step.LogStepRequest;
 import com.supertrace.aitrace.dto.trace.LogTraceRequest;
@@ -170,8 +169,9 @@ class LogServiceImplTest {
 
         verify(stepMetaService).addStepMeta(
             eq(stepId),
-            any(StepMetadata.class),
+            eq(req.getDescription()),
             eq(req.getLlmProvider()),
+            eq(req.getModel()),
             eq(req.getUsage())
         );
     }
