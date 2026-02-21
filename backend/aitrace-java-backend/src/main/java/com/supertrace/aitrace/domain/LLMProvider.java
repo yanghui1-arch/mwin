@@ -2,7 +2,7 @@ package com.supertrace.aitrace.domain;
 
 public enum LLMProvider {
     OPEN_ROUTER("open_router"),
-    DASHBOARD("dashboard"),
+    DASH_SCOPE("dash_scope"),
     OPENAI("openai"),
     DEEP_SEEK("deep_seek"),
     ANTHROPIC("anthropic"),
