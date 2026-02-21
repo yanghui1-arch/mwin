@@ -1,15 +1,4 @@
 {
-  "_comment_billing_model": [
-    "All prices are USD per 1,000,000 tokens.",
-    "Tiers are ordered smallest→largest context window.",
-    "The last tier has no max_context_tokens (catch-all).",
-    "thinking_output_price_per_million: omit when equal to output_price_per_million.",
-    "  Thinking-mode billing applies when reasoning_tokens > 0 in the API response.",
-    "  The ENTIRE output (reasoning + answer) is billed at one rate — not split.",
-    "Sources:",
-    "  OpenRouter  – https://openrouter.ai/<model-id>",
-    "  DashScope   – https://www.alibabacloud.com/help/en/model-studio/model-pricing"
-  ],
   "open_router": {
     "anthropic/claude-haiku-4.5": {
       "tiers": [
