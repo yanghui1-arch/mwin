@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +41,8 @@ public class TrackVO {
     private String model;
 
     private LLMUsage usage;
+
+    private BigDecimal cost;
 
     private LocalDateTime startTime;
 

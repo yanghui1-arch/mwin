@@ -11,6 +11,7 @@ import com.supertrace.aitrace.service.application.ApiKeyService;
 import com.supertrace.aitrace.service.application.DeleteService;
 import com.supertrace.aitrace.service.application.LogService;
 import com.supertrace.aitrace.service.application.QueryService;
+import com.supertrace.aitrace.service.domain.StepMetaService;
 import com.supertrace.aitrace.service.domain.StepService;
 import com.supertrace.aitrace.utils.ApiKeyUtils;
 import com.supertrace.aitrace.vo.PageVO;
@@ -22,7 +23,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -34,6 +37,7 @@ public class TraceController {
     private final QueryService queryService;
     private final DeleteService deleteService;
     private final StepService stepService;
+    private final StepMetaService stepMetaService;
 
     @PostMapping("/log/trace")
     public ResponseEntity<APIResponse<UUID>> createAndLogStep(
@@ -105,6 +109,8 @@ public class TraceController {
     public ResponseEntity<APIResponse<List<TrackVO>>> getTracks(@RequestBody GetTracksRequest request) {
         try {
             List<Step> steps = this.stepService.findStepsByTraceId(UUID.fromString(request.getTraceId()));
+            List<UUID> stepIds = steps.stream().map(Step::getId).toList();
+            Map<UUID, BigDecimal> costMap = this.stepMetaService.findCostsByStepIds(stepIds);
             List<TrackVO> tracks = steps.stream()
                 .map(s -> TrackVO.builder()
                     .id(s.getId())
@@ -117,6 +123,7 @@ public class TraceController {
                     .errorInfo(s.getErrorInfo())
                     .model(s.getModel())
                     .usage(s.getUsage())
+                    .cost(costMap.get(s.getId()))
                     .startTime(s.getStartTime())
                     .endTime(s.getEndTime())
                     .build())
