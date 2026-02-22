@@ -6,6 +6,19 @@ import {
 } from "@/components/xyflow-ui/base-node";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { Brain, Wrench, Search, Settings, AlertCircle, Clock, Repeat, ChevronRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
+
+const CNY_RATE = 7;
+
+function formatCost(cost: number, language: string): string {
+  const isChinese = language.startsWith("zh");
+  const value = isChinese ? cost * CNY_RATE : cost;
+  const symbol = isChinese ? "¥" : "$";
+  if (value === 0) return `${symbol}0`;
+  if (value < 0.0001) return `${symbol}${value.toExponential(2)}`;
+  if (value < 0.01) return `${symbol}${value.toFixed(6).replace(/0+$/, "")}`;
+  return `${symbol}${value.toFixed(4).replace(/\.?0+$/, "")}`;
+}
 
 const typeConfig: Record<
   string,
@@ -38,6 +51,7 @@ const typeConfig: Record<
 };
 
 export const TraceProcessNode = memo(({ data }: NodeProps) => {
+  const { i18n } = useTranslation();
   const hasPrev = data.hasPrev as boolean;
   const hasNext = data.hasNext as boolean;
   const trackType = (data.trackType as string) || "customized";
@@ -45,6 +59,7 @@ export const TraceProcessNode = memo(({ data }: NodeProps) => {
   const durationLabel = data.durationLabel as string | undefined;
   const isRecursive = data.isRecursive as boolean | undefined;
   const hasChildren = data.hasChildren as boolean | undefined;
+  const cost = data.cost as number | undefined;
 
   const config = typeConfig[trackType] || typeConfig.customized;
   const Icon = config.icon;
@@ -89,11 +104,14 @@ export const TraceProcessNode = memo(({ data }: NodeProps) => {
             recursive
           </span>
         )}
-        {hasChildren && (
-          <span className="flex items-center gap-0.5 ml-auto">
-            <ChevronRight className="h-3 w-3" />
-          </span>
-        )}
+        <span className="flex items-center gap-1 ml-auto">
+          {cost !== undefined && (
+            <span className="font-mono opacity-70">
+              {formatCost(cost, i18n.language)}
+            </span>
+          )}
+          {hasChildren && <ChevronRight className="h-3 w-3" />}
+        </span>
       </div>
 
       {hasNext && (

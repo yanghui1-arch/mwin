@@ -220,6 +220,7 @@ function buildFlowGraph(
         durationLabel,
         isRecursive: isRecursive(track),
         hasChildren: hasChildTracks,
+        cost: track.cost,
       },
       position: {
         x: pos.x - NODE_WIDTH / 2,

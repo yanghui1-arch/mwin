@@ -23,6 +23,7 @@ export type Track = {
   error_info?: string;
   model?: string;
   usage?: CompletionUsage;
+  cost?: number;
   start_time: string;
   end_time: string;
 };
