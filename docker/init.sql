@@ -74,9 +74,9 @@ create table project
     name                  varchar(255)                             not null,
     created_timestamp     timestamp      default CURRENT_TIMESTAMP not null,
     avg_duration          integer        default 0                 not null,
-    cost                  numeric(38, 2) default 0                 not null,
+    cost                  numeric(38, 6) default 0                 not null,
     last_update_timestamp timestamp      default CURRENT_TIMESTAMP not null,
-    description           varchar(255)
+    description           varchar(255),
     strategy              text
 );
 

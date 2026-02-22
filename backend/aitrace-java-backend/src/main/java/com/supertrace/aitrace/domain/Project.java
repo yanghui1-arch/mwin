@@ -38,6 +38,7 @@ public class Project {
     private Integer averageDuration;
 
     @NotNull
+    @Column(precision = 38, scale = 6)
     private BigDecimal cost;
 
     @Column(name = "created_timestamp", nullable = false)
