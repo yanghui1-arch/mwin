@@ -1,8 +1,12 @@
 import { cn } from "@/lib/utils";
+import mermaid from "mermaid";
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { createHighlighter, type Highlighter } from "shiki";
+
+mermaid.initialize({ startOnLoad: false });
+let _mermaidId = 0;
 
 type MarkdownProps = {
   content: string;
@@ -26,8 +30,46 @@ const LANGS = [
   "html",
   "python",
   "java",
-  "mermaid",
 ] as const;
+
+function MermaidBlock({ code }: { code: string }) {
+  const [svg, setSvg] = useState<string>("");
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const id = `mermaid-diagram-${++_mermaidId}`;
+    setSvg("");
+    setError(null);
+
+    mermaid
+      .render(id, code)
+      .then(({ svg }) => setSvg(svg))
+      .catch((err) => setError(String(err)));
+  }, [code]);
+
+  if (error) {
+    return (
+      <pre className="my-6 overflow-x-auto rounded-lg border border-destructive bg-destructive/10 p-4 text-sm text-destructive">
+        {error}
+      </pre>
+    );
+  }
+
+  if (!svg) {
+    return (
+      <div className="my-6 rounded-lg border bg-muted p-4 text-sm text-muted-foreground">
+        Rendering diagram...
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="my-6 flex justify-center overflow-x-auto rounded-lg border p-4"
+      dangerouslySetInnerHTML={{ __html: svg }}
+    />
+  );
+}
 
 export function Markdown({ content, className }: MarkdownProps) {
   const [highlighter, setHighlighter] = useState<Highlighter | null>(null);
@@ -116,6 +158,11 @@ export function Markdown({ content, className }: MarkdownProps) {
                   {children}
                 </code>
               );
+            }
+
+            // mermaid diagrams
+            if (lang === "mermaid") {
+              return <MermaidBlock code={code} />;
             }
 
             // use common pre to occupy when highlighter is not ready.
