@@ -1,6 +1,8 @@
 import { cn } from "@/lib/utils";
+import { Download } from "lucide-react";
 import mermaid from "mermaid";
-import { useEffect, useState } from "react";
+import { toPng } from "html-to-image";
+import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { createHighlighter, type Highlighter } from "shiki";
@@ -35,6 +37,7 @@ const LANGS = [
 function MermaidBlock({ code }: { code: string }) {
   const [svg, setSvg] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
+  const diagramRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const id = `mermaid-diagram-${++_mermaidId}`;
@@ -46,6 +49,23 @@ function MermaidBlock({ code }: { code: string }) {
       .then(({ svg }) => setSvg(svg))
       .catch((err) => setError(String(err)));
   }, [code]);
+
+  function triggerDownload(url: string, filename: string) {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  function downloadPng() {
+    if (!diagramRef.current) return;
+    const bg = getComputedStyle(diagramRef.current).backgroundColor;
+    toPng(diagramRef.current, { backgroundColor: bg, pixelRatio: 2 }).then(
+      (dataUrl) => triggerDownload(dataUrl, "diagram.png")
+    );
+  }
 
   if (error) {
     return (
@@ -64,10 +84,23 @@ function MermaidBlock({ code }: { code: string }) {
   }
 
   return (
-    <div
-      className="my-6 flex justify-center overflow-x-auto rounded-lg border p-4"
-      dangerouslySetInnerHTML={{ __html: svg }}
-    />
+    <div className="group relative my-6 rounded-lg border">
+      <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+        <button
+          onClick={downloadPng}
+          title="Download PNG"
+          className="flex items-center gap-1 rounded-md border bg-background px-2 py-1 text-xs text-muted-foreground shadow-sm hover:bg-muted hover:text-foreground"
+        >
+          <Download className="h-3 w-3" />
+          PNG
+        </button>
+      </div>
+      <div
+        ref={diagramRef}
+        className="flex justify-center overflow-x-auto bg-background p-4"
+        dangerouslySetInnerHTML={{ __html: svg }}
+      />
+    </div>
   );
 }
 
