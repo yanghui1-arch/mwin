@@ -61,11 +61,9 @@ export function SessionSidebar({
                 selectedSession?.id === session.id &&
                   "bg-accent text-accent-foreground"
               )}
+              onClick={() => onSelectSession(session.id)}
             >
-              <div
-                className="min-w-0 flex-1 truncate"
-                onClick={() => onSelectSession(session.id)}
-              >
+              <div className="min-w-0 flex-1 truncate">
                 {session.title ?? ""}
               </div>
               <div className="shrink-0">
