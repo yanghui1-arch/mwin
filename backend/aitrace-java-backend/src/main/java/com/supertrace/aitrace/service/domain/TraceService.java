@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -15,14 +16,16 @@ import java.util.UUID;
  * @since 2025-10-24
  */
 public interface TraceService {
+
     /**
      * store trace into the database
-     * Trace is the one generation in the complete workflow of agent
+     * Trace is the one generation in the complete workflow of agent so the id is the same.
      *
      * @param logTraceRequest log trace request
      * @param projectId project id which trace belongs to
      * @return step id
      */
+
     UUID createTrace(LogTraceRequest logTraceRequest, Long projectId);
 
     /**
@@ -45,6 +48,10 @@ public interface TraceService {
      * @return all traces
      */
     Page<Trace> getTracesByProjectId(Long projectId, int page, int pageSize, Sort sort);
+
+    Optional<Trace> findById(UUID traceId);
+
+    long countByProjectId(Long projectId);
 
     /**
      * Delete trace by trace id

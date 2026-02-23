@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -22,6 +23,16 @@ public class TraceServiceImpl implements TraceService {
 
     private final TraceRepository traceRepository;
     private final TraceFactory traceFactory;
+
+    @Override
+    public Optional<Trace> findById(UUID traceId) {
+        return traceRepository.findById(traceId);
+    }
+
+    @Override
+    public long countByProjectId(Long projectId) {
+        return traceRepository.countByProjectId(projectId);
+    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)

@@ -201,4 +201,41 @@ class StepMetaServiceImplTest {
         assertEquals("keep this", captor.getValue().getMetadata().getDescription(),
             "A null new-description must never overwrite an existing description");
     }
+
+    // ── Return value ──────────────────────────────────────────────────────────
+
+    @Test
+    void addStepMeta_firstCall_returnsSavedStepMeta() {
+        BigDecimal cost = new BigDecimal("0.005");
+        StepMeta saved = StepMeta.builder().id(stepId).cost(cost).build();
+        when(stepMetaRepository.save(any())).thenReturn(saved);
+
+        StepMeta result = service.addStepMeta(stepId, "desc", "OPEN_ROUTER", null,
+            new OpenRouterUsage(cost, null));
+
+        assertNotNull(result);
+        assertEquals(stepId, result.getId());
+        assertEquals(cost, result.getCost());
+    }
+
+    @Test
+    void addStepMeta_secondCall_noUsage_returnsMetaWithExistingCost() {
+        // Second call carries no usage → newCost = 0 → stored cost is preserved.
+        // The returned StepMeta must reflect the preserved (existing) cost,
+        // so the caller can compute the correct delta for the project.
+        BigDecimal existingCost = new BigDecimal("0.00123");
+        StepMeta existing = StepMeta.builder()
+            .id(stepId)
+            .metadata(StepMetadata.builder().description("desc").build())
+            .cost(existingCost)
+            .build();
+        when(stepMetaRepository.findById(stepId)).thenReturn(Optional.of(existing));
+
+        StepMeta merged = StepMeta.builder().id(stepId).cost(existingCost).build();
+        when(stepMetaRepository.save(any())).thenReturn(merged);
+
+        StepMeta result = service.addStepMeta(stepId, null, null, null, null);
+
+        assertEquals(existingCost, result.getCost());
+    }
 }

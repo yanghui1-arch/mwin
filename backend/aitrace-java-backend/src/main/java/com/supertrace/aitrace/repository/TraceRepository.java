@@ -12,4 +12,6 @@ import java.util.UUID;
 @Repository
 public interface TraceRepository extends JpaRepository<Trace, UUID> {
     Page<Trace> findTracesByProjectId(@NotNull Long projectId, Pageable pageable);
+
+    long countByProjectId(@NotNull Long projectId);
 }

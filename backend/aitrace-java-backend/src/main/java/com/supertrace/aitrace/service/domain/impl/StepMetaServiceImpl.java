@@ -49,15 +49,15 @@ public class StepMetaServiceImpl implements StepMetaService {
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void addStepMeta(UUID stepId, String description, String provider, String model, LLMUsage llmUsage) {
+    public StepMeta addStepMeta(UUID stepId, String description, String provider, String model, LLMUsage llmUsage) {
         LLMProvider resolvedProvider = LLMProvider.fromString(provider);
 
         BigDecimal newCost = Optional.ofNullable(llmUsage)
             .map(LLMUsage::getCost)
             .orElseGet(() -> UsageCostCalcUtils.calcUsageCost(resolvedProvider, model, llmUsage));
 
-        stepMetaRepository.findById(stepId).ifPresentOrElse(
-            existing -> {
+        StepMeta toSave = stepMetaRepository.findById(stepId)
+            .map(existing -> {
                 // Second call: merge — never regress description or cost with a weaker value
                 String mergedDescription = description != null
                     ? description
@@ -67,18 +67,19 @@ public class StepMetaServiceImpl implements StepMetaService {
                     ? newCost
                     : existing.getCost();
 
-                stepMetaRepository.save(StepMeta.builder()
+                return StepMeta.builder()
                     .id(stepId)
                     .metadata(StepMetadata.builder().description(mergedDescription).build())
                     .cost(mergedCost)
-                    .build());
-            },
-            () -> stepMetaRepository.save(StepMeta.builder()
+                    .build();
+            })
+            .orElseGet(() -> StepMeta.builder()
                 .id(stepId)
                 .metadata(StepMetadata.builder().description(description).build())
                 .cost(newCost)
-                .build())
-        );
+                .build());
+
+        return stepMetaRepository.save(toSave);
     }
 
     @Override
