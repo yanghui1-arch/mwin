@@ -78,8 +78,11 @@ export const projectColumns: ColumnDef<Project>[] = [
       </div>
     ),
     cell: ({ row }) => {
-      const avgDuration = row.original.avgDuration;
-      return <div className="font-medium">{avgDuration + "s"}</div>;
+      const avgDuration: number = row.original.avgDuration;
+      const formatted = avgDuration < 1000
+        ? `${avgDuration}ms`
+        : `${(avgDuration / 1000).toFixed(2)}s`;
+      return <div className="font-medium">{formatted}</div>;
     },
   },
   {
@@ -94,10 +97,14 @@ export const projectColumns: ColumnDef<Project>[] = [
     ),
     cell: ({ row }) => {
       const cost = parseFloat(row.getValue("cost"));
-      const formatted = new Intl.NumberFormat("en-US", {
+      const isZh = i18n.language.startsWith("zh");
+      const displayCost = isZh ? cost * 7 : cost;
+      const formatted = new Intl.NumberFormat(isZh ? "zh-CN" : "en-US", {
         style: "currency",
-        currency: "USD",
-      }).format(cost);
+        currency: isZh ? "CNY" : "USD",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 6,
+      }).format(displayCost);
       return <div className="font-medium">{formatted}</div>;
     },
   },
