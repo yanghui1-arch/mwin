@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 
 /**
  * @param table tanstack table
@@ -28,8 +29,9 @@ export function DataTableToolbar<TData>({
     if (idsToDelete.length == 0) return ;
     try {
       const count = await onDelete(idsToDelete);
-      console.log(`Delete ${count} rows Data.`)
-      table.options.meta?.onRefresh?.();
+      table.resetRowSelection();
+      await table.options.meta?.onRefresh?.();
+      toast.success(t("dataTable.deleteSuccess", { count }));
     } catch (error) {
       console.error(error)
     }

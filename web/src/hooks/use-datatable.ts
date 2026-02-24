@@ -15,7 +15,7 @@ import { useState } from "react";
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
-  onRefresh?: () => void;
+  onRefresh?: () => void | Promise<void>;
 }
 
 /**
@@ -68,7 +68,7 @@ interface ManulPaginationDataTableProps<TData, TValue> {
   pagination: PaginationState;
   pageCount: number,
   setPagination: OnChangeFn<PaginationState>;
-  onRefresh?: () => void;
+  onRefresh?: () => void | Promise<void>;
 }
 
 export function useManulPaginationDataTable<TData extends {id: string}, TValue>({

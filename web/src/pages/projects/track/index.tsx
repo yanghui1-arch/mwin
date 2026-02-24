@@ -35,15 +35,32 @@ export default function ProjectDetailPage() {
     const response = await http.get(
       `/v0/step/${encodeURIComponent(name as string)}?page=${pagination.pageIndex}&pageSize=${pagination.pageSize}`
     );
-    setStepData(response.data.data);
+    const responseData = response.data.data;
+    const data = responseData.data;
+    const newPageCount = responseData.pageCount;
+    setPageCount(newPageCount);
+    if (data.length === 0 && pagination.pageIndex > 0) {
+      const lastPage = Math.max(0, newPageCount - 1);
+      setPagination({ ...pagination, pageIndex: lastPage });
+      return;
+    }
+    setStepData(data);
   };
 
   const refreshTraceData = async () => {
     const response = await http.get(
       `/v0/trace/${encodeURIComponent(name as string)}?page=${tracePagination.pageIndex}&pageSize=${tracePagination.pageSize}`
     );
-    setTraceData(response.data.data);
-    await refreshStepData()
+    const responseData = response.data.data;
+    const data = responseData.data;
+    const newPageCount = responseData.pageCount;
+    setTracePageCount(newPageCount);
+    if (data.length === 0 && tracePagination.pageIndex > 0) {
+      const lastPage = Math.max(0, newPageCount - 1);
+      setTracePagination({ ...tracePagination, pageIndex: lastPage });
+      return;
+    }
+    setTraceData(data);
   };
 
   const { table: stepTable } = useManulPaginationDataTable({
