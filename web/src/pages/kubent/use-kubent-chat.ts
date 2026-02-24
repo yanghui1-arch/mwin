@@ -76,8 +76,10 @@ export function useKubentChat() {
     onDone: onTaskDone,
   });
 
-  const selectProject = (projectName: string) =>
+  const selectProject = (projectName: string) => {
+    localStorage.setItem("kubent:selectedProjectName", projectName);
     setSelectedProject(projects.find((p: Project) => p.name === projectName));
+  };
 
   const selectSession = async (sessionId: string) => {
     setSelectedSession(sessions.find((session) => session.id === sessionId));
@@ -208,7 +210,9 @@ export function useKubentChat() {
           });
           setProjects(availableProjects);
           if (availableProjects.length > 0) {
-            setSelectedProject(availableProjects[0]);
+            const cachedName = localStorage.getItem("kubent:selectedProjectName");
+            const cached = cachedName && availableProjects.find((p) => p.name === cachedName);
+            setSelectedProject(cached || availableProjects[0]);
           }
         }
       } catch (error) {
