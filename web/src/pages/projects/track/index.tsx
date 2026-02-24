@@ -64,13 +64,13 @@ export default function ProjectDetailPage() {
   };
 
   const { table: stepTable } = useManulPaginationDataTable({
-    columns: stepColumns, 
+    columns: stepColumns,
     data: stepData,
     pagination: pagination,
     pageCount: pageCount,
     setPagination: setPagination,
-    onRefresh: refreshStepData
-  })
+    onRefresh: refreshStepData,
+  });
 
   const { table: traceTable } = useManulPaginationDataTable({
     columns: traceColumns,
@@ -78,8 +78,8 @@ export default function ProjectDetailPage() {
     pagination: tracePagination,
     pageCount: tracePageCount,
     setPagination: setTracePagination,
-    onRefresh: refreshTraceData
-  })
+    onRefresh: refreshTraceData,
+  });
 
   useEffect(() => {
     const loadStepDataOfProject = async () => {
