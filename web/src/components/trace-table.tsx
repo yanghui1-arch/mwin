@@ -46,6 +46,7 @@ export function TraceTable({ table }: TraceTableProps) {
                 if (prev) {
                   /* create a copy */
                   const newUsage = { ...prev };
+                  newUsage.cost = (newUsage.cost ?? 0) + (track.cost ?? 0);
 
                   /* merge token usage */
                   const addUsage = (preToken?: number, curToken?: number): number | undefined => {
@@ -85,12 +86,12 @@ export function TraceTable({ table }: TraceTableProps) {
                   
                   acc.set(model, newUsage);
                 } else {
-                  acc.set(model, { ...usage });
+                  acc.set(model, { ...usage, cost: track.cost ?? 0 });
                 }
 
                 return acc;
               },
-              new Map<string, CompletionUsage>()
+              new Map<string, CompletionUsage & { cost: number }>()
             );
 
             return (
@@ -109,7 +110,7 @@ export function TraceTable({ table }: TraceTableProps) {
                     key={model}
                     model={model}
                     usage={completionUsage}
-                    cost={1}
+                    cost={completionUsage.cost}
                   />
                 ))}
                 <TraceDialogMain data={rowData} tracks={tracks}/>
