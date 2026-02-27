@@ -21,7 +21,7 @@ export function TraceDialogMain({ data, tracks }: TraceDialogMainProps) {
       <div className="flex gap-2">
         <Button
           variant="link"
-          className={displayType === "io" ? "bg-foreground text-black" : ""}
+          className={displayType === "io" ? "bg-foreground text-primary-foreground" : ""}
           onClick={() => {
             setDisplayType("io");
           }}
@@ -31,7 +31,7 @@ export function TraceDialogMain({ data, tracks }: TraceDialogMainProps) {
         <Button
           variant="link"
           className={
-            displayType === "process" ? "bg-foreground text-black" : ""
+            displayType === "process" ? "bg-foreground text-primary-foreground" : ""
           }
           onClick={() => {
             setDisplayType("process");

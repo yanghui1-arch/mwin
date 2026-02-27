@@ -120,7 +120,7 @@ export default function ProjectDetailPage() {
       <div className="flex gap-4 py-2">
         <Button
           variant="link"
-          className={isNavButtonDisabled("step") ? "bg-white text-black" : ""}
+          className={isNavButtonDisabled("step") ? "bg-primary text-primary-foreground" : ""}
           onClick={() => {
             if (isNavButtonDisabled("step")) {
               return;
@@ -132,7 +132,7 @@ export default function ProjectDetailPage() {
         </Button>
         <Button
           variant="link"
-          className={isNavButtonDisabled("trace") ? "bg-white text-black" : ""}
+          className={isNavButtonDisabled("trace") ? "bg-primary text-primary-foreground" : ""}
           onClick={() => {
             if (isNavButtonDisabled("trace")) {
               return;
@@ -145,7 +145,7 @@ export default function ProjectDetailPage() {
         <Button
           variant="link"
           className={
-            isNavButtonDisabled("conversation") ? "bg-white text-black" : ""
+            isNavButtonDisabled("conversation") ? "bg-primary text-primary-foreground" : ""
           }
           onClick={() => {
             if (isNavButtonDisabled("conversation")) {
