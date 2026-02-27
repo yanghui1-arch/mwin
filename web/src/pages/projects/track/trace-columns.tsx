@@ -183,7 +183,9 @@ export const traceColumns: ColumnDef<Trace>[] = [
     ),
     cell: ({ row }) => {
       const startTime = row.original.startTime;
-      return <div className="text-center font-medium">{startTime}</div>;
+      // sv-SE locale produces ISO format; replace "T" with " " to keep YYYY-MM-DD HH:mm:ss
+      const formatted = startTime ? new Date(startTime).toLocaleString("sv-SE").replace("T", " ") : "";
+      return <div className="text-center font-medium">{formatted}</div>;
     },
   },
   {
@@ -195,7 +197,9 @@ export const traceColumns: ColumnDef<Trace>[] = [
     ),
     cell: ({ row }) => {
       const endTime = row.original.lastUpdateTimestamp;
-      return <div className="text-center font-medium">{endTime}</div>;
+      // sv-SE locale produces ISO format; replace "T" with " " to keep YYYY-MM-DD HH:mm:ss
+      const formatted = endTime ? new Date(endTime).toLocaleString("sv-SE").replace("T", " ") : "";
+      return <div className="text-center font-medium">{formatted}</div>;
     },
   },
 ];
