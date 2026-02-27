@@ -14,9 +14,14 @@ http.interceptors.request.use((config) => {
   return config;
 });
 
-/* TODO: Keep it now. Later improve it. */
 http.interceptors.response.use(
-  (res) => res,
+  (res) => {
+    const refreshedToken = res.headers["at-token-refresh"];
+    if (refreshedToken) {
+      localStorage.setItem(MWIN_JWT, refreshedToken);
+    }
+    return res;
+  },
   (error) => {
     const status = error.response?.status;
     const message =

@@ -22,6 +22,9 @@ public class JwtUtil {
     @Value("${jwt.expiration}")
     private long expiration;
 
+    @Value("${jwt.renewal-threshold}")
+    private long renewalThreshold;
+
     /**
      * Generate jwt token
      *
@@ -48,6 +51,18 @@ public class JwtUtil {
     }
 
     /**
+     * Returns true when the token is valid but will expire within the renewal threshold,
+     * meaning a fresh token should be issued to extend the session (sliding window).
+     *
+     * @param token jwt token
+     * @return true if renewal is needed
+     */
+    public boolean needsRenewal(String token) {
+        Date exp = extractExpiration(token);
+        return (exp.getTime() - System.currentTimeMillis()) < renewalThreshold;
+    }
+
+    /**
      * Extract uuid from jwt token
      *
      * @param token jwt token
@@ -63,20 +78,16 @@ public class JwtUtil {
         return UUID.fromString(userId);
     }
 
-    /**
-     * Judge whether jwt token is expired
-     *
-     * @param token jwt token
-     * @return true if expiration else false
-     */
-    private boolean isExpired(String token) {
-        Date exp = Jwts.parserBuilder()
+    private Date extractExpiration(String token) {
+        return Jwts.parserBuilder()
             .setSigningKey(Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret)))
             .build()
             .parseClaimsJws(token)
             .getBody()
             .getExpiration();
+    }
 
-        return exp.before(new Date());
+    private boolean isExpired(String token) {
+        return extractExpiration(token).before(new Date());
     }
 }

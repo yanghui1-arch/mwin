@@ -19,7 +19,8 @@ spring:
 
 jwt:
   secret: "aitraceinitialsecaitraceinitialsecretaitraceinitialsecretaitraceinitialsecretaitraceinitialsecretaitraceinitialsecretaitraceinitialsecretret"
-  expiration: 3600000
+  expiration: 604800000       # 7 days in ms
+  renewal-threshold: 86400000 # renew when < 1 day remaining
 
 github:
   client-id: Ov23liWyhyfoA5aDkDQx

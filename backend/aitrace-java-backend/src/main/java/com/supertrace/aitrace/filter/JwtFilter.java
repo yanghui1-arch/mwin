@@ -65,6 +65,9 @@ public class JwtFilter extends OncePerRequestFilter {
             return ;
         }
         request.setAttribute("userId", userId);
+        if (this.jwtUtil.needsRenewal(token)) {
+            response.setHeader("AT-token-refresh", this.jwtUtil.generateToken(userId));
+        }
         filterChain.doFilter(request, response);
     }
 
