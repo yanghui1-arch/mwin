@@ -28,7 +28,7 @@ export default function KubentPage() {
       />
       {/* Main content area: 2:8 ratio for sidebar:chat */}
       <div className="flex gap-2 w-full flex-1 overflow-hidden">
-        <div className="flex-2 min-w-0 h-full">
+        <div className="w-1/5 shrink-0 h-full overflow-hidden">
           <SessionSidebar
             sessions={sessions}
             selectedSession={selectedSession}
@@ -37,7 +37,7 @@ export default function KubentPage() {
             onNewChat={handleNewChat}
           />
         </div>
-        <div className="flex-8 min-w-0 h-full">
+        <div className="flex-1 min-w-0 h-full">
           <ChatArea
             messages={messages}
             taskId={taskId}
