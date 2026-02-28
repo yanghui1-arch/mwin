@@ -67,6 +67,7 @@ async def optimize_agent_system(
         session_id = chat_session.id
     else:
         session_id = UUID(req.session_id)
+        # No matter the length of chat_hist. Kubent has to handle the long context for llm usage.
         chats:List[KubentChat] = await kubent_chat.select_chat(db=db, session_id=session_id)
         chat_hist = [chat.payload for chat in chats]
 
