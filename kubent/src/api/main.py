@@ -2,6 +2,7 @@ import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from .router import api_router
+from ..repository.redis import init_redis_pool
 from ..sandbox import init_docker_client, init_sandbox_manager, get_sandbox_manager
 
 
@@ -22,12 +23,17 @@ async def clean_up_sandboxes():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Initialize docker client and sandbox manager
+    # Initialize Redis connection pool
+    redis_pool = init_redis_pool()
+    app.state.redis_pool = redis_pool
+    print("[Startup] Redis pool initialized")
+
+    # Initialize docker client and sandbox manager
     docker_client = init_docker_client()
     app.state.docker_client = docker_client
 
     # Initialize sandbox manager with capacity
-    sandbox_manager = init_sandbox_manager(capacity=10, docker_client=docker_client)
+    sandbox_manager = init_sandbox_manager(capacity=64, docker_client=docker_client)
     app.state.sandbox_manager = sandbox_manager
 
     # Start background cleanup task
@@ -52,6 +58,8 @@ async def lifespan(app: FastAPI):
     sandbox_manager.clear_pool(close_containers=True)
 
     docker_client.close()
+
+    redis_pool.close()
     print("[Shutdown] Cleanup complete")
 
 
