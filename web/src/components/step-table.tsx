@@ -5,7 +5,7 @@ import { RowPanelContent } from "./data-table/data-table-row-panel";
 import { Clock } from "lucide-react";
 import TokensPanel from "./tokens-panel";
 import { LLMJsonCard } from "./llm-json-card";
-import { Card, CardContent } from "./ui/card";
+import { FunctionIOCard } from "./fn-io-card";
 import { DataTableToolbar } from "./data-table/data-table-toolbar/common-data-table-toolbar";
 import { stepApi } from "@/api/step";
 import { Badge } from "./ui/badge";
@@ -129,82 +129,33 @@ export function StepTable({ table }: StepTableProps) {
                   </Button>
                 </div>
 
-                {displayPanel === Display.FunctionInput &&
-                  rowData.input.func_inputs && (
-                    <div className="flex gap-4">
-                      <LLMJsonCard jsonObject={rowData.input.func_inputs} />
-                    </div>
-                  )}
+                {displayPanel === Display.FunctionInput && (
+                  <FunctionIOCard data={rowData.input.func_inputs} />
+                )}
 
-                {displayPanel === Display.FunctionOutput &&
-                  rowData.output.func_output &&
-                  (typeof rowData.output.func_output === "string" ? (
-                    <div className="flex flex-col gap-4 w-full">
-                      <Card>
-                        <CardContent>
-                          <pre className="text-sm font-mono whitespace-pre-wrap break-all text-left">
-                            <code>
-                              {JSON.stringify(
-                                rowData.output.func_output
-                                  ? rowData.output.func_output
-                                  : rowData.errorInfo ?? t("common.somethingErrors"),
-                                null,
-                                2
-                              )}
-                            </code>
-                          </pre>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  ) : (
+                {displayPanel === Display.FunctionOutput && (
+                  <FunctionIOCard
+                    data={rowData.output.func_output}
+                    errorInfo={rowData.errorInfo}
+                  />
+                )}
+
+                {displayPanel === Display.LLMInput && (
+                  rowData.input.llm_inputs ? (
                     <LLMJsonCard
-                      jsonObject={
-                        rowData.output.func_output as Record<string, undefined>
-                      }
-                      errorInfo={rowData.errorInfo}
-                      llmJsonLight={false}
+                      jsonObject={rowData.input.llm_inputs as Record<string, unknown>}
                     />
-                  ))}
-
-                {displayPanel === Display.LLMInput &&
-                  (rowData.input.llm_inputs ? (
-                    <div className="flex gap-4">
-                      <LLMJsonCard
-                        jsonObject={
-                          rowData.input.llm_inputs as Record<string, unknown>
-                        }
-                      />
-                    </div>
                   ) : (
-                    <LLMJsonCard errorInfo={t("stepTable.noLLMParams")}/>
-                  ))}
+                    <LLMJsonCard errorInfo={t("stepTable.noLLMParams")} />
+                  )
+                )}
 
-                {displayPanel === Display.LLMOutput &&
-                  (rowData.output.llm_outputs &&
-                  typeof rowData.output.llm_outputs === "string" ? (
-                    <>
-                      <Card>
-                        <CardContent>
-                          <pre className="text-sm font-mono whitespace-pre-wrap wrap-break-words text-left">
-                            <code>
-                              {JSON.stringify(
-                                rowData.output.llm_outputs
-                                  ? rowData.output.llm_outputs
-                                  : rowData.errorInfo ?? t("stepTable.llmError"),
-                                null,
-                                2
-                              )}
-                            </code>
-                          </pre>
-                        </CardContent>
-                      </Card>
-                    </>
-                  ) : (
-                    <LLMJsonCard
-                      jsonObject={rowData.output.llm_outputs}
-                      errorInfo={rowData.errorInfo}
-                    />
-                  ))}
+                {displayPanel === Display.LLMOutput && (
+                  <LLMJsonCard
+                    jsonObject={rowData.output.llm_outputs}
+                    errorInfo={rowData.errorInfo}
+                  />
+                )}
               </div>
             );
           }}
