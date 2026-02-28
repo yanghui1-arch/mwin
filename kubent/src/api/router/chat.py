@@ -18,6 +18,7 @@ from src.repository.models import (
     KubentChat,
 )
 from src.repository.db.conn import get_db, AsyncSession
+from src.repository.redis.conn import get_redis_client
 from src.api.schemas import ChatRequest, ChatResponse, ChatSessionResponse, ChatSessionTitleRequest, ChatTaskResponse, ResponseModel
 from src.api.jwt import verify_at_token
 from src.service import chat
@@ -73,7 +74,16 @@ async def optimize_agent_system(
 
     if req.project_id:
         # Get some project's traces and then push them to kubent to analyze.
-        traces_id: List[UUID] = await trace.select_latest_traces_id_by_project_id(db=db, project_id=req.project_id)
+        # Get the trace from cache first if it's missing then from db to get a latest trace.
+        # Cache stores `optimize-trace-{user_id}: trace id`
+        redis_client = get_redis_client()
+        target_trace_id: List[str] = redis_client.lrange(f"optimize-trace-{str(user_id)}", 0, -1)
+        if len(target_trace_id) != 0:
+            traces_id: List[UUID] = [UUID(trace_id) for trace_id in target_trace_id]
+        else:
+            traces_id: List[UUID] = await trace.select_latest_traces_id_by_project_id(db=db, project_id=req.project_id)
+            redis_client.rpush(f"optimize-trace-{str(user_id)}", *[str(t_id) for t_id in traces_id])
+
         steps_in_traces: List[List[Step]] = [await step.select_steps_by_trace_id(db=db, trace_id=trace_id) for trace_id in traces_id]
         exec_graphs: List[str] = [str(mermaid.steps_to_mermaid(steps=steps)) for steps in steps_in_traces]
         selected_project: Project | None = await project.query_project_by_id(db=db, project_id=req.project_id)
