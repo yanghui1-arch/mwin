@@ -479,6 +479,7 @@ dependencies = [
     { name = "openai" },
     { name = "psycopg2" },
     { name = "pyjwt" },
+    { name = "redis" },
     { name = "sqlalchemy" },
     { name = "uvicorn" },
 ]
@@ -490,10 +491,11 @@ requires-dist = [
     { name = "docker", specifier = ">=7.1.0" },
     { name = "dotenv", specifier = ">=0.9.9" },
     { name = "fastapi", specifier = ">=0.124.4" },
-    { name = "mwin", specifier = ">=0.1.6" },
+    { name = "mwin", specifier = ">=0.1.8" },
     { name = "openai", specifier = ">=2.11.0" },
     { name = "psycopg2", specifier = ">=2.9.11" },
     { name = "pyjwt", specifier = ">=2.10.1" },
+    { name = "redis", specifier = ">=5.0.0" },
     { name = "sqlalchemy", specifier = ">=2.0.45" },
     { name = "uvicorn", specifier = ">=0.38.0" },
 ]
@@ -509,7 +511,7 @@ wheels = [
 
 [[package]]
 name = "mwin"
-version = "0.1.6"
+version = "0.1.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -518,9 +520,9 @@ dependencies = [
     { name = "requests" },
     { name = "uuid6" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/fc/5a/7ece9cae8ff3ca4ca8e3958e589084497240a2bb63dfb3b4bd0c81abe45b/mwin-0.1.6.tar.gz", hash = "sha256:cd29e604f7048a8e5fa6e0718b02dc93a074f095784546ca450f3a7feee95574", size = 31283, upload-time = "2026-01-16T04:55:14.244Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4c/c1/8fb402ff6e56617d38f91454c98f66d6844c40023d51bc0ad1ac1fa02c4f/mwin-0.1.8.tar.gz", hash = "sha256:a5ecd013d2c9f3f3cf475413a1f3016d7cb40f957381644164df7445822f797c", size = 32950, upload-time = "2026-02-20T03:35:48.41Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/29/15/e8fd536949e77f3013f04403edd74fecc5f95d6a1706971c832b4a967118/mwin-0.1.6-py3-none-any.whl", hash = "sha256:bdf8cc9571e852388db2d04aa05125b30932f37f51d25cb79c910dfac68c7b71", size = 39940, upload-time = "2026-01-16T04:55:13.049Z" },
+    { url = "https://files.pythonhosted.org/packages/ae/52/a059d69805875da808b63ae010da1a8c3f4535a135dfb5d1ba2024843c50/mwin-0.1.8-py3-none-any.whl", hash = "sha256:8f88dfc0cbeb9774030d341bdbb505db1370aa33d20e312a30b4cabed4fa8c76", size = 42154, upload-time = "2026-02-20T03:35:46.616Z" },
 ]
 
 [[package]]
