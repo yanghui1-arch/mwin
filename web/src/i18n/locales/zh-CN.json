@@ -171,8 +171,8 @@
         "totalTokens": "总 Token",
         "promptTokens": "Prompt Token",
         "completionTokens": "Completion Token",
-        "prompt": "提示",
-        "completion": "完成",
+        "prompt": "提示词",
+        "completion": "模型回答",
         "noUsage": "该步骤没有可用的使用情况。",
         "promptDetail": "Prompt: {{count}} ({{pct}}%)",
         "completionDetail": "Completion: {{count}} ({{pct}}%)"
