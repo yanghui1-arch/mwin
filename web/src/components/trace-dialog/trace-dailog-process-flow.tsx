@@ -481,7 +481,7 @@ export function TraceDialogProcessPanel({
                   variant="link"
                   className={
                     nodeDetailDisplayType === "llm"
-                      ? "bg-foreground text-black"
+                      ? "bg-primary text-primary-foreground"
                       : ""
                   }
                   onClick={() => {
@@ -494,7 +494,7 @@ export function TraceDialogProcessPanel({
                   variant="link"
                   className={
                     nodeDetailDisplayType === "fn"
-                      ? "bg-foreground text-black"
+                      ? "bg-primary text-primary-foreground"
                       : ""
                   }
                   onClick={() => {
