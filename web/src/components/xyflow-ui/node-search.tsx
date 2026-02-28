@@ -30,12 +30,10 @@ export interface NodeSearchProps extends Omit<PanelProps, "children"> {
 }
 
 export function NodeSearchInternal({
-  className,
   onSearch,
   onSelectNode,
   open,
   onOpenChange,
-  ...props
 }: NodeSearchProps) {
   const [searchResults, setSearchResults] = useState<Node[]>([]);
   const [searchString, setSearchString] = useState<string>("");
@@ -63,7 +61,7 @@ export function NodeSearchInternal({
         setSearchResults(results);
       }
     },
-    [onSearch, onOpenChange],
+    [onSearch, onOpenChange, defaultOnSearch],
   );
 
   const defaultOnSelectNode = useCallback(
@@ -143,13 +141,13 @@ export interface NodeSearchDialogProps extends NodeSearchProps {
   title?: string;
 }
 
+// ignore title for passing lint check.
 export function NodeSearchDialog({
   className,
   onSearch,
   onSelectNode,
   open,
   onOpenChange,
-  title = "Node Search",
   ...props
 }: NodeSearchDialogProps) {
   return (
