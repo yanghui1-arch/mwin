@@ -74,32 +74,6 @@ export const traceColumns: ColumnDef<Trace>[] = [
     },
   },
   {
-    accessorKey: "name",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          className="w-full justify-center"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          <span className="inline-flex items-center justify-center gap-1">
-            <span className="w-4 inline-flex justify-end">
-              <List className="h-4 w-4" />
-            </span>
-            <span className="font-semibold">{i18n.t("track.columns.name")}</span>
-            <span className="w-4 inline-flex justify-start">
-              {column.getIsSorted() === "asc" ? (
-                <ArrowDown className="h-4 w-4" />
-              ) : (
-                <ArrowUp className="h-4 w-4" />
-              )}
-            </span>
-          </span>
-        </Button>
-      );
-    },
-  },
-  {
     accessorKey: "input",
     header: () => (
       <div className="w-full flex justify-center">
