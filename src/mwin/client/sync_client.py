@@ -35,7 +35,8 @@ class SyncClient:
         self._client = httpx.Client(
             base_url=client_config.host_url,
             headers=client_config.headers,
-            timeout=timeout_ms / 1000
+            timeout=timeout_ms / 1000,
+            trust_env=False,
         )
 
     def log_step(
