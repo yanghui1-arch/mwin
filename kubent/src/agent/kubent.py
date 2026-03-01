@@ -80,7 +80,7 @@ class Kubent(ReActAgent):
         ]
         return self
 
-    @track(track_llm=LLMProvider.OPENAI)
+    @track(llm_provider=LLMProvider.OPENAI)
     def act(
         self, 
         question: str | None,
@@ -96,7 +96,7 @@ class Kubent(ReActAgent):
     def run():
         ...
     
-    @track(track_llm=LLMProvider.OPENAI)
+    @track(llm_provider=LLMProvider.OPENAI, project_name="Kubent")
     def step(
         self,
         question: str | None,

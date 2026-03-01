@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from openai import OpenAI, pydantic_function_tool
 from openai.types.chat import ChatCompletionFunctionToolParam, ChatCompletion
+from mwin import track, LLMProvider
 from .toolkits import Tool
 from ...config import config
 
@@ -24,6 +25,7 @@ You are the best thinker.
 User will ask you a question. Think carefully about this question and tell him/her the thinking process and the results.
 """
 
+@track(llm_provider=LLMProvider.OPEN_ROUTER)
 def think(question:str):
     completion:ChatCompletion = engine.chat.completions.create(
         model=model,

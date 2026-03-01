@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from openai import OpenAI, pydantic_function_tool
 from openai.types.chat import ChatCompletionFunctionToolParam, ChatCompletion
+from mwin import track, LLMProvider
 from .toolkits import Tool
 from ...config import config
 
@@ -29,6 +30,7 @@ If you notice that Robin is heading in the wrong direction or that certain infor
 In short, as an absolutely rational entity, you must remain calm and objective in analyzing every issue.
 """
 
+@track(llm_provider=LLMProvider.OPEN_ROUTER)
 def think(question:str):
     completion:ChatCompletion = engine.chat.completions.create(
         model=model,
