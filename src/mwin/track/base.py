@@ -36,7 +36,7 @@ class BaseTracker(ABC):
         tags: List[str] | None = None,
         step_type: StepType = StepType.CUSTOMIZED,
         model: str | None = None,
-        llm_provider: LLMProvider | None = None,
+        llm_provider: LLMProvider = LLMProvider.OPENAI,
         llm_ignore_fields: List[str] | None = None,
         description: str | None = None,
     ) -> Callable:
@@ -50,8 +50,7 @@ class BaseTracker(ABC):
             tags(List[str] | None): tags of tracking steps. Default to `None`.
             step_type(StepType): step type. Default to `StepType.CUSTOMIZED`.
             model(str | None): using model name. Default to `None`. If you are using llama you can set the field to `llama`.
-            llm_provider(LLMProvider | None): track a certain llm. Default to `None`. 
-                                            If `llm_provider` is not `None`, AITrace will track provider's api.
+            llm_provider(LLMProvider): llm inference provider. Default to `OPENAI`.
             llm_ignore_fields(List[str] | None): a list of llm ignore fields name. Default to `None`.
             description(str | None): step description. Default to `None`.
             

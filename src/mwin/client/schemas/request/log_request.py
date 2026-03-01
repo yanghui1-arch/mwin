@@ -50,7 +50,7 @@ class LogStepRequest(BaseModel):
     description: str | None
     """Step python docs"""
 
-    llm_provider: str | None
+    llm_provider: str
     """llm inference provider"""
 
     @field_serializer('input', 'output')

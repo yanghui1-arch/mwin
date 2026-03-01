@@ -16,8 +16,7 @@ class TrackerOptions:
         step_type(StepType | None): step type. Default to `None`.
         model(str | None): using model name. Default to `None`.
         trace_name(str | None): trace name. Default to `None`.
-        llm_provider(LLMProvider | None): track a certain llm. Default to `None`. 
-                                        If `llm_provider` is not `None`, Mwin will track provider's api.
+        llm_provider(LLMProvider): track a certain llm. Default to `LLMProvider.OPENAI`
         llm_ignore_fields(List[str] | None): a list of llm ignore fields name. Default to `None`.
         description(str | None): track step description. Default to `None`.
         project_name(str | None): project name which is the tracked step's project. 
@@ -31,7 +30,7 @@ class TrackerOptions:
     step_type: StepType | None = None
     model: str | None = None
     trace_name: str | None = None
-    llm_provider: LLMProvider | None = None
+    llm_provider: LLMProvider = LLMProvider.OPENAI
     llm_ignore_fields: List[str] | None = None
     description: str | None = None
     project_name: str | None = None

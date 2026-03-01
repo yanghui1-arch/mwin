@@ -55,7 +55,7 @@ class SyncClient:
         start_time: datetime,
         end_time: datetime | None,
         description: str | None,
-        llm_provider: LLMProvider | None,
+        llm_provider: LLMProvider,
     ) -> LogStepResponse:
         """Create a step and log it in server."""
         
@@ -63,7 +63,7 @@ class SyncClient:
         if parent_step_id == "None":
             parent_step_id = None
         
-        llm_provider = None if llm_provider is None else llm_provider.value
+        llm_provider = llm_provider.value
             
         log_step_req = LogStepRequest(
             project_name=self._project_name,
