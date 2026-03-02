@@ -265,5 +265,6 @@ class Robin(ReActAgent):
             tools=self.tools,
             parallel_tool_calls=True,
         )
-        return self.current_env.step(llm_action=completion.choices[0].message)
+        message = completion.choices[0].message
+        return self.current_env.step(content=message.content, tool_calls=message.tool_calls)
     

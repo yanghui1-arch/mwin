@@ -1,7 +1,7 @@
 from typing import TypedDict, Required, List, Dict, Any
 from uuid import UUID
 from celery import Task
-from openai.types.chat import ChatCompletionMessageParam
+from openai.types.chat import ChatCompletion, ChatCompletionMessageParam
 from .celery_app import celery_app
 from ..agent.kubent import Kubent, Result
 from ..agent.runtime import execution_scope
@@ -93,13 +93,14 @@ def run(
     }
     while terminate is False and cnt < kubent.attempt:
         # obs, reward, terminate, act_info
-        completion = kubent.step(
+        completion:ChatCompletion = kubent.step(
             question=question, 
             obs=obs,
             chat_hist=chat_hist, 
             agent_workflows=agent_workflows,
         )
-        obs, reward, terminate, act_info = env.step(llm_action=completion.choices[0].message)
+        message = completion.choices[0].message
+        obs, reward, terminate, act_info = env.step(content=message.content, tool_calls=message.tool_calls)
         cnt += 1
 
         # task progress update

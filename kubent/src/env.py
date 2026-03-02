@@ -79,15 +79,17 @@ class Env(BaseModel):
         self.answer =  None
         return self.obs
     
-    @track
+    @track()
     def step(
         self,
-        llm_action: ChatCompletionMessage,
+        content: str | None,
+        tool_calls: List[ChatCompletionMessageToolCallUnion] | None
     ) -> tuple[List[ChatCompletionMessageParam], float, bool, EnvStepInfo]:
         """Environment will be affected by an agent's decision.
         
         Args:
-            llm_action(ChatCompletionMessage): agent action.
+            content(str | None): llm complete response content.
+            tool_calls(List[ChatCompletionMessageToolCallUnion] | None): tool calls generated from llm response.
 
         Returns:
             a tuple consists of observation which is passed to the next round conversation, action accumulated rewards, terminate flag 
@@ -97,9 +99,6 @@ class Env(BaseModel):
 
         reward = 0
         terminate = False
-
-        content:str | None = llm_action.content
-        tool_calls:List[ChatCompletionMessageToolCallUnion] | None = llm_action.tool_calls
 
         if content is not None and tool_calls is None:
             terminate = True
