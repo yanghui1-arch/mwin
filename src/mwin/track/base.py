@@ -34,7 +34,7 @@ class BaseTracker(ABC):
         func_name: str | Callable | None = None,
         project_name: str | None = None,
         tags: List[str] | None = None,
-        step_type: StepType = StepType.CUSTOMIZED,
+        step_type: StepType = StepType.GENERAL,
         model: str | None = None,
         llm_provider: LLMProvider = LLMProvider.OPENAI,
         llm_ignore_fields: List[str] | None = None,
@@ -48,7 +48,7 @@ class BaseTracker(ABC):
             func_name(str | Callable | None): caller can set it they want to name with 'str' type. If caller doesn't set, it will be `Callable`.
             project_name(str | None): project name of this function. Default to `None`. It is set only when you deploys two or more programs which are using mwin to track.
             tags(List[str] | None): tags of tracking steps. Default to `None`.
-            step_type(StepType): step type. Default to `StepType.CUSTOMIZED`.
+            step_type(StepType): step type. Default to `StepType.GENERAL`.
             model(str | None): using model name. Default to `None`. If you are using llama you can set the field to `llama`.
             llm_provider(LLMProvider): llm inference provider. Default to `OPENAI`.
             llm_ignore_fields(List[str] | None): a list of llm ignore fields name. Default to `None`.

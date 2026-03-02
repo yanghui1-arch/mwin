@@ -7,8 +7,8 @@ from openai.types.completion_usage import CompletionUsage
 from ..helper import serialize_helper
 
 class StepType(Enum):
-    CUSTOMIZED = 'customized'
-    LLM_RESPONSE = 'llm_response'
+    GENERAL = 'general'
+    LLM = 'llm'
     RETRIEVE = 'retrieve'
     TOOL = 'tool'
 
@@ -17,7 +17,7 @@ class Step(BaseModel):
     id: str | UUID
     trace_id: str | UUID
     parent_step_id: str | UUID | None = None
-    type: StepType = StepType.CUSTOMIZED
+    type: StepType = StepType.GENERAL
     tags: List[str] = Field(default_factory=list)
     input: Dict[str, Any] | None = None
     output: Dict[str, Any] | None = None
