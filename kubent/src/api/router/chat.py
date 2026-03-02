@@ -83,6 +83,7 @@ async def optimize_agent_system(
         else:
             traces_id: List[UUID] = await trace.select_latest_traces_id_by_project_id(db=db, project_id=req.project_id)
             redis_client.rpush(f"optimize-trace-{str(user_id)}", *[str(t_id) for t_id in traces_id])
+            redis_client.expire(f"optimize-trace-{str(user_id)}", 600)
 
         steps_in_traces: List[List[Step]] = [await step.select_steps_by_trace_id(db=db, trace_id=trace_id) for trace_id in traces_id]
         exec_graphs: List[str] = [str(mermaid.steps_to_mermaid(steps=steps)) for steps in steps_in_traces]
