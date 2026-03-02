@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from textwrap import dedent
 from openai import OpenAI, pydantic_function_tool
 from openai.types.chat import ChatCompletionFunctionToolParam
-from mwin import track, LLMProvider
+from mwin import track, LLMProvider, StepType
 from sqlalchemy import select
 from .toolkits import Tool
 from ...repository.models import Step, StepMeta
@@ -149,7 +149,7 @@ def _step_overview(openai_client: OpenAI, step: Step, step_meta: StepMeta | None
     
     return _build_overview(overview=overview)
 
-@track(llm_provider=LLMProvider.OPEN_ROUTER)
+@track(llm_provider=LLMProvider.OPEN_ROUTER, step_type=StepType.TOOL)
 def query_step(step_ids: List[str]) -> str:
     overview_step_info: List[str] = []
     openai_cli: OpenAI = OpenAI(**_OPENAI_CLIENT_KWARGS)

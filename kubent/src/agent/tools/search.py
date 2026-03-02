@@ -2,8 +2,10 @@ from typing import Callable
 from pydantic import BaseModel, Field
 from openai import pydantic_function_tool
 from openai.types.chat import ChatCompletionFunctionToolParam
+from mwin import track, StepType
 from .toolkits import Tool
 
+@track(StepType.TOOL)
 def search_google(keyword, limit=2):
     ...
 

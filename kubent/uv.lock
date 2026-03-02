@@ -511,18 +511,19 @@ wheels = [
 
 [[package]]
 name = "mwin"
-version = "0.1.8"
+version = "0.1.9"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
+    { name = "httpx" },
     { name = "more-itertools" },
     { name = "openai" },
     { name = "requests" },
     { name = "uuid6" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/4c/c1/8fb402ff6e56617d38f91454c98f66d6844c40023d51bc0ad1ac1fa02c4f/mwin-0.1.8.tar.gz", hash = "sha256:a5ecd013d2c9f3f3cf475413a1f3016d7cb40f957381644164df7445822f797c", size = 32950, upload-time = "2026-02-20T03:35:48.41Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/bb/0b/25b981cf21d8a626534f79e9019e317c74bb7dede6068a50906b7c829b98/mwin-0.1.9.tar.gz", hash = "sha256:401777ea149fed79a09eafffa869e4366b3b213ec047cd146f720fd011c95108", size = 32942, upload-time = "2026-03-02T00:26:44.18Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ae/52/a059d69805875da808b63ae010da1a8c3f4535a135dfb5d1ba2024843c50/mwin-0.1.8-py3-none-any.whl", hash = "sha256:8f88dfc0cbeb9774030d341bdbb505db1370aa33d20e312a30b4cabed4fa8c76", size = 42154, upload-time = "2026-02-20T03:35:46.616Z" },
+    { url = "https://files.pythonhosted.org/packages/a3/a0/01e534bbe5a12ae779ba6b7715e48bb34b90d0b6000b30054cee968e0752/mwin-0.1.9-py3-none-any.whl", hash = "sha256:7c839c7d27e9acc3afed57bd34b1d0a820a07dc6332ae69d9698c3e27eebff75", size = 42090, upload-time = "2026-03-02T00:26:42.838Z" },
 ]
 
 [[package]]

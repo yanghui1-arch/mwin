@@ -150,7 +150,7 @@ class Robin(ReActAgent):
 
         return self
     
-    @track(llm_provider=LLMProvider.OPENAI, project_name="Kubent")
+    @track
     def run(
         self,
         question: str,
@@ -233,7 +233,7 @@ class Robin(ReActAgent):
             
             return Result(answer=act_info.get("answer"), chats=chats)
 
-    @track(llm_provider=LLMProvider.OPENAI, project_name="Kubent")
+    @track
     def act(
         self,
         question: str,

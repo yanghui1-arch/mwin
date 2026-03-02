@@ -4,14 +4,14 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 from openai import pydantic_function_tool
 from openai.types.chat import ChatCompletionFunctionToolParam
-from mwin import track
+from mwin import track, StepType
 
 from .toolkits import Tool
 from ..runtime import get_current_agent_name, get_current_session_id, get_current_user_id, get_current_project_name
 from ...sandbox import get_sandbox_manager, DockerSandboxConfig, VolumeMount
 from ...config import config
 
-@track
+@track(step_type=StepType.TOOL)
 def bash(command: str):
     """Execute bash command
     
