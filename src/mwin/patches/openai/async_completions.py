@@ -11,7 +11,7 @@ from openai.types.chat.chat_completion_chunk import ChatCompletionChunk, Choice,
 
 from ..llm_patch_config import LLMPatchConfig, get_llm_patch_config
 from ..std import PatchStreamResponse, ToolFunctionCall, Function, patch_std_output
-from ...models import Step, LLMProvider
+from ...models import Step
 from ...track.options import TrackerOptions
 from ...context.func_context import current_function_name_context
 from ...helper import inspect_helper
