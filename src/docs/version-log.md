@@ -1,5 +1,10 @@
 # Version log
 Every version updates, fixes and removings could be checked here.
+## 0.1.9
+### Fix
+- Don't consider proxy in httpx and fix httpx version to 0.28.1. - @yanghui1-arch [# 6f70729](https://github.com/yanghui1-arch/mwin/commit/6f7072922e72939fa35bd7924a8f4a9d60a01cb8)
+- Fix llm_provider default value is OpenAI. - @yanghui1-arch [# 5312137](https://github.com/yanghui1-arch/mwin/commit/5312137fb0be939246776f3cf5113db54fae59a8)
+- Fix step_type default value is general. - @yanghui1-arch [# b119b1e](https://github.com/yanghui1-arch/mwin/commit/b119b1e497044a22e47e0adbcc9882cbc3be8c14)
 
 ## 0.1.8
 ### BREAKING CHANGE
