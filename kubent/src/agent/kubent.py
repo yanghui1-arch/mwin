@@ -199,6 +199,7 @@ class Kubent(ReActAgent):
             else:
                 raise bqe
 
+    @track()
     def stream_step(
         self,
         question: str | None,
