@@ -33,19 +33,23 @@ async def select_chat_session_by_user_id(
     db: AsyncSession,
     user_id: UUID,
     limit: int = 20,
+    desc: bool = True,
 ) -> List[KubentChatSession]:
     """Select all chat sessions with Kubent by user uuid.
     
     Args:
         db(AsyncSession): db connection
         user_id(UUID): user id
-        limit(int): search limits. Default to `20`
+        limit(int): search limits. Default to `50`
+        desc(bool): use desc with last update
     Return:
         List[KubentChatSession]: a list of chat session with Kubent.
     """
     stmt = select(KubentChatSession).where(
         KubentChatSession.user_uuid == user_id
     ).limit(limit=limit)
+    if desc:
+        stmt = stmt.order_by(KubentChatSession.last_update_timestamp.desc())
     result = await db.execute(stmt)
     return result.scalars().all()
 
