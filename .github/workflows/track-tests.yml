@@ -34,5 +34,5 @@ jobs:
           python -m pip install pytest
         working-directory: src
       - name: Run track tests
-        run: python -m pytest test/track
+        run: python -m pytest test
         working-directory: src
