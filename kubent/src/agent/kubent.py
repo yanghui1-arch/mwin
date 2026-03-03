@@ -2,7 +2,7 @@ from typing import List, Dict, Any, Callable
 from uuid import UUID
 import os
 from textwrap import dedent
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from dotenv import load_dotenv
 from openai import OpenAI, Stream, BadRequestError
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletion, ChatCompletionFunctionToolParam, ChatCompletionChunk
@@ -68,8 +68,7 @@ class Kubent(ReActAgent):
     engine: OpenAI = OpenAI(**_OPENAI_CLIENT_KWARGS)
     attempt: int = 15
 
-    class Config:
-        arbitrary_types_allowed=True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @model_validator(mode="after")
     def load_tools(self):
