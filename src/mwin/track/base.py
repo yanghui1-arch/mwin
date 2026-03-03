@@ -142,7 +142,7 @@ class BaseTracker(ABC):
                 result = func(*args, **kwargs)
             except Exception as e:
                 error_info = str(e)
-                error_info = exception_helper.clean_exception(error_info)
+                error_info = exception_helper.collect_exception(error_info)
                 func_exception = e
             finally:
                 # after track
@@ -194,7 +194,7 @@ class BaseTracker(ABC):
                 result = await func(*args, **kwargs)
             except Exception as e:
                 error_info = str(e)
-                error_info = exception_helper.clean_exception(error_info)
+                error_info = exception_helper.collect_exception(error_info)
                 func_exception = e
             finally:
                 # after track
