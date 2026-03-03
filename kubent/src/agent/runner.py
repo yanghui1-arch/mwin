@@ -1,34 +1,12 @@
 import threading
 from typing import List, Dict, Any, Callable
-from enum import StrEnum
 from uuid import UUID
-from pydantic import BaseModel
 from openai.types.chat import ChatCompletionMessageParam
 from .kubent import Kubent, Result
+from .events import AgentEventType, SSEEvent
 from ..env import Env, EnvStepInfo
 from ..repository.db.conn import SessionLocal
 from ..repository import kubent_chat
-
-
-class AgentEventType(StrEnum):
-    PROGRESS = "PROGRESS"
-    DONE = "DONE"
-    ERROR = "ERROR"
-
-
-class SSEEvent(BaseModel):
-    type: AgentEventType
-    delta: str | None = None
-    """LLM text token, streamed during PROGRESS."""
-
-    tool_names: List[str] | None = None
-    """Tools called in this step, reported after env.step() during PROGRESS."""
-
-    answer: str | None = None
-    """Final answer from the agent, present on DONE."""
-
-    detail: str | None = None
-    """Error message, present on ERROR."""
 
 
 def run_with_callback(
@@ -61,7 +39,7 @@ def run_with_callback(
             obs=obs,
             chat_hist=chat_hist,
             agent_workflows=agent_workflows,
-            on_token=lambda delta: on_progress(SSEEvent(type=AgentEventType.PROGRESS, delta=delta)),
+            on_progress=on_progress,
         )
         obs, reward, terminate, act_info = env.step(content=content, tool_calls=tool_calls)
         cnt += 1

@@ -7,8 +7,9 @@ from dotenv import load_dotenv
 from openai import OpenAI, Stream, BadRequestError
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletion, ChatCompletionFunctionToolParam, ChatCompletionChunk
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall, Function
-from mwin import track
+from mwin import track, LLMProvider
 from .react import ReActAgent
+from .events import AgentEventType, SSEEvent
 from .tools import SearchGoogle, KubentThink, QueryStep, ConsultRobin, Bash
 from .runtime import current_project_name, current_user_id
 from ..config import config
@@ -199,20 +200,20 @@ class Kubent(ReActAgent):
             else:
                 raise bqe
 
-    @track()
+    @track(llm_provider=LLMProvider.OPEN_ROUTER)
     def stream_step(
         self,
         question: str | None,
         obs: List[ChatCompletionMessageParam],
         chat_hist: List[ChatCompletionMessageParam] | None,
         agent_workflows: List[str] | None,
-        on_token: Callable[[str], None],
+        on_progress: Callable[[SSEEvent], None],
     ) -> tuple[str | None, list[ChatCompletionMessageToolCall] | None]:
-        """Like step() but streams token deltas via on_token as the LLM generates them.
+        """Like step() but streams token deltas via on_progress as the LLM generates them.
 
         Args:
-            on_token: called with each text token delta string.
-                      If you don't need token-level updates, pass ``lambda _: None``.
+            on_progress: called with each SSEEvent (PROGRESS with delta or answer_delta).
+                         Pass ``lambda _: None`` if you don't need streaming updates.
 
         Returns:
             Reconstructed message compatible with env.step().
@@ -248,7 +249,7 @@ class Kubent(ReActAgent):
                 parallel_tool_calls=True,
                 stream=True,
             )
-            return self._collect_stream(stream, on_token)
+            return self._collect_stream(stream, on_progress)
         except BadRequestError as bqe:
             if "maximum context" in bqe.args[0]:
                 new_message: NewMessage = solve_exceed_context(
@@ -274,30 +275,43 @@ class Kubent(ReActAgent):
                     parallel_tool_calls=True,
                     stream=True,
                 )
-                return self._collect_stream(stream, on_token)
+                return self._collect_stream(stream, on_progress)
             raise bqe
 
     def _collect_stream(
         self,
         stream: Stream[ChatCompletionChunk],
-        on_token: Callable[[str], None],
+        on_progress: Callable[[SSEEvent], None],
     ) -> tuple[str | None, list[ChatCompletionMessageToolCall] | None]:
         """Consume a streaming LLM response.
 
-        Calls on_token for each text delta as it arrives.
+        Classifies the step on the first meaningful chunk:
+        - tool_calls chunk → intermediate step: emits PROGRESS(delta=...)
+        - content chunk    → final answer step: emits PROGRESS(answer_delta=...)
         Returns (content, tool_calls) to pass directly to env.step().
         """
         content_parts: List[str] = []
         tool_calls_acc: dict[int, dict] = {}
+        is_answer_step: bool | None = None  # None = not yet classified
 
         for chunk in stream:
             if not chunk.choices:
                 continue
             delta = chunk.choices[0].delta
 
+            # Classify on the first meaningful chunk
+            if is_answer_step is None:
+                if delta.tool_calls:
+                    is_answer_step = False
+                elif delta.content:
+                    is_answer_step = True
+
             if delta.content:
                 content_parts.append(delta.content)
-                on_token(delta.content)
+                if is_answer_step:
+                    on_progress(SSEEvent(type=AgentEventType.PROGRESS, answer_delta=delta.content))
+                else:
+                    on_progress(SSEEvent(type=AgentEventType.PROGRESS, delta=delta.content))
 
             if delta.tool_calls:
                 for tc in delta.tool_calls:
