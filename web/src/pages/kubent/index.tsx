@@ -14,7 +14,7 @@ export default function KubentPage() {
     handleDeleteSession,
     handleNewChat,
     messages,
-    taskId,
+    isStreaming,
     callingToolInformation,
     handleSend,
   } = useKubentChat();
@@ -40,10 +40,10 @@ export default function KubentPage() {
         <div className="flex-1 min-w-0 h-full">
           <ChatArea
             messages={messages}
-            taskId={taskId}
+            isStreaming={isStreaming}
             callingToolInformation={callingToolInformation}
             selectedProjectName={selectedProject?.name}
-            disabled={!selectedProject}
+            disabled={!selectedProject || isStreaming}
             onSend={handleSend}
           />
         </div>

@@ -13,7 +13,7 @@ import type { ChatMessage } from "../types";
 
 interface ChatAreaProps {
   messages: ChatMessage[];
-  taskId: string | null;
+  isStreaming: boolean;
   callingToolInformation: string | undefined;
   selectedProjectName: string | undefined;
   disabled: boolean;
@@ -24,7 +24,7 @@ const SCROLL_BOTTOM_THRESHOLD = 50;
 
 export function ChatArea({
   messages,
-  taskId,
+  isStreaming,
   callingToolInformation,
   selectedProjectName,
   disabled,
@@ -78,7 +78,7 @@ export function ChatArea({
     const viewport = getViewport();
     if (!viewport) return;
     viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
-  }, [messages, taskId, callingToolInformation, isAtBottom, getViewport]);
+  }, [messages, isStreaming, callingToolInformation, isAtBottom, getViewport]);
 
   // Reset transition state when messages appear
   useEffect(() => {
@@ -127,8 +127,8 @@ export function ChatArea({
                       <UserChatBubble key={index} content={message.content} />
                     )
                   )}
-                  {taskId && <ThinkingBubble />}
-                  {taskId && callingToolInformation && (
+                  {isStreaming && !callingToolInformation && <ThinkingBubble />}
+                  {isStreaming && callingToolInformation && (
                     <ToolChatBubble content={callingToolInformation} />
                   )}
                 </div>

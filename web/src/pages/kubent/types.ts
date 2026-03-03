@@ -38,3 +38,11 @@ export type TaskProgressData = {
       }
     | undefined;
 };
+
+export type SSEEvent = {
+  type: "PROGRESS" | "DONE" | "ERROR";
+  delta: string | null;
+  tool_names: string[] | null;
+  answer: string | null;
+  detail: string | null;
+};

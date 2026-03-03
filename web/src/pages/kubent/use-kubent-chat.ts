@@ -1,14 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { projectApi } from "@/api/project";
 import { kubentChatApi } from "@/api/kubent/kubent-chat";
-import { useTaskPolling, type TaskStatus } from "@/hooks/use-task";
-import type {
-  ChatMessage,
-  Session,
-  Project,
-  TaskStatusResponse,
-  TaskProgressData,
-} from "./types";
+import type { ChatMessage, Session, Project } from "./types";
 
 export function useKubentChat() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -18,63 +11,11 @@ export function useKubentChat() {
     undefined
   );
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  // Track chat with Kubent task status.
-  const [taskId, setTaskId] = useState<string | null>(null);
-  const [enabled, setEnabled] = useState<boolean>(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const [callingToolInformation, setCallingToolInformation] = useState<
     string | undefined
   >(undefined);
-
-  const fetchTaskStatus = async (
-    taskId: string,
-    signal: AbortSignal
-  ): Promise<TaskStatus<TaskProgressData>> => {
-    const taskStatus: TaskStatusResponse = await kubentChatApi.queryChatStatus(
-      taskId,
-      signal
-    );
-
-    return {
-      status: taskStatus.status,
-      data: {
-        content: taskStatus.content,
-        exceptionTraceback: taskStatus.exceptionTraceback,
-        progressInfo: taskStatus.progressInfo,
-      },
-    };
-  };
-
-  const onTaskDone = (_taskStatus: TaskStatus<TaskProgressData>) => {
-    void _taskStatus;
-    setEnabled(false);
-    setTaskId(null);
-    setCallingToolInformation(undefined);
-  };
-
-  const onTaskUpdate = (taskStatus: TaskStatus<TaskProgressData>) => {
-    const status = taskStatus.status;
-    if (status === "PROGRESS") {
-      setCallingToolInformation(taskStatus.data.progressInfo?.content);
-    } else if (status === "SUCCESS") {
-      const assistantMessage: ChatMessage = {
-        role: "assistant",
-        content: taskStatus.data.content as string,
-        startTimestamp: new Date().toLocaleString("sv-SE"),
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
-    }
-  };
-
-  // TODO: Add an update message callback.
-
-  useTaskPolling({
-    taskId,
-    enabled,
-    fetchStatus: fetchTaskStatus,
-    intervalMs: 300,
-    onUpdate: onTaskUpdate,
-    onDone: onTaskDone,
-  });
+  const abortRef = useRef<AbortController | null>(null);
 
   const selectProject = (projectName: string) => {
     localStorage.setItem("kubent:selectedProjectName", projectName);
@@ -127,10 +68,10 @@ export function useKubentChat() {
   };
 
   const handleNewChat = () => {
+    abortRef.current?.abort();
     setSelectedSession(undefined);
     setMessages([]);
-    setTaskId(null);
-    setEnabled(false);
+    setIsStreaming(false);
     setCallingToolInformation(undefined);
   };
 
@@ -144,6 +85,7 @@ export function useKubentChat() {
       startTimestamp: new Date().toLocaleString("sv-SE"),
     };
     setMessages((prev) => [...prev, userMessage]);
+
     let session: Session | undefined = selectedSession;
     let isNewSession = false;
     if (!session) {
@@ -159,33 +101,11 @@ export function useKubentChat() {
         isNewSession = true;
         setSelectedSession(session);
       } else {
-        throw new Error(
-          "Failed to create a new chat. Please retry after a moment."
-        );
+        throw new Error("Failed to create a new chat. Please retry after a moment.");
       }
     }
-    const [chatResponse, titleResponse] = await Promise.all([
-      kubentChatApi.chat(session.id, inputValue, selectedProject.id),
-      kubentChatApi.title(session.id, inputValue.trim()),
-    ]);
-    // if (chatResponse.data.code === 200) {
-    //   const assistantMessage: ChatMessage = {
-    //     role: "assistant",
-    //     content: chatResponse.data.data.message,
-    //     startTimestamp: new Date().toLocaleString("sv-SE"),
-    //   };
-    //   setMessages((prev) => [...prev, assistantMessage]);
-    // }
-    if (chatResponse.data.code === 200) {
-      const task_id = chatResponse.data.data.task_id;
-      setTaskId(task_id);
-      setEnabled(true);
-    } else {
-      setTaskId(null);
-      setEnabled(false);
-      setCallingToolInformation(undefined);
-    }
 
+    const titleResponse = await kubentChatApi.title(session.id, inputValue.trim());
     if (titleResponse.data.code === 200) {
       const title: string = titleResponse.data.data;
       session = { ...session, title };
@@ -193,6 +113,56 @@ export function useKubentChat() {
       if (isNewSession) {
         setSessions((prev) => [session!, ...prev]);
       }
+    }
+
+    // Start SSE stream
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    setIsStreaming(true);
+    setCallingToolInformation(undefined);
+
+    try {
+      let accumulated = "";
+      for await (const event of kubentChatApi.optimizeStream(
+        session.id,
+        inputValue.trim(),
+        selectedProject.id,
+        controller.signal,
+      )) {
+        if (event.type === "PROGRESS") {
+          if (event.delta) {
+            accumulated += event.delta;
+            setCallingToolInformation(accumulated);
+          }
+          if (event.tool_names && event.tool_names.length > 0) {
+            // Tool was called — reset buffer for next step
+            accumulated = "";
+            setCallingToolInformation(undefined);
+          }
+        } else if (event.type === "DONE") {
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content: event.answer ?? "",
+              startTimestamp: new Date().toLocaleString("sv-SE"),
+            },
+          ]);
+          break;
+        } else if (event.type === "ERROR") {
+          console.error("SSE error:", event.detail);
+          break;
+        }
+      }
+    } catch (err) {
+      if ((err as Error).name !== "AbortError") {
+        console.error("Stream error:", err);
+      }
+    } finally {
+      setIsStreaming(false);
+      setCallingToolInformation(undefined);
     }
   };
 
@@ -261,7 +231,7 @@ export function useKubentChat() {
     handleDeleteSession,
     handleNewChat,
     messages,
-    taskId,
+    isStreaming,
     callingToolInformation,
     handleSend,
   };
