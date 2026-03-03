@@ -1,7 +1,9 @@
 import asyncio
 from contextlib import asynccontextmanager
+from concurrent.futures import ThreadPoolExecutor
 from fastapi import FastAPI
 from .router import api_router
+from .guard import AgentCapacityGuard
 from ..repository.redis import init_redis_pool
 from ..sandbox import init_docker_client, init_sandbox_manager, get_sandbox_manager
 
@@ -39,9 +41,16 @@ async def lifespan(app: FastAPI):
     # Start background cleanup task
     clean_up_sandboxes_task = asyncio.create_task(clean_up_sandboxes())
     app.state.cleanup_task = clean_up_sandboxes_task
-
     print("[Startup] Sandbox manager initialized with automatic cleanup")
     print("[Startup] Cleanup runs every 60 seconds (idle timeout: 600 seconds)")
+
+    # Dedicated thread pool for agent runs — isolated from the default executor.
+    # Sized to MAX_CONCURRENT_AGENTS so threads and capacity gate are always consistent.
+    MAX_CONCURRENT_AGENTS = 10
+    agent_executor = ThreadPoolExecutor(max_workers=MAX_CONCURRENT_AGENTS)
+    app.state.agent_executor = agent_executor
+    app.state.agent_guard = AgentCapacityGuard(max_concurrent=MAX_CONCURRENT_AGENTS)
+    print(f"[Startup] Agent executor initialized (max_workers={MAX_CONCURRENT_AGENTS})")
 
     yield
 
@@ -60,6 +69,9 @@ async def lifespan(app: FastAPI):
     docker_client.close()
 
     redis_pool.close()
+
+    agent_executor.shutdown(wait=False)
+    print("[Shutdown] Agent executor stopped")
     print("[Shutdown] Cleanup complete")
 
 

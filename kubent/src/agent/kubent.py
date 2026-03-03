@@ -1,12 +1,13 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Callable
 from uuid import UUID
 import os
 from textwrap import dedent
 from pydantic import BaseModel, Field, model_validator
 from dotenv import load_dotenv
-from openai import OpenAI, BadRequestError
-from openai.types.chat import ChatCompletionMessageParam, ChatCompletion, ChatCompletionFunctionToolParam
-from mwin import track, LLMProvider
+from openai import OpenAI, Stream, BadRequestError
+from openai.types.chat import ChatCompletionMessageParam, ChatCompletion, ChatCompletionFunctionToolParam, ChatCompletionChunk
+from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall, Function
+from mwin import track
 from .react import ReActAgent
 from .tools import SearchGoogle, KubentThink, QueryStep, ConsultRobin, Bash
 from .runtime import current_project_name, current_user_id
@@ -58,6 +59,7 @@ Refered to workflow, please use **mermaid** language to describe it.
 
 Encourage you to use more tools to get more information in the real world.
 """
+
 
 class Kubent(ReActAgent):
     name: str = "kubent"
@@ -197,3 +199,127 @@ class Kubent(ReActAgent):
             # Not because exceed context length of model.
             else:
                 raise bqe
+
+    def stream_step(
+        self,
+        question: str | None,
+        obs: List[ChatCompletionMessageParam],
+        chat_hist: List[ChatCompletionMessageParam] | None,
+        agent_workflows: List[str] | None,
+        on_token: Callable[[str], None],
+    ) -> tuple[str | None, list[ChatCompletionMessageToolCall] | None]:
+        """Like step() but streams token deltas via on_token as the LLM generates them.
+
+        Args:
+            on_token: called with each text token delta string.
+                      If you don't need token-level updates, pass ``lambda _: None``.
+
+        Returns:
+            Reconstructed message compatible with env.step().
+        """
+        kubent_system_prompt = system_bg
+        if chat_hist is None:
+            chat_hist = []
+        user_content = question
+        conversation_dir = build_save_dir(agent_name=self.name, user_uuid=str(current_user_id.get()), project_name=current_project_name.get())
+        if conversation_dir.exists() and conversation_dir.is_dir():
+            pattern = f"conversation_*.md"
+            matched_files = list(conversation_dir.glob(pattern))
+            matched_files.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+            kubent_system_prompt += dedent(
+                f"""
+                # Stored Conversation Path
+                {config.get("agent.docker.conversations_dir")}
+
+                ## Some latest conversation files name
+                {"\n".join([ file.name for file in matched_files[:3] ])}
+                """
+            )
+
+        if agent_workflows is not None and len(agent_workflows) > 0:
+            workflows_desc = [f"<AgentExecutionGraph>\n{workflow}\n</AgentExecutionGraph>" for workflow in agent_workflows]
+            kubent_system_prompt += f"<Agent>\n{"\n".join(workflows_desc)}\n</Agent>"
+
+        try:
+            stream:Stream[ChatCompletionChunk] = self.engine.chat.completions.create(
+                model=self.model,
+                messages=[{"role": "system", "content": kubent_system_prompt}] + chat_hist + [{"role": "user", "content": user_content}] + obs,
+                tools=self.tools,
+                parallel_tool_calls=True,
+                stream=True,
+            )
+            return self._collect_stream(stream, on_token)
+        except BadRequestError as bqe:
+            if "maximum context" in bqe.args[0]:
+                new_message: NewMessage = solve_exceed_context(
+                    chat_hist=chat_hist,
+                    user_content=user_content,
+                    obs=obs,
+                    user_uuid=current_user_id.get(),
+                    project_name=current_project_name.get(),
+                )
+                if new_message.summary_obs:
+                    kubent_system_prompt += dedent(f"""
+                    # Summary of What You've Done in the current turn.
+                    {new_message.summary_obs}
+                    """)
+                kubent_system_prompt += dedent(f"""
+                # Summary of What You've Done So Far
+                {new_message.summary_conversation}
+                """)
+                stream = self.engine.chat.completions.create(
+                    model=self.model,
+                    messages=[{"role": "system", "content": kubent_system_prompt}] + new_message.pairs + [{"role": "user", "content": user_content}],
+                    tools=self.tools,
+                    parallel_tool_calls=True,
+                    stream=True,
+                )
+                return self._collect_stream(stream, on_token)
+            raise bqe
+
+    def _collect_stream(
+        self,
+        stream: Stream[ChatCompletionChunk],
+        on_token: Callable[[str], None],
+    ) -> tuple[str | None, list[ChatCompletionMessageToolCall] | None]:
+        """Consume a streaming LLM response.
+
+        Calls on_token for each text delta as it arrives.
+        Returns (content, tool_calls) to pass directly to env.step().
+        """
+        content_parts: List[str] = []
+        tool_calls_acc: dict[int, dict] = {}
+
+        for chunk in stream:
+            if not chunk.choices:
+                continue
+            delta = chunk.choices[0].delta
+
+            if delta.content:
+                content_parts.append(delta.content)
+                on_token(delta.content)
+
+            if delta.tool_calls:
+                for tc in delta.tool_calls:
+                    idx = tc.index
+                    if idx not in tool_calls_acc:
+                        tool_calls_acc[idx] = {"id": "", "name": "", "arguments": ""}
+                    if tc.id:
+                        tool_calls_acc[idx]["id"] = tc.id
+                    if tc.function:
+                        if tc.function.name:
+                            tool_calls_acc[idx]["name"] += tc.function.name
+                        if tc.function.arguments:
+                            tool_calls_acc[idx]["arguments"] += tc.function.arguments
+
+        tool_calls = None
+        if tool_calls_acc:
+            tool_calls = [
+                ChatCompletionMessageToolCall(
+                    id=tc["id"],
+                    type="function",
+                    function=Function(name=tc["name"], arguments=tc["arguments"]),
+                )
+                for tc in tool_calls_acc.values()
+            ]
+        return "".join(content_parts) or None, tool_calls
