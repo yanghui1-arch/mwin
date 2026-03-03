@@ -127,7 +127,7 @@ export function ChatArea({
                       <UserChatBubble key={index} content={message.content} />
                     )
                   )}
-                  {isStreaming && !callingToolInformation && <ThinkingBubble />}
+                  {isStreaming && !callingToolInformation && !(messages[messages.length - 1]?.role === "assistant" && messages[messages.length - 1]?.content) && <ThinkingBubble />}
                   {isStreaming && callingToolInformation && (
                     <ToolChatBubble content={callingToolInformation} />
                   )}

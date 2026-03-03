@@ -42,6 +42,7 @@ export type TaskProgressData = {
 export type SSEEvent = {
   type: "PROGRESS" | "DONE" | "ERROR";
   delta: string | null;
+  answer_delta: string | null;
   tool_names: string[] | null;
   answer: string | null;
   detail: string | null;

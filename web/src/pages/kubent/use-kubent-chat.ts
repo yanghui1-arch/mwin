@@ -85,6 +85,8 @@ export function useKubentChat() {
       startTimestamp: new Date().toLocaleString("sv-SE"),
     };
     setMessages((prev) => [...prev, userMessage]);
+    setIsStreaming(true);
+    setCallingToolInformation(undefined);
 
     let session: Session | undefined = selectedSession;
     let isNewSession = false;
@@ -120,11 +122,9 @@ export function useKubentChat() {
     const controller = new AbortController();
     abortRef.current = controller;
 
-    setIsStreaming(true);
-    setCallingToolInformation(undefined);
-
     try {
       let accumulated = "";
+      let answerAccumulated = "";
       for await (const event of kubentChatApi.optimizeStream(
         session.id,
         inputValue.trim(),
@@ -132,24 +132,31 @@ export function useKubentChat() {
         controller.signal,
       )) {
         if (event.type === "PROGRESS") {
-          if (event.delta) {
+          if (event.answer_delta) {
+            const isFirst = !answerAccumulated;
+            answerAccumulated += event.answer_delta;
+            if (isFirst) {
+              setCallingToolInformation(undefined);
+              setMessages((prev) => [
+                ...prev,
+                { role: "assistant", content: answerAccumulated, startTimestamp: new Date().toLocaleString("sv-SE") },
+              ]);
+            } else {
+              setMessages((prev) => {
+                const updated = [...prev];
+                updated[updated.length - 1] = { ...updated[updated.length - 1], content: answerAccumulated };
+                return updated;
+              });
+            }
+          } else if (event.delta) {
             accumulated += event.delta;
             setCallingToolInformation(accumulated);
           }
           if (event.tool_names && event.tool_names.length > 0) {
-            // Tool was called — reset buffer for next step
             accumulated = "";
             setCallingToolInformation(undefined);
           }
         } else if (event.type === "DONE") {
-          setMessages((prev) => [
-            ...prev,
-            {
-              role: "assistant",
-              content: event.answer ?? "",
-              startTimestamp: new Date().toLocaleString("sv-SE"),
-            },
-          ]);
           break;
         } else if (event.type === "ERROR") {
           console.error("SSE error:", event.detail);
