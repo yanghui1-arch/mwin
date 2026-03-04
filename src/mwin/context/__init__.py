@@ -1,6 +1,9 @@
 from .storage import aitrace_storage_context
+from .runner import start_trace, start_trace_async
 
 __all__ = [
+    "start_trace",
+    "start_trace_async",
     "add_storage_step",
     "pop_storage_step",
     "set_storage_trace",

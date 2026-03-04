@@ -1,5 +1,5 @@
 from typing import Tuple
-from contextvars import ContextVar
+from contextvars import ContextVar, Token
 
 from ..models.key_models import Trace, Step
 
@@ -110,14 +110,17 @@ class AITraceStorageContext:
             return None
         return steps[-1]
     
-    def set_trace(self, current_trace: Trace | None):
+    def set_trace(self, current_trace: Trace | None) -> Token[Trace]:
         """set the current trace
         
         Args:
             current_trace(Trace | None): current trace. It maybe a None type for no current trace.
+
+        Returns:
+            a token which is used for .reset_trace()
         """
         
-        self._trace.set(current_trace)
+        return self._trace.set(current_trace)
     
     def pop_trace(self) -> Trace | None:
         """pop trace
@@ -139,6 +142,15 @@ class AITraceStorageContext:
 
         current_trace: Trace | None = self._trace.get()
         return current_trace
+    
+    def reset_trace(self, token: Token):
+        """Reset trace before enter .set_trace()
+        
+        Args:
+            token(Token): token returned by .set_trace()
+        """
+        
+        self._trace.reset(token)
 
 aitrace_storage_context = AITraceStorageContext()
 
