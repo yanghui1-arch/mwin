@@ -408,6 +408,12 @@ class BaseTracker(ABC):
         )
 
 
+        # When the outermost @track call completes (step stack empty),
+        # clear the trace so the next request on this thread gets a fresh one.
+        # Critic: to solve the trace memory leak.
+        if context.get_storage_top_step_data() is None:
+            context.pop_storage_trace()
+
         # Reset llm patch config.
         if patched_token is not None:
             reset_llm_patch_config(token=patched_token)
