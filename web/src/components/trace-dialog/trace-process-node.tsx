@@ -46,7 +46,7 @@ const typeConfig: Record<
     icon: Settings,
     color: "border-l-violet-500",
     bg: "bg-violet-500/5 dark:bg-violet-500/10",
-    label: "Custom",
+    label: "General",
   },
 };
 
