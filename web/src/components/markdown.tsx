@@ -40,14 +40,30 @@ function MermaidBlock({ code }: { code: string }) {
   const diagramRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    let stale = false;
     const id = `mermaid-diagram-${++_mermaidId}`;
-    setSvg("");
     setError(null);
 
-    mermaid
-      .render(id, code)
-      .then(({ svg }) => setSvg(svg))
-      .catch((err) => setError(String(err)));
+    // Debounce: during streaming the mermaid code arrives in partial chunks.
+    // Wait for it to stabilize before attempting a render to avoid rapid
+    // error/loading/render cycles that cause layout jitter.
+    const timer = setTimeout(() => {
+      mermaid
+        .render(id, code)
+        .then(({ svg }) => { if (!stale) setSvg(svg); })
+        .catch((err) => { if (!stale) setError(String(err)); })
+        .finally(() => {
+          // mermaid injects a temporary element into document.body during rendering.
+          // On failure it leaves it behind, causing "Syntax error in text" to appear in the page.
+          const leftover = document.getElementById(id) ?? document.getElementById(`d${id}`);
+          leftover?.parentElement?.removeChild(leftover);
+        });
+    }, 300);
+
+    return () => {
+      stale = true;
+      clearTimeout(timer);
+    };
   }, [code]);
 
   function triggerDownload(url: string, filename: string) {
