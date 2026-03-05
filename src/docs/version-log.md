@@ -1,5 +1,13 @@
 # Version log
 Every version updates, fixes and removings could be checked here.
+## 0.1.10
+### Feature
+- Offer a context manager to manually decide when start and end a trace. - @yanghui1-arch [# 43a212b](https://github.com/yanghui1-arch/mwin/commit/43a212b446c291e2613383f73173b0c80a46d36c)
+
+### Fix
+- Fix exception information is too long to store trace. - @yanghui1-arch [# fb094de](https://github.com/yanghui1-arch/mwin/commit/fb094dea86e5c9db725bf7b489b5466d13e8cd9e)
+- Fix trace default name to `trace`. - @yanghui1-arch [# 76830f1](https://github.com/yanghui1-arch/mwin/commit/76830f17f602976ef66cf311db62825f2891c80b)
+
 ## 0.1.9
 ### Fix
 - Don't consider proxy in httpx and fix httpx version to 0.28.1. - @yanghui1-arch [# 6f70729](https://github.com/yanghui1-arch/mwin/commit/6f7072922e72939fa35bd7924a8f4a9d60a01cb8)
