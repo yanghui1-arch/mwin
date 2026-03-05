@@ -28,48 +28,74 @@ Then you just follow the instructions to configure mwin.
 > Congrats to configure mwin.
 ```
 It needs an Mwin API key. You can get the apikey after logging `http://localhost:5173`.
-Finally use `@track` to track your llm input and output
+Finally use `@track` to track your llm input and output.
+
+## The simplest Demo
 ```python
-from mwin import track, LLMProvider
+from mwin import track
 from openai import OpenAI
 
-openai_apikey = 'YOUR API KEY'
+openai_apikey = "<llm_api_key>"
+openai_base_url = "<llm_base_url>"
+model = "<llm_model>"
 
-@track(
-    tags=['test', 'demo'],
-    llm_provider=LLMProvider.OPENAI,    
-)
-def llm_classification(film_comment: str):
-    prompt = "Please classify the film comment into happy, sad or others. Just tell me result. Don't output anything."
-    cli = OpenAI(base_url='https://api.deepseek.com', api_key=openai_apikey)
-    cli.chat.completions.create(
-        messages=[{"role": "user", "content": f"{prompt}\nfilm_comment: {film_comment}"}],
-        model="deepseek-chat"
+@track()
+def run_agent(prompt: str):
+    cli = OpenAI(base_url=openai_base_url, api_key=openai_apikey)
+    content = cli.chat.completions.create(
+        messages=[{"role": "user", "content": f"{prompt}"}],
+        model=model
     ).choices[0].message.content
-    llm_counts(film_comment=film_comment)
-    return "return value"
+    return content
 
-@track(
-    tags=['test', 'demo', 'second_demo'],
-    llm_provider=LLMProvider.OPENAI,
-)
-def llm_counts(film_comment: str):
-    prompt = "Count the film comment words. just output word number. Don't output anything others."
-    cli = OpenAI(base_url='https://api.deepseek.com', api_key=openai_apikey)
-    return cli.chat.completions.create(
-        messages=[{"role": "user", "content": f"{prompt}\nfilm_comment: {film_comment}"}],
-        model="deepseek-chat"
+run_agent("hello, mwin.")
+```
+
+## Using start_trace() to manually set the trace scope
+It's the most recommended method to use mwin to track the trace in a project. mwin offers two context manager to make trace scope more clear. It's very easy to use and not breaking change your current project code. Using `start_trace_async()` for async context manager. The usage of them is both same.
+
+### Demo
+```python
+from mwin import track, StepType, start_trace
+from openai import OpenAI
+
+openai_apikey = "<llm_api_key>"
+openai_base_url = "<llm_base_url>"
+model = "<llm_model>"
+
+@track(step_type=StepType.TOOL)
+def execute_bash(command: str):
+    # assume execute bash and get a stdout
+    return "<bash_stdout>"
+
+@track()
+def run_agent(prompt: str):
+    cli = OpenAI(base_url=openai_base_url, api_key=openai_apikey)
+    content = cli.chat.completions.create(
+        messages=[{"role": "user", "content": f"{prompt}"}],
+        model=model
     ).choices[0].message.content
+    if "bash" in content:
+        res = execute_bash(content)
+        return res
+    return content
 
-llm_classification("Wow! It sucks.")
+@track()
+def query_for_information(stmt: str) -> str:
+    ...
+
+with start_trace():
+    info = query_for_information("mwin")
+    run_agent()
 ```
 
 # Using mwin with Thread Pools
+**If you are using `with start_trace()` or `async with start_trace_async()` Skip this part.**
 
-When your program uses `ThreadPoolExecutor`, `multiprocessing.pool.ThreadPool`, or similar thread pools, you need to be aware of how mwin traces work with thread reuse.
 
-The correct solution is to use `contextvars.copy_context()`. Wrap your submitted task with `copy_context().run()` to give each task an isolated context:
+When your program uses `ThreadPoolExecutor`, `multiprocessing.pool.ThreadPool`, or similar thread pools, and you wouldn't like to use `start_trace()` and `start_trace_async()` you have to be aware of how mwin traces work with thread reuse.
 
+The correct solution is to use `contextvars.copy_context()`. Wrap your submitted task with `copy_context().run()` to give each task an isolated context. The trace is probably record unexpectedly without `contextvars.copy_context()`.
 ```python
 import contextvars
 from concurrent.futures import ThreadPoolExecutor
@@ -86,7 +112,7 @@ executor.submit(ctx.run, run_agent)
 
 `ctx.run(run_agent)` creates a context sandbox: all `ContextVar` operations inside it go to `ctx`, not to the thread's persistent context. When `ctx.run()` returns, `ctx` is garbage collected along with its trace.
 
-## Example: FastAPI with ThreadPoolExecutor
+### Example: FastAPI with ThreadPoolExecutor
 
 ```python
 import asyncio
@@ -108,18 +134,13 @@ async def chat_handler(request: Request):
     loop.run_in_executor(executor, ctx.run, run_agent)
 ```
 
-## When you don't need this
-
-- **Simple scripts**: one execution = one trace, no thread reuse.
-- **Celery**: mwin auto-clears the trace via `task_prerun` signal. No action needed.
-- **New `threading.Thread`**: each new thread gets a context copy on creation. No issue.
-
-## Summary
+### Conditions you have to notice
 
 | Scenario | Action needed |
 |---|---|
-| Simple script | None |
+| scripts | None |
 | Celery tasks | None (auto-handled) |
+| fastapi using async not sync| None |
 | `threading.Thread` | None |
 | `ThreadPoolExecutor` | Use `copy_context().run()` |
 | `asyncio.loop.run_in_executor` | Use `copy_context().run()` |
