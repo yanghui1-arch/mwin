@@ -52,16 +52,13 @@ export function useKubentChat() {
   };
 
   const handleDeleteSession = async (sessionId: string) => {
-    const response = { data: { code: 200, message: "Success" } };
+    const response = await kubentChatApi.deleteSession(sessionId);
     if (response.data.code !== 200) {
       throw new Error(response.data.message || "Failed to delete session.");
     }
 
-    const nextSessions = sessions.filter((session) => session.id !== sessionId);
-    setSessions(nextSessions);
-    // Delete session is current session
+    setSessions((prev) => prev.filter((session) => session.id !== sessionId));
     if (selectedSession?.id === sessionId) {
-      console.log("clear");
       setSelectedSession(undefined);
       setMessages([]);
     }
