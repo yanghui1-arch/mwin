@@ -157,7 +157,7 @@ function MessageRow({ message, index, isExpanded, onToggle }: MessageRowProps) {
 
           {/* Content — capped height so long responses don't explode the layout */}
           {content !== undefined && content !== null && (
-            <div className="overflow-y-auto max-h-[45vh] px-4 pb-4 pt-1">
+            <div className="px-4 pb-4 pt-1">
               {markdownMode && hasStringContent ? (
                 <Markdown content={contentStr} className="text-sm" />
               ) : (

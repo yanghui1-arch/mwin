@@ -73,7 +73,7 @@ export function LLMJsonCard({
     return (
       <div className="flex flex-col gap-2 flex-1">
         {labelTitle && <Label>{labelTitle}</Label>}
-        <div className="overflow-y-auto max-h-[60vh] space-y-3">
+        <div className="space-y-3">
 
           {/* Metadata / other fields — plain text tab strip */}
           {Object.keys(rest).length > 0 && <IOFieldViewer data={rest} />}
@@ -113,7 +113,7 @@ export function LLMJsonCard({
   return (
     <div className="flex flex-col gap-2 flex-1">
       {labelTitle && <Label>{labelTitle}</Label>}
-      <div className="overflow-y-auto max-h-[60vh]">
+      <div>
         <IOFieldViewer data={jsonObject} />
       </div>
     </div>
