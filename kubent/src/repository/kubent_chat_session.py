@@ -1,6 +1,6 @@
 from uuid import UUID
 from typing import List
-from sqlalchemy import select, update
+from sqlalchemy import select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from .models import KubentChatSession
 
@@ -52,6 +52,12 @@ async def select_chat_session_by_user_id(
         stmt = stmt.order_by(KubentChatSession.last_update_timestamp.desc())
     result = await db.execute(stmt)
     return result.scalars().all()
+
+async def delete_chat_session(db: AsyncSession, session_id: UUID) -> UUID:
+    stmt = delete(KubentChatSession).where(KubentChatSession.id == session_id).returning(KubentChatSession.id)
+    result = await db.execute(stmt)
+    await db.flush()
+    return result.scalar_one()
 
 async def update_chat_session_title(db: AsyncSession, session_id: UUID, title: str) -> bool:
     """Update chat session title

@@ -3,7 +3,7 @@ from uuid import UUID
 from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from .models import KubentChat
 
 async def create_new_chat(
@@ -45,6 +45,12 @@ async def select_chat(db: AsyncSession, session_id: UUID) -> List[KubentChat]:
     ).order_by(KubentChat.start_timestamp.asc())
     result = await db.execute(stmt)
     return result.scalars().all()
+
+async def delete_chats_by_session_id(db: AsyncSession, session_id: UUID) -> int:
+    stmt = delete(KubentChat).where(KubentChat.session_uuid == session_id)
+    result = await db.execute(stmt)
+    await db.flush()
+    return result.rowcount
 
 async def query_chat(
     db: AsyncSession,

@@ -23,7 +23,7 @@ from src.repository.models import (
 )
 from src.repository.db.conn import get_db, AsyncSession
 from src.repository.redis.conn import get_redis_client
-from src.api.schemas import ChatRequest, ChatResponse, ChatSessionResponse, ChatSessionTitleRequest, ChatTaskResponse, ResponseModel
+from src.api.schemas import ChatRequest, ChatResponse, ChatSessionResponse, ChatSessionTitleRequest, ChatTaskResponse, DeleteChatSessionRequest, ResponseModel
 from src.api.jwt import verify_at_token
 from src.service import chat
 from src.utils import mermaid
@@ -56,8 +56,32 @@ async def create_new_chat_session(
     return ResponseModel.success(data=ChatSessionResponse(id=chat_session.id, user_uuid=user_id, title=chat_session.title, last_update_timestamp=chat_session.last_update_timestamp))
 
 @chat_router.post(
-    "/optimize", 
-    description="Chat with Kubent to optimize the agent system.", 
+    "/delete_session",
+    description="Delete a chat session and its messages.",
+)
+async def delete_chat_session(
+    req: DeleteChatSessionRequest,
+    user_id: UUID = Depends(verify_at_token),
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        session_id = UUID(req.session_id)
+        chat_session: KubentChatSession | None = await kubent_chat_session.select_chat_session_by_id(db=db, session_id=session_id)
+        if not chat_session:
+            return ResponseModel.error(message="Not existing session id.")
+        if chat_session.user_uuid != user_id:
+            return ResponseModel.error(message=f"No authentication to access {session_id}")
+        await kubent_chat.delete_chats_by_session_id(db=db, session_id=session_id)
+        await kubent_chat_session.delete_chat_session(db=db, session_id=session_id)
+        await db.commit()
+        return ResponseModel.success(data=None)
+    except ValueError:
+        return ResponseModel.error(message="Failed to parse session id.")
+
+
+@chat_router.post(
+    "/optimize",
+    description="Chat with Kubent to optimize the agent system.",
     response_model=ResponseModel[ChatResponse],
 )
 async def optimize_agent_system(
