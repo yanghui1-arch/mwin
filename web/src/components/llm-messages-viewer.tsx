@@ -17,7 +17,7 @@ interface LLMMessagesViewerProps {
 
 export function LLMMessagesViewer({ messages, className }: LLMMessagesViewerProps) {
   // First message expanded by default; supports multi-expand for comparison
-  const [expandedSet, setExpandedSet] = useState<Set<number>>(new Set([0]));
+  const [expandedSet, setExpandedSet] = useState<Set<number>>(new Set());
 
   const toggle = (idx: number) => {
     setExpandedSet((prev) => {
