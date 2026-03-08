@@ -256,10 +256,10 @@ class TestRunWithCallback:
         kubent.attempt = 5
 
         def fake_stream_step(**kwargs):
-            on_token = kwargs.get("on_token")
-            if on_token:
-                on_token("tok1")
-                on_token("tok2")
+            on_progress = kwargs.get("on_progress")
+            if on_progress:
+                on_progress(SSEEvent(type=AgentEventType.PROGRESS, delta="tok1"))
+                on_progress(SSEEvent(type=AgentEventType.PROGRESS, delta="tok2"))
             return ("tok1tok2", None)
 
         kubent.stream_step.side_effect = fake_stream_step
