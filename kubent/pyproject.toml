@@ -1,6 +1,6 @@
 [project]
 name = "kubent"
-version = "0.1.0-beta"
+version = "0.2.1"
 description = "Kubent: offer an enterprise-level solution to improve agent system better."
 readme = "README.md"
 requires-python = ">=3.12"
