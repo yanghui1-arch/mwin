@@ -7,6 +7,7 @@ from fastapi.responses import StreamingResponse
 from celery import states as celery_task_states
 from celery.result import AsyncResult
 from openai.types.chat import ChatCompletionMessageParam
+from mwin import start_trace
 from src.repository import (
     step,
     trace,
@@ -180,7 +181,7 @@ async def optimize_agent_system_stream(
 
     def run_agent():
         try:
-            with execution_scope(session_id=session_id, user_id=user_id, project_name=project_name, agent_name="kubent"):
+            with execution_scope(session_id=session_id, user_id=user_id, project_name=project_name, agent_name="kubent"), start_trace():
                 env = Env(env_name=f"optimize_{str(user_id)}")
                 kubent_agent = Kubent()
                 for tool in kubent_agent.tools:
