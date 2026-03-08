@@ -85,8 +85,8 @@ function MermaidBlock({ code }: { code: string }) {
 
   if (error) {
     return (
-      <pre className="my-6 overflow-x-auto rounded-lg border border-destructive bg-destructive/10 p-4 text-sm text-destructive">
-        {error}
+      <pre className="my-6 overflow-x-auto rounded-lg border bg-muted p-4">
+        <code className="font-mono text-sm">{code}</code>
       </pre>
     );
   }
