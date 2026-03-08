@@ -104,6 +104,7 @@ def _build_overview(overview: StepOverview):
         """)
         return dedent(result)
 
+@track(llm_provider=LLMProvider.OPEN_ROUTER, step_type=StepType.TOOL)
 def _step_overview(openai_client: OpenAI, step: Step, step_meta: StepMeta | None) -> str:
 
     status = "success" if step.error_info is None else "failed"
@@ -149,7 +150,7 @@ def _step_overview(openai_client: OpenAI, step: Step, step_meta: StepMeta | None
     
     return _build_overview(overview=overview)
 
-@track(llm_provider=LLMProvider.OPEN_ROUTER, step_type=StepType.TOOL)
+@track(step_type=StepType.TOOL)
 def query_step(step_ids: List[str]) -> str:
     overview_step_info: List[str] = []
     openai_cli: OpenAI = OpenAI(**_OPENAI_CLIENT_KWARGS)
