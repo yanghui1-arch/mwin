@@ -56,9 +56,6 @@ class LogStepRequest(BaseModel):
     prompt_version_id: str | None = None
     """Prompt version ID resolved from the prompt registry"""
 
-    prompt_label: str | None = None
-    """Label used to resolve the prompt version"""
-
     system_prompt: str | None = None
     """Raw system prompt string captured via mwin_prompt() inside the step"""
 
