@@ -18,6 +18,7 @@ from ...helper import inspect_helper
 from ...helper.llm import openai_helper
 from ...client import SyncClient, get_cached_sync_client
 from ...logger import logger
+from ...prompt.wrapper import extract_system_prompt_from_messages
 
 raw_async_openai_create = resources.chat.completions.AsyncCompletions.create
 
@@ -54,8 +55,19 @@ def patch_async_openai_chat_completions():
             ignore_fields=tracker_options.llm_ignore_fields,
         )
 
+        _mwin_prompt = extract_system_prompt_from_messages(raw_openai_inputs.get('messages'))
+        system_prompt: str | None = _mwin_prompt._original_template if _mwin_prompt else None
+        prompt_version: str | None = _mwin_prompt._version if _mwin_prompt else None
+
         if isinstance(resp, AsyncStream):
-            return ProxyAsyncStream(real_async_stream=resp, tracker_options=tracker_options, step=step, inputs=async_openai_inputs)
+            return ProxyAsyncStream(
+                real_async_stream=resp, 
+                tracker_options=tracker_options, 
+                step=step, 
+                inputs=async_openai_inputs, 
+                system_prompt=system_prompt, 
+                prompt_version=prompt_version
+            )
 
         # log
         client: SyncClient = get_cached_sync_client(project_name=tracker_options.project_name)
@@ -75,6 +87,8 @@ def patch_async_openai_chat_completions():
             end_time=datetime.now(),
             description=tracker_options.description,
             llm_provider=tracker_options.llm_provider,
+            system_prompt=system_prompt,
+            prompt_version_id=prompt_version,
         )
 
         return resp
@@ -90,12 +104,16 @@ class ProxyAsyncStream(AsyncStream):
         real_async_stream: AsyncStream[ChatCompletionChunk],
         step: Step,
         inputs: Dict[str, Any],
-        tracker_options: TrackerOptions
+        tracker_options: TrackerOptions,
+        system_prompt: str | None = None,
+        prompt_version: str | None = None,
     ):
         self.real_async_stream: AsyncStream[ChatCompletionChunk] = real_async_stream
         self.step = step
         self.inputs = inputs
         self.tracker_options = tracker_options
+        self.system_prompt = system_prompt
+        self.prompt_version = prompt_version
         self._output: List[ChatCompletionChunk] = []
 
     @override
@@ -132,7 +150,9 @@ class ProxyAsyncStream(AsyncStream):
                 start_time=self.step.start_time,
                 end_time=datetime.now(),
                 description=self.tracker_options.description,
-                llm_provider=self.tracker_options.llm_provider
+                llm_provider=self.tracker_options.llm_provider,
+                system_prompt=self.system_prompt,
+                prompt_version_id=self.prompt_version,
             )
         return chat_completion_chunk
 
@@ -170,6 +190,8 @@ class ProxyAsyncStream(AsyncStream):
                     end_time=datetime.now(),
                     description=self.tracker_options.description,
                     llm_provider=self.tracker_options.llm_provider,
+                    system_prompt=self.system_prompt,
+                    prompt_version_id=self.prompt_version,
                 )
             yield chunk
 

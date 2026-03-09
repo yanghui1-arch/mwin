@@ -56,15 +56,20 @@ class SyncClient:
         end_time: datetime | None,
         description: str | None,
         llm_provider: LLMProvider,
+        system_prompt: str | None,
+        prompt_version_id: str | None,
     ) -> LogStepResponse:
         """Create a step and log it in server."""
-        
+
         # Convert string "None" to actual None for parent_step_id
         if parent_step_id == "None":
             parent_step_id = None
-        
+
         llm_provider = llm_provider.value
-            
+        # prompt_version_id not set -> don't pass system_prompt.
+        if prompt_version_id is None:
+            system_prompt = None
+
         log_step_req = LogStepRequest(
             project_name=self._project_name,
             step_name=step_name,
@@ -82,8 +87,10 @@ class SyncClient:
             end_time=end_time,
             description=description,
             llm_provider=llm_provider,
+            system_prompt=system_prompt,
+            prompt_version_id=prompt_version_id,
         )
-        
+
         try:
             response = self._client.post(
                 "/log/step",
@@ -95,7 +102,7 @@ class SyncClient:
                 status_desc=response.reason_phrase,
                 json_content=response.json()
             )
-        
+
         except httpx.HTTPStatusError as e:
             try:
                 json_content = e.response.json()
@@ -143,7 +150,7 @@ class SyncClient:
             start_time=start_time,
             last_update_timestamp=last_update_timestamp,
         )
-        
+
         try:
             response = self._client.post(
                 "/log/trace",
@@ -155,7 +162,7 @@ class SyncClient:
                 status_desc=response.reason_phrase,
                 json_content=response.json()
             )
-        
+
         except httpx.HTTPStatusError as e:
             try:
                 json_content = e.response.json()
@@ -176,14 +183,6 @@ class SyncClient:
                 json_content={"error": str(e)},
                 server_error_info="Network failure"
             )
-
-    @property
-    def project_name(self):
-        return self._project_name
-    
-    @property
-    def host_url(self):
-        return self._host_url
 
 
 @functools.lru_cache()

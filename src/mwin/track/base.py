@@ -7,7 +7,7 @@ import functools
 
 from .options import TrackerOptions
 from .. import context
-from ..context.func_context import current_function_name_context 
+from ..context.func_context import current_function_name_context
 from ..models.key_models import StepType, Step, Trace
 from ..models.common import LLMProvider
 from ..helper import args_helper, inspect_helper, exception_helper
@@ -28,7 +28,7 @@ class BaseTracker(ABC):
 
     def __init__(self):
         self.provider: str | None = None
- 
+
     def track(
         self,
         func_name: str | Callable | None = None,
@@ -53,7 +53,7 @@ class BaseTracker(ABC):
             llm_provider(LLMProvider): llm inference provider. Default to `OPENAI`.
             llm_ignore_fields(List[str] | None): a list of llm ignore fields name. Default to `None`.
             description(str | None): step description. Default to `None`.
-            
+
         Returns:
             Callable: decorator
         """
@@ -67,33 +67,33 @@ class BaseTracker(ABC):
             description=description,
             project_name=project_name,
         )
-    
+
         if callable(func_name):
             func = func_name
             if description is None:
                 tracker_options.description = inspect.getdoc(func)
             return self._decorator(func=func, tracker_options=tracker_options)
-        
+
         tracker_options.func_name = func_name
 
         def decorator(func:Callable):
             if description is None:
                 tracker_options.description = inspect.getdoc(func)
             return self._decorator(func=func, tracker_options=tracker_options)
-        
+
         return decorator
-    
+
     def _decorator(
         self,
         func: Callable,
         tracker_options: TrackerOptions
     ) -> Callable:
-        """ Construct a decorator 
-        
+        """ Construct a decorator
+
         Args:
             func(Callable): a callable function
             tracker_options(TrackerOptions): tracker options
-        
+
         Returns:
             Callable: track decorator
         """
@@ -108,7 +108,7 @@ class BaseTracker(ABC):
             func=func,
             tracker_options=tracker_options,
         )
-    
+
     def _sync_decorator(
         self,
         func: Callable,
@@ -121,14 +121,14 @@ class BaseTracker(ABC):
             func(Callable): a callable tracked function
             tracker_options(TrackerOptions): tracker options
         """
-        
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs) -> Any:
             result = None
             func_exception: Exception | None = None
             error_info: str | None = None
             patched_token: Token | None =  None
-            
+
             # before track
             patched_token = self._before_calling_function(
                 func=func,
@@ -147,9 +147,9 @@ class BaseTracker(ABC):
             finally:
                 # after track
                 self._after_calling_function(
-                    func=func, 
-                    output=result, 
-                    error_info=error_info, 
+                    func=func,
+                    output=result,
+                    error_info=error_info,
                     tracker_options=tracker_options,
                     patched_token=patched_token,
                 )
@@ -199,9 +199,9 @@ class BaseTracker(ABC):
             finally:
                 # after track
                 self._after_calling_function(
-                    func=func, 
-                    output=result, 
-                    error_info=error_info, 
+                    func=func,
+                    output=result,
+                    error_info=error_info,
                     tracker_options=tracker_options,
                     patched_token=patched_token
                 )
@@ -234,7 +234,7 @@ class BaseTracker(ABC):
         """
 
         patch_token = None
-        
+
         try:
             start_arguments:args_helper.StartArguments = self.start_inputs_args_preprocess(
                 func=func,
@@ -242,10 +242,10 @@ class BaseTracker(ABC):
                 args=args,
                 kwargs=kwargs
             )
-        
+
         except Exception as exception:
             print(str(exception))
-            
+
             start_arguments = args_helper.StartArguments(
                 func_name=inspect_helper.get_call_name(func=func, args=args),
                 tags=tracker_options.tags,
@@ -264,7 +264,7 @@ class BaseTracker(ABC):
         elif current_trace.input is None:
             # Capture the first function's input. The input is `{}`` means input of the fist step is nothing.
             current_trace.input = start_arguments.input
-            
+
 
         new_step: Step = args_helper.create_new_step(
             input=start_arguments.input,
@@ -305,7 +305,7 @@ class BaseTracker(ABC):
         """ Prepare and log output after track function
         Log step, trace and then restore llm patched token which guarantees step-in and step-out.
         Restore patched_token is very important and neccessary.
-        
+
         Arg:
             output(Any): output from decorated function.
             error_info(str | None): error information during executing decorated function.
@@ -362,7 +362,7 @@ class BaseTracker(ABC):
                 tags=tracker_options.tags,
             )
             context.set_storage_trace(current_trace=current_trace)
-        
+
         current_trace: Trace = context.get_storage_current_trace_data()
         # refresh trace update timestamp
         current_trace.last_update_timestamp = datetime.now()
@@ -377,7 +377,7 @@ class BaseTracker(ABC):
 
         context.set_storage_trace(current_trace=current_trace)
 
-        
+
         client: sync_client.SyncClient = sync_client.get_cached_sync_client(
             project_name=tracker_options.project_name
         )
@@ -398,6 +398,8 @@ class BaseTracker(ABC):
             end_time=current_step.end_time,
             description=tracker_options.description,
             llm_provider=tracker_options.llm_provider,
+            system_prompt=None,
+            prompt_version_id=None,
         )
 
         client.log_trace(
@@ -416,7 +418,7 @@ class BaseTracker(ABC):
         # Reset llm patch config.
         if patched_token is not None:
             reset_llm_patch_config(token=patched_token)
- 
+
     @abstractmethod
     def start_inputs_args_preprocess(
         self,
