@@ -64,7 +64,7 @@ def template_prompt(system_prompt: str, version: str | None = None) -> "_MwinPro
     return _MwinPromptStr(system_prompt, version=version)
 
 
-def extract_system_prompt_from_messages(messages: Sequence) -> str | None:
+def extract_system_prompt_from_messages(messages: Sequence) -> _MwinPromptStr | None:
     """Scan a messages list for a system message wrapped with mwin_prompt().
 
     Returns the _original_template (unformatted) of the first system-role
@@ -78,5 +78,5 @@ def extract_system_prompt_from_messages(messages: Sequence) -> str | None:
         if msg.get("role") == "system":
             content = msg.get("content")
             if isinstance(content, _MwinPromptStr):
-                return content._original_template
+                return content
     return None
