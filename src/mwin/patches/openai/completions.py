@@ -67,6 +67,7 @@ def patch_openai_chat_completions():
             ignore_fields=tracker_options.llm_ignore_fields,
         )
         _mwin_prompt = extract_system_prompt_from_messages(raw_openai_inputs.get('messages'))
+        prompt_group: str | None = _mwin_prompt._prompt_group if _mwin_prompt else None
         system_prompt = _mwin_prompt._original_template if _mwin_prompt else None
         prompt_version = _mwin_prompt._version if _mwin_prompt else None
 
@@ -76,7 +77,8 @@ def patch_openai_chat_completions():
                 tracker_options=tracker_options, 
                 step=step, 
                 inputs=openai_inputs, 
-                system_prompt=system_prompt, 
+                prompt_group=prompt_group,
+                system_prompt=system_prompt,
                 prompt_version=prompt_version
             )
 
@@ -103,6 +105,7 @@ def patch_openai_chat_completions():
             end_time=datetime.now(),
             description=tracker_options.description,
             llm_provider=tracker_options.llm_provider,
+            prompt_group=prompt_group,
             system_prompt=system_prompt,
             prompt_version_id=prompt_version,
         )
@@ -122,6 +125,7 @@ class ProxyStream(Stream):
         tracker_options: TrackerOptions,
         step: Step,
         inputs: Dict[str, Any],
+        prompt_group: str | None,
         system_prompt: str | None = None,
         prompt_version: str | None = None,
     ):
@@ -134,6 +138,7 @@ class ProxyStream(Stream):
         self.tracker_options = tracker_options
         self.step = step
         self.inputs = inputs
+        self.prompt_group = prompt_group
         self.system_prompt = system_prompt
         self.prompt_version = prompt_version
         self.model = inputs.get('model', step.model)
@@ -176,6 +181,7 @@ class ProxyStream(Stream):
                 end_time=datetime.now(),
                 description=self.tracker_options.description,
                 llm_provider=self.tracker_options.llm_provider,
+                prompt_group=self.prompt_group,
                 system_prompt=self.system_prompt,
                 prompt_version_id=self.prompt_version,
             )
@@ -217,6 +223,7 @@ class ProxyStream(Stream):
                     end_time=datetime.now(),
                     description=self.tracker_options.description,
                     llm_provider=self.tracker_options.llm_provider,
+                    prompt_group=self.prompt_group,
                     system_prompt=self.system_prompt,
                     prompt_version_id=self.prompt_version,
                 )

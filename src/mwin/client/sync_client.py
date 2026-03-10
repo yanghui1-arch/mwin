@@ -56,6 +56,7 @@ class SyncClient:
         end_time: datetime | None,
         description: str | None,
         llm_provider: LLMProvider,
+        prompt_group: str | None,
         system_prompt: str | None,
         prompt_version_id: str | None,
     ) -> LogStepResponse:
@@ -68,6 +69,7 @@ class SyncClient:
         llm_provider = llm_provider.value
         # prompt_version_id not set -> don't pass system_prompt.
         if prompt_version_id is None:
+            prompt_group = None
             system_prompt = None
 
         log_step_req = LogStepRequest(
@@ -87,6 +89,7 @@ class SyncClient:
             end_time=end_time,
             description=description,
             llm_provider=llm_provider,
+            prompt_group=prompt_group,
             system_prompt=system_prompt,
             prompt_version_id=prompt_version_id,
         )

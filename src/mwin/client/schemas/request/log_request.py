@@ -53,11 +53,14 @@ class LogStepRequest(BaseModel):
     llm_provider: str
     """llm inference provider"""
 
+    prompt_group: str | None = None
+    """Prompt group"""
+
     prompt_version_id: str | None = None
-    """Prompt version ID resolved from the prompt registry"""
+    """Prompt version id"""
 
     system_prompt: str | None = None
-    """Raw system prompt string captured via mwin_prompt() inside the step"""
+    """Raw system prompt string captured via template_prompt() inside the step"""
 
     @field_serializer('input', 'output')
     def serialize_any_field(self, value: Any):
