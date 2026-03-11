@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import lombok.Builder;
 import lombok.Data;
 
-import com.supertrace.aitrace.domain.core.prompt.PromptGroup;
+import com.supertrace.aitrace.domain.core.prompt.PromptPipeline;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -13,7 +13,7 @@ import java.util.UUID;
 @Data
 @Builder
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class PromptGroupVO {
+public class PromptPipelineVO {
     private UUID id;
     private Long projectId;
     private String name;
@@ -22,13 +22,13 @@ public class PromptGroupVO {
     private long versionCount;
     private List<PromptStatusVO> statuses;
 
-    public static PromptGroupVO from(PromptGroup group, long versionCount, List<PromptStatusVO> statuses) {
-        return PromptGroupVO.builder()
-            .id(group.getId())
-            .projectId(group.getProjectId())
-            .name(group.getName())
-            .description(group.getDescription())
-            .createdAt(group.getCreatedAt())
+    public static PromptPipelineVO from(PromptPipeline pipeline, long versionCount, List<PromptStatusVO> statuses) {
+        return PromptPipelineVO.builder()
+            .id(pipeline.getId())
+            .projectId(pipeline.getProjectId())
+            .name(pipeline.getName())
+            .description(pipeline.getDescription())
+            .createdAt(pipeline.getCreatedAt())
             .versionCount(versionCount)
             .statuses(statuses)
             .build();

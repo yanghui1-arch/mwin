@@ -10,7 +10,7 @@ import java.util.UUID;
 
 @Repository
 public interface PromptStatusRepository extends JpaRepository<PromptStatus, UUID> {
-    List<PromptStatus> findByPromptGroupId(UUID promptGroupId);
-    Optional<PromptStatus> findByPromptGroupIdAndStatus(UUID promptGroupId, String status);
-    void deleteByPromptGroupId(UUID promptGroupId);
+    List<PromptStatus> findByPromptPipelineId(UUID promptPipelineId);
+    Optional<PromptStatus> findByPromptPipelineIdAndStatus(UUID promptPipelineId, String status);
+    void deleteByPromptPipelineId(UUID promptPipelineId);
 }

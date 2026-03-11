@@ -68,7 +68,7 @@ public class StepServiceImpl implements StepService {
         if (promptRef != null) {
             StepRef stepRef = StepRef.builder()
                 .id(newStep.getId())
-                .promptId(promptRef.promptGroupId())
+                .promptId(promptRef.promptPipelineId())
                 .promptVersionId(promptRef.promptVersionId())
                 .build();
             stepRefRepository.save(stepRef);

@@ -15,7 +15,7 @@ import java.util.UUID;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class PromptVO {
     private UUID id;
-    private UUID promptGroupId;
+    private UUID promptPipelineId;
     private String version;
     private String content;
     private ModelConfig modelConfig;
@@ -25,7 +25,7 @@ public class PromptVO {
     public static PromptVO from(Prompt p) {
         return PromptVO.builder()
             .id(p.getId())
-            .promptGroupId(p.getPromptGroupId())
+            .promptPipelineId(p.getPromptPipelineId())
             .version(p.getVersion())
             .content(p.getContent())
             .modelConfig(p.getModelConfig())

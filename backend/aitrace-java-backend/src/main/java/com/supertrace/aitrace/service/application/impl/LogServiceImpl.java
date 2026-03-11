@@ -45,12 +45,12 @@ public class LogServiceImpl implements LogService {
         Project projectOwnedByUserId = this.searchProject(userId, projectName);
         Long projectId = projectOwnedByUserId.getId();
 
-        String promptGroupName = logStepRequest.getPromptGroup();
+        String promptPipelineName = logStepRequest.getPromptPipeline();
         String promptVersion = logStepRequest.getPromptVersionId();
         String systemPrompt = logStepRequest.getSystemPrompt();
         PromptRef promptRef = null;
-        if (promptGroupName != null && promptVersion != null && systemPrompt != null) {
-            promptRef = promptService.findOrCreatePrompt(projectId, promptGroupName, promptVersion, systemPrompt);
+        if (promptPipelineName != null && promptVersion != null && systemPrompt != null) {
+            promptRef = promptService.findOrCreatePrompt(projectId, promptPipelineName, promptVersion, systemPrompt);
         }
 
         UUID stepId = this.stepService.logStep(userId, logStepRequest, projectId, promptRef);

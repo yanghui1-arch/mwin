@@ -2,14 +2,14 @@ package com.supertrace.aitrace.service.domain.impl;
 
 import com.supertrace.aitrace.domain.Project;
 import com.supertrace.aitrace.domain.core.prompt.Prompt;
-import com.supertrace.aitrace.domain.core.prompt.PromptGroup;
+import com.supertrace.aitrace.domain.core.prompt.PromptPipeline;
 import com.supertrace.aitrace.domain.core.prompt.PromptRef;
 import com.supertrace.aitrace.domain.core.prompt.PromptStatus;
 import com.supertrace.aitrace.dto.prompt.CreateOrUpdateStatusRequest;
-import com.supertrace.aitrace.dto.prompt.CreatePromptGroupRequest;
+import com.supertrace.aitrace.dto.prompt.CreatePromptPipelineRequest;
 import com.supertrace.aitrace.dto.prompt.CreatePromptRequest;
 import com.supertrace.aitrace.repository.ProjectRepository;
-import com.supertrace.aitrace.repository.PromptGroupRepository;
+import com.supertrace.aitrace.repository.PromptPipelineRepository;
 import com.supertrace.aitrace.repository.PromptRepository;
 import com.supertrace.aitrace.repository.PromptStatusRepository;
 import com.supertrace.aitrace.service.domain.PromptService;
@@ -27,44 +27,44 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class PromptServiceImpl implements PromptService {
 
-    private final PromptGroupRepository promptGroupRepository;
+    private final PromptPipelineRepository promptPipelineRepository;
     private final PromptRepository promptRepository;
     private final PromptStatusRepository promptStatusRepository;
     private final ProjectRepository projectRepository;
 
     @Override
-    public UUID createPromptGroup(CreatePromptGroupRequest request, UUID userId) {
-        PromptGroup group = PromptGroup.builder()
+    public UUID createPromptPipeline(CreatePromptPipelineRequest request, UUID userId) {
+        PromptPipeline pipeline = PromptPipeline.builder()
             .projectId(request.getProjectId())
             .name(request.getName())
             .description(request.getDescription())
             .build();
-        return promptGroupRepository.save(group).getId();
+        return promptPipelineRepository.save(pipeline).getId();
     }
 
     @Override
-    public List<PromptGroup> listPromptGroups(Long projectId) {
-        return promptGroupRepository.findByProjectId(projectId);
+    public List<PromptPipeline> listPromptPipelines(Long projectId) {
+        return promptPipelineRepository.findByProjectId(projectId);
     }
 
     @Override
-    public PromptGroup getPromptGroupDetail(Long projectId, String promptGroupName) {
-        return promptGroupRepository.findByProjectIdAndName(projectId, promptGroupName)
-            .orElseThrow(() -> new NoSuchElementException("Prompt group not found: " + promptGroupName));
+    public PromptPipeline getPromptPipelineDetail(Long projectId, String promptPipelineName) {
+        return promptPipelineRepository.findByProjectIdAndName(projectId, promptPipelineName)
+            .orElseThrow(() -> new NoSuchElementException("Prompt pipeline not found: " + promptPipelineName));
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void deletePromptGroup(UUID promptGroupId) {
-        promptStatusRepository.deleteByPromptGroupId(promptGroupId);
-        promptRepository.deleteByPromptGroupId(promptGroupId);
-        promptGroupRepository.deleteById(promptGroupId);
+    public void deletePromptPipeline(UUID promptPipelineId) {
+        promptStatusRepository.deleteByPromptPipelineId(promptPipelineId);
+        promptRepository.deleteByPromptPipelineId(promptPipelineId);
+        promptPipelineRepository.deleteById(promptPipelineId);
     }
 
     @Override
     public UUID createPrompt(CreatePromptRequest request, UUID userId) {
         Prompt prompt = Prompt.builder()
-            .promptGroupId(request.getPromptGroupId())
+            .promptPipelineId(request.getPromptPipelineId())
             .version(request.getVersion())
             .content(request.getContent())
             .modelConfig(request.getModelConfig())
@@ -75,26 +75,26 @@ public class PromptServiceImpl implements PromptService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public PromptRef findOrCreatePrompt(Long projectId, String promptGroupName, String version, String content) {
-        PromptGroup group = promptGroupRepository.findByProjectIdAndName(projectId, promptGroupName)
-            .orElseGet(() -> promptGroupRepository.save(
-                PromptGroup.builder()
+    public PromptRef findOrCreatePrompt(Long projectId, String promptPipelineName, String version, String content) {
+        PromptPipeline pipeline = promptPipelineRepository.findByProjectIdAndName(projectId, promptPipelineName)
+            .orElseGet(() -> promptPipelineRepository.save(
+                PromptPipeline.builder()
                     .projectId(projectId)
-                    .name(promptGroupName)
+                    .name(promptPipelineName)
                     .build()
             ));
 
-        UUID promptVersionId = promptRepository.findByPromptGroupIdAndVersion(group.getId(), version)
+        UUID promptVersionId = promptRepository.findByPromptPipelineIdAndVersion(pipeline.getId(), version)
             .map(Prompt::getId)
             .orElseGet(() -> promptRepository.save(
                 Prompt.builder()
-                    .promptGroupId(group.getId())
+                    .promptPipelineId(pipeline.getId())
                     .version(version)
                     .content(content)
                     .build()
             ).getId());
 
-        return new PromptRef(group.getId(), promptVersionId);
+        return new PromptRef(pipeline.getId(), promptVersionId);
     }
 
     @Override
@@ -103,29 +103,29 @@ public class PromptServiceImpl implements PromptService {
     }
 
     @Override
-    public List<Prompt> listPrompts(UUID promptGroupId) {
-        return promptRepository.findByPromptGroupIdOrderByCreatedAtDesc(promptGroupId);
+    public List<Prompt> listPrompts(UUID promptPipelineId) {
+        return promptRepository.findByPromptPipelineIdOrderByCreatedAtDesc(promptPipelineId);
     }
 
     @Override
-    public long countPrompts(UUID promptGroupId) {
-        return promptRepository.countByPromptGroupId(promptGroupId);
+    public long countPrompts(UUID promptPipelineId) {
+        return promptRepository.countByPromptPipelineId(promptPipelineId);
     }
 
     @Override
-    public UUID resolvePrompt(UUID userId, String projectName, String promptGroupName, String status) {
+    public UUID resolvePrompt(UUID userId, String projectName, String promptPipelineName, String status) {
         List<Project> projects = projectRepository.findProjectsByName(projectName);
         Project project = projects.stream()
             .filter(p -> p.getUserId().equals(userId))
             .findFirst()
             .orElseThrow(() -> new NoSuchElementException("Project not found: " + projectName));
 
-        PromptGroup group = promptGroupRepository.findByProjectIdAndName(project.getId(), promptGroupName)
-            .orElseThrow(() -> new NoSuchElementException("Prompt group not found: " + promptGroupName));
+        PromptPipeline pipeline = promptPipelineRepository.findByProjectIdAndName(project.getId(), promptPipelineName)
+            .orElseThrow(() -> new NoSuchElementException("Prompt pipeline not found: " + promptPipelineName));
 
-        PromptStatus promptStatus = promptStatusRepository.findByPromptGroupIdAndStatus(group.getId(), status)
+        PromptStatus promptStatus = promptStatusRepository.findByPromptPipelineIdAndStatus(pipeline.getId(), status)
             .orElseThrow(() -> new NoSuchElementException(
-                "Status '" + status + "' not found for prompt group: " + promptGroupName));
+                "Status '" + status + "' not found for prompt pipeline: " + promptPipelineName));
 
         return promptStatus.getPromptId();
     }
@@ -134,7 +134,7 @@ public class PromptServiceImpl implements PromptService {
     @Transactional(rollbackFor = Exception.class)
     public PromptStatus createOrUpdateStatus(CreateOrUpdateStatusRequest request, UUID userId) {
         PromptStatus statusEntity = promptStatusRepository
-            .findByPromptGroupIdAndStatus(request.getPromptGroupId(), request.getStatus())
+            .findByPromptPipelineIdAndStatus(request.getPromptPipelineId(), request.getStatus())
             .map(existing -> {
                 existing.setPromptId(request.getPromptId());
                 existing.setDeployedBy(userId);
@@ -142,7 +142,7 @@ public class PromptServiceImpl implements PromptService {
                 return existing;
             })
             .orElseGet(() -> PromptStatus.builder()
-                .promptGroupId(request.getPromptGroupId())
+                .promptPipelineId(request.getPromptPipelineId())
                 .status(request.getStatus())
                 .promptId(request.getPromptId())
                 .deployedBy(userId)
@@ -152,8 +152,8 @@ public class PromptServiceImpl implements PromptService {
     }
 
     @Override
-    public List<PromptStatus> listStatuses(UUID promptGroupId) {
-        return promptStatusRepository.findByPromptGroupId(promptGroupId);
+    public List<PromptStatus> listStatuses(UUID promptPipelineId) {
+        return promptStatusRepository.findByPromptPipelineId(promptPipelineId);
     }
 
     @Override

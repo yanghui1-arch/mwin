@@ -25,7 +25,7 @@ public class PromptStatus {
 
     @NotNull
     @Column(name = "prompt_group_id", nullable = false)
-    private UUID promptGroupId;
+    private UUID promptPipelineId;
 
     @NotBlank
     @Column(name = "status", nullable = false, length = 100)

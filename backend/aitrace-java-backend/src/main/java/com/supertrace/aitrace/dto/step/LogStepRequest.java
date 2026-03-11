@@ -73,7 +73,7 @@ public class LogStepRequest {
 
     private String description;
 
-    private String promptGroup;
+    private String promptPipeline;
 
     private String systemPrompt;
 

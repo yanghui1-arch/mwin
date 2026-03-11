@@ -15,7 +15,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "prompt",
-    uniqueConstraints = @UniqueConstraint(columnNames = {"prompt_group_id", "version"}))
+    uniqueConstraints = @UniqueConstraint(columnNames = {"prompt_pipeline_id", "version"}))
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -26,8 +26,8 @@ public class Prompt {
     private UUID id;
 
     @NotNull
-    @Column(name = "prompt_group_id", nullable = false)
-    private UUID promptGroupId;
+    @Column(name = "prompt_pipeline_id", nullable = false)
+    private UUID promptPipelineId;
 
     @NotBlank
     @Column(name = "version", nullable = false, length = 50)

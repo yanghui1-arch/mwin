@@ -10,8 +10,8 @@ import java.util.UUID;
 
 @Repository
 public interface PromptRepository extends JpaRepository<Prompt, UUID> {
-    List<Prompt> findByPromptGroupIdOrderByCreatedAtDesc(UUID promptGroupId);
-    Optional<Prompt> findByPromptGroupIdAndVersion(UUID promptGroupId, String version);
-    long countByPromptGroupId(UUID promptGroupId);
-    void deleteByPromptGroupId(UUID promptGroupId);
+    List<Prompt> findByPromptPipelineIdOrderByCreatedAtDesc(UUID promptPipelineId);
+    Optional<Prompt> findByPromptPipelineIdAndVersion(UUID promptPipelineId, String version);
+    long countByPromptPipelineId(UUID promptPipelineId);
+    void deleteByPromptPipelineId(UUID promptPipelineId);
 }

@@ -156,9 +156,9 @@ class StepServiceImplTest {
         LogStepRequest req = buildRequest();
         UUID stepId = UUID.fromString(req.getStepId());
         Step newStep = buildStep(stepId);
-        UUID promptGroupId = UUID.randomUUID();
+        UUID promptPipelineId = UUID.randomUUID();
         UUID promptVersionId = UUID.randomUUID();
-        PromptRef promptRef = new PromptRef(promptGroupId, promptVersionId);
+        PromptRef promptRef = new PromptRef(promptPipelineId, promptVersionId);
 
         when(stepRepository.findById(stepId)).thenReturn(Optional.empty());
         when(stepFactory.createStep(req, projectId)).thenReturn(newStep);
@@ -168,7 +168,7 @@ class StepServiceImplTest {
 
         verify(stepRefRepository).save(argThat(ref ->
             ref.getId().equals(stepId)
-                && ref.getPromptId().equals(promptGroupId)
+                && ref.getPromptId().equals(promptPipelineId)
                 && ref.getPromptVersionId().equals(promptVersionId)
         ));
     }
