@@ -87,7 +87,7 @@ public interface PromptService {
 
     /**
      * Finds the prompt identified by {@code (projectId, promptGroupName, version)},
-     * creating the group and/or the prompt version if they do not yet exist.
+     * creating the group and/or the prompt with version if they do not yet exist.
      *
      * <p>This method is designed for use during step logging, where the caller knows the
      * prompt content and version at runtime but cannot guarantee prior registration.
