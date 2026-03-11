@@ -8,6 +8,8 @@ import com.supertrace.aitrace.dto.trace.LogTraceRequest;
 import com.supertrace.aitrace.repository.ProjectRepository;
 import com.supertrace.aitrace.service.application.LogService;
 import com.supertrace.aitrace.service.domain.ProjectService;
+import com.supertrace.aitrace.service.domain.PromptService;
+import com.supertrace.aitrace.domain.core.prompt.PromptRef;
 import com.supertrace.aitrace.service.domain.StepMetaService;
 import com.supertrace.aitrace.service.domain.StepService;
 import com.supertrace.aitrace.service.domain.TraceService;
@@ -27,6 +29,7 @@ public class LogServiceImpl implements LogService {
     private final StepService stepService;
     private final StepMetaService stepMetaService;
     private final TraceService traceService;
+    private final PromptService promptService;
 
     /**
      * Log step
@@ -40,7 +43,17 @@ public class LogServiceImpl implements LogService {
     public UUID logStep(@NotNull UUID userId, @NotNull LogStepRequest logStepRequest) {
         String projectName = logStepRequest.getProjectName();
         Project projectOwnedByUserId = this.searchProject(userId, projectName);
-        UUID stepId = this.stepService.logStep(userId, logStepRequest, projectOwnedByUserId.getId());
+        Long projectId = projectOwnedByUserId.getId();
+
+        String promptGroupName = logStepRequest.getPromptGroup();
+        String promptVersion = logStepRequest.getPromptVersionId();
+        String systemPrompt = logStepRequest.getSystemPrompt();
+        PromptRef promptRef = null;
+        if (promptGroupName != null && promptVersion != null && systemPrompt != null) {
+            promptRef = promptService.findOrCreatePrompt(projectId, promptGroupName, promptVersion, systemPrompt);
+        }
+
+        UUID stepId = this.stepService.logStep(userId, logStepRequest, projectId, promptRef);
 
         String description = logStepRequest.getDescription();
         String llmProvider = logStepRequest.getLlmProvider();
@@ -61,7 +74,7 @@ public class LogServiceImpl implements LogService {
         ).getCost();
 
         BigDecimal newProjectCost = projectOwnedByUserId.getCost().add(updatedStepCost.subtract(prevStepCost));
-        this.projectRepository.updateCost(projectOwnedByUserId.getId(), newProjectCost);
+        this.projectRepository.updateCost(projectId, newProjectCost);
         return stepId;
     }
 

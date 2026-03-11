@@ -1,10 +1,13 @@
 package com.supertrace.aitrace.service.domain.impl;
 
 import com.supertrace.aitrace.domain.core.step.Step;
+import com.supertrace.aitrace.domain.core.step.StepRef;
 import com.supertrace.aitrace.dto.step.LogStepRequest;
 import com.supertrace.aitrace.factory.StepFactory;
+import com.supertrace.aitrace.repository.StepRefRepository;
 import com.supertrace.aitrace.repository.StepRepository;
 import com.supertrace.aitrace.service.domain.StepService;
+import com.supertrace.aitrace.domain.core.prompt.PromptRef;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -21,19 +24,24 @@ import java.util.*;
 public class StepServiceImpl implements StepService {
 
     private final StepRepository stepRepository;
+    private final StepRefRepository stepRefRepository;
     private final StepFactory stepFactory;
 
     /**
      * Validate request and persist step.
+     * Two conditions to call this function. One is general another is llm calling.
+     * If promptRef is not Null generally it means that it's in the second condition. If it's Null, maybe it's the first condition or the second.
+     * Because the second condition sometimes not need system prompt OR user doesn't want to track system prompt or doesn't know how to track it.
      *
      * @param userId user uuid
      * @param logStepRequest log step request
      * @param projectId project id which step belongs to. Must ensure the project id exists and belongs to user uuid.
+     * @param promptRef resolved prompt group id and prompt version id. It can be Null.
      * @return step id
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public UUID logStep(@NotNull UUID userId, @NotNull LogStepRequest logStepRequest, @NotNull Long projectId) {
+    public UUID logStep(@NotNull UUID userId, @NotNull LogStepRequest logStepRequest, @NotNull Long projectId, PromptRef promptRef) {
         Step newStep;
         // 1. merge or create step
         UUID stepId = UUID.fromString(logStepRequest.getStepId());
@@ -56,7 +64,15 @@ public class StepServiceImpl implements StepService {
         // 2. save step
         stepRepository.saveAndFlush(newStep);
 
-        // 3. logger
+        // 3. save step-prompt relationship if provided
+        if (promptRef != null) {
+            StepRef stepRef = StepRef.builder()
+                .id(newStep.getId())
+                .promptId(promptRef.promptGroupId())
+                .promptVersionId(promptRef.promptVersionId())
+                .build();
+            stepRefRepository.save(stepRef);
+        }
 
         // 4. return step id
         return newStep.getId();

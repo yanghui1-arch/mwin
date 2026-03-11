@@ -2,9 +2,11 @@ package com.supertrace.aitrace.service.domain.impl;
 
 import com.supertrace.aitrace.domain.core.step.Step;
 import com.supertrace.aitrace.domain.core.step.StepOutput;
+import com.supertrace.aitrace.domain.core.prompt.PromptRef;
 import com.supertrace.aitrace.domain.core.usage.LLMUsage;
 import com.supertrace.aitrace.dto.step.LogStepRequest;
 import com.supertrace.aitrace.factory.StepFactory;
+import com.supertrace.aitrace.repository.StepRefRepository;
 import com.supertrace.aitrace.repository.StepRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +30,9 @@ class StepServiceImplTest {
 
     @Mock
     private StepRepository stepRepository;
+
+    @Mock
+    private StepRefRepository stepRefRepository;
 
     @Mock
     private StepFactory stepFactory;
@@ -93,7 +98,7 @@ class StepServiceImplTest {
         when(stepFactory.createStep(req, projectId)).thenReturn(newStep);
         when(stepRepository.saveAndFlush(any())).thenReturn(newStep);
 
-        UUID result = service.logStep(userId, req, projectId);
+        UUID result = service.logStep(userId, req, projectId, null);
 
         assertEquals(stepId, result);
         verify(stepFactory).createStep(req, projectId);
@@ -111,7 +116,7 @@ class StepServiceImplTest {
         when(stepRepository.findById(stepId)).thenReturn(Optional.of(existing));
         when(stepRepository.saveAndFlush(any())).thenReturn(existing);
 
-        UUID result = service.logStep(userId, req, projectId);
+        UUID result = service.logStep(userId, req, projectId, null);
 
         assertEquals(stepId, result);
         // Factory must NOT be called when step already exists
@@ -131,7 +136,7 @@ class StepServiceImplTest {
         when(stepRepository.findById(stepId)).thenReturn(Optional.of(existing));
         when(stepRepository.saveAndFlush(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        service.logStep(userId, req, projectId);
+        service.logStep(userId, req, projectId, null);
 
         assertTrue(existing.getTags().contains("new-tag"));
         assertTrue(existing.getTags().contains("old-tag"));
@@ -143,7 +148,44 @@ class StepServiceImplTest {
         req.setStepId("not-a-uuid");
 
         assertThrows(IllegalArgumentException.class,
-            () -> service.logStep(userId, req, projectId));
+            () -> service.logStep(userId, req, projectId, null));
+    }
+
+    @Test
+    void logStep_withPromptRef_savesStepRefWithBothIds() {
+        LogStepRequest req = buildRequest();
+        UUID stepId = UUID.fromString(req.getStepId());
+        Step newStep = buildStep(stepId);
+        UUID promptGroupId = UUID.randomUUID();
+        UUID promptVersionId = UUID.randomUUID();
+        PromptRef promptRef = new PromptRef(promptGroupId, promptVersionId);
+
+        when(stepRepository.findById(stepId)).thenReturn(Optional.empty());
+        when(stepFactory.createStep(req, projectId)).thenReturn(newStep);
+        when(stepRepository.saveAndFlush(any())).thenReturn(newStep);
+
+        service.logStep(userId, req, projectId, promptRef);
+
+        verify(stepRefRepository).save(argThat(ref ->
+            ref.getId().equals(stepId)
+                && ref.getPromptId().equals(promptGroupId)
+                && ref.getPromptVersionId().equals(promptVersionId)
+        ));
+    }
+
+    @Test
+    void logStep_withNullPromptRef_doesNotSaveStepRef() {
+        LogStepRequest req = buildRequest();
+        UUID stepId = UUID.fromString(req.getStepId());
+        Step newStep = buildStep(stepId);
+
+        when(stepRepository.findById(stepId)).thenReturn(Optional.empty());
+        when(stepFactory.createStep(req, projectId)).thenReturn(newStep);
+        when(stepRepository.saveAndFlush(any())).thenReturn(newStep);
+
+        service.logStep(userId, req, projectId, null);
+
+        verify(stepRefRepository, never()).save(any());
     }
 
     // ── findStepsByProjectId ──────────────────────────────────────────────────

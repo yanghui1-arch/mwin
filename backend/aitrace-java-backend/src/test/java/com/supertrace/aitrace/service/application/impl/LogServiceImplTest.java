@@ -126,7 +126,7 @@ class LogServiceImplTest {
         UUID stepId = UUID.randomUUID();
 
         when(projectRepository.findProjectsByName("test-project")).thenReturn(List.of(existingProject));
-        when(stepService.logStep(userId, req, 10L)).thenReturn(stepId);
+        when(stepService.logStep(eq(userId), eq(req), eq(10L), any())).thenReturn(stepId);
         stubLogStepZeroCost(stepId);
 
         service.logStep(userId, req);
@@ -151,7 +151,7 @@ class LogServiceImplTest {
 
         when(projectRepository.findProjectsByName("test-project")).thenReturn(List.of(otherProject));
         when(projectService.createNewProjectByProgram("test-project", userId)).thenReturn(newProject);
-        when(stepService.logStep(userId, req, 30L)).thenReturn(stepId);
+        when(stepService.logStep(eq(userId), eq(req), eq(30L), any())).thenReturn(stepId);
         stubLogStepZeroCost(stepId);
 
         service.logStep(userId, req);
@@ -171,7 +171,7 @@ class LogServiceImplTest {
 
         when(projectRepository.findProjectsByName("brand-new")).thenReturn(List.of());
         when(projectService.createNewProjectByProgram("brand-new", userId)).thenReturn(newProject);
-        when(stepService.logStep(userId, req, 99L)).thenReturn(stepId);
+        when(stepService.logStep(eq(userId), eq(req), eq(99L), any())).thenReturn(stepId);
         stubLogStepZeroCost(stepId);
 
         service.logStep(userId, req);
@@ -185,7 +185,7 @@ class LogServiceImplTest {
         UUID stepId = UUID.randomUUID();
 
         when(projectRepository.findProjectsByName(any())).thenReturn(List.of(existingProject));
-        when(stepService.logStep(any(), any(), any())).thenReturn(stepId);
+        when(stepService.logStep(any(), any(), any(), any())).thenReturn(stepId);
         stubLogStepZeroCost(stepId);
 
         assertEquals(stepId, service.logStep(userId, req));
@@ -197,7 +197,7 @@ class LogServiceImplTest {
         UUID stepId = UUID.randomUUID();
 
         when(projectRepository.findProjectsByName("test-project")).thenReturn(List.of(existingProject));
-        when(stepService.logStep(any(), any(), any())).thenReturn(stepId);
+        when(stepService.logStep(any(), any(), any(), any())).thenReturn(stepId);
         stubLogStepZeroCost(stepId);
 
         service.logStep(userId, req);
@@ -217,7 +217,7 @@ class LogServiceImplTest {
         UUID stepId = UUID.randomUUID();
 
         when(projectRepository.findProjectsByName("test-project")).thenReturn(List.of(existingProject));
-        when(stepService.logStep(any(), any(), any())).thenReturn(stepId);
+        when(stepService.logStep(any(), any(), any(), any())).thenReturn(stepId);
         when(stepMetaService.findCostsByStepIds(any())).thenReturn(Map.of()); // no prior cost
         when(stepMetaService.addStepMeta(any(), any(), any(), any(), any()))
             .thenReturn(StepMeta.builder().id(stepId).cost(stepCost).build());
@@ -236,7 +236,7 @@ class LogServiceImplTest {
         UUID stepId = UUID.randomUUID();
 
         when(projectRepository.findProjectsByName("test-project")).thenReturn(List.of(existingProject));
-        when(stepService.logStep(any(), any(), any())).thenReturn(stepId);
+        when(stepService.logStep(any(), any(), any(), any())).thenReturn(stepId);
         when(stepMetaService.findCostsByStepIds(any())).thenReturn(Map.of(stepId, existingStepCost));
         when(stepMetaService.addStepMeta(any(), any(), any(), any(), any()))
             .thenReturn(StepMeta.builder().id(stepId).cost(existingStepCost).build()); // cost unchanged
@@ -262,7 +262,7 @@ class LogServiceImplTest {
             .lastUpdateTimestamp(LocalDateTime.now()).build();
 
         when(projectRepository.findProjectsByName("test-project")).thenReturn(List.of(projectWithCost));
-        when(stepService.logStep(any(), any(), any())).thenReturn(stepId);
+        when(stepService.logStep(any(), any(), any(), any())).thenReturn(stepId);
         when(stepMetaService.findCostsByStepIds(any())).thenReturn(Map.of(stepId, prevStepCost));
         when(stepMetaService.addStepMeta(any(), any(), any(), any(), any()))
             .thenReturn(StepMeta.builder().id(stepId).cost(updatedStepCost).build());

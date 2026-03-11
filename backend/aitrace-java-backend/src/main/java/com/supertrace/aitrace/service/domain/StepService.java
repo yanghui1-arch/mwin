@@ -2,6 +2,7 @@ package com.supertrace.aitrace.service.domain;
 
 import com.supertrace.aitrace.domain.core.step.Step;
 import com.supertrace.aitrace.dto.step.LogStepRequest;
+import com.supertrace.aitrace.domain.core.prompt.PromptRef;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
@@ -24,7 +25,7 @@ public interface StepService {
      * @param logStepRequest log step request
      * @return step id
      */
-    UUID logStep(UUID userId, LogStepRequest logStepRequest, Long projectId);
+    UUID logStep(UUID userId, LogStepRequest logStepRequest, Long projectId, PromptRef promptRef);
 
     /**
      * get all steps of a project which is owned by userId

@@ -72,4 +72,11 @@ public class LogStepRequest {
     private LocalDateTime endTime;
 
     private String description;
+
+    private String promptGroup;
+
+    private String systemPrompt;
+
+    private String promptVersionId;
+
 }
