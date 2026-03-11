@@ -14,44 +14,44 @@ class _MwinPromptStr(str):
 
     _original_template: str
     _version: str
-    _prompt_group: str
+    _pipeline: str
 
-    def __new__(cls, value: str, original_template: str, version: str, prompt_group: str) -> "_MwinPromptStr":
+    def __new__(cls, value: str, original_template: str, version: str, pipeline: str) -> "_MwinPromptStr":
         instance = super().__new__(cls, value)
         # If original_template is not supplied, this instance IS the template
         instance._original_template = original_template if original_template is not None else str(value)
         instance._version = version
-        instance._prompt_group = prompt_group
+        instance._pipeline = pipeline
         return instance
 
     def format(self, *args: Any, **kwargs: Any) -> "_MwinPromptStr":
         """Format and return a new _MwinPromptStr, preserving the original template."""
         formatted = str.format(self, *args, **kwargs)
         return _MwinPromptStr(
-            formatted, 
-            original_template=self._original_template, 
+            formatted,
+            original_template=self._original_template,
             version=self._version,
-            prompt_group=self._prompt_group
+            pipeline=self._pipeline
         )
 
     def format_map(self, mapping: Any) -> "_MwinPromptStr":
         """format_map variant — also preserves the original template."""
         formatted = str.format_map(self, mapping)
         return _MwinPromptStr(
-            formatted, 
-            original_template=self._original_template, 
+            formatted,
+            original_template=self._original_template,
             version=self._version,
-            prompt_group=self._prompt_group
+            pipeline=self._pipeline
         )
 
     def __mod__(self, args: Any) -> "_MwinPromptStr":
         """%-style formatting — also preserves the original template."""
         formatted = str.__mod__(self, args)
         return _MwinPromptStr(
-            formatted, 
-            original_template=self._original_template, 
+            formatted,
+            original_template=self._original_template,
             version=self._version,
-            prompt_group=self._prompt_group,
+            pipeline=self._pipeline,
         )
     
     @property
@@ -59,7 +59,7 @@ class _MwinPromptStr(str):
         return self._version
 
 
-def template_prompt(system_prompt: str, version: str, prompt_group: str) -> "_MwinPromptStr":
+def template_prompt(system_prompt: str, version: str, pipeline: str) -> "_MwinPromptStr":
     """Wrap a system prompt template so mwin can log the original template.
 
     Call this with the unformatted template string. Then call .format() (or
@@ -78,7 +78,7 @@ def template_prompt(system_prompt: str, version: str, prompt_group: str) -> "_Mw
             # mwin logs: "You are {role}. Project: {project}"
             client.create(messages=[{"role": "system", "content": system}, ...])
     """
-    return _MwinPromptStr(system_prompt, version=version, prompt_group=prompt_group)
+    return _MwinPromptStr(system_prompt, version=version, pipeline=pipeline)
 
 
 def extract_system_prompt_from_messages(messages: Sequence) -> _MwinPromptStr | None:

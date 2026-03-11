@@ -398,7 +398,7 @@ class BaseTracker(ABC):
             end_time=current_step.end_time,
             description=tracker_options.description,
             llm_provider=tracker_options.llm_provider,
-            prompt_group=None,
+            pipeline=None,
             system_prompt=None,
             prompt_version_id=None,
         )
