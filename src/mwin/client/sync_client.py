@@ -89,7 +89,7 @@ class SyncClient:
             end_time=end_time,
             description=description,
             llm_provider=llm_provider,
-            pipeline=pipeline,
+            prompt_pipeline=pipeline,
             system_prompt=system_prompt,
             prompt_version_id=prompt_version_id,
         )

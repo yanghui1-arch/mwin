@@ -53,7 +53,7 @@ class LogStepRequest(BaseModel):
     llm_provider: str
     """llm inference provider"""
 
-    pipeline: str | None = None
+    prompt_pipeline: str | None = None
     """Pipeline"""
 
     prompt_version_id: str | None = None
