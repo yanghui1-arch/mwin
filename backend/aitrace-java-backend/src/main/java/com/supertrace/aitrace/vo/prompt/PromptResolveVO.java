@@ -12,4 +12,8 @@ import java.util.UUID;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class PromptResolveVO {
     private UUID promptId;
+
+    public static PromptResolveVO from(UUID promptId) {
+        return PromptResolveVO.builder().promptId(promptId).build();
+    }
 }

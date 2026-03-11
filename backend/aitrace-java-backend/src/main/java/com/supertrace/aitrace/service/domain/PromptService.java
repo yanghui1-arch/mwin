@@ -1,17 +1,17 @@
 package com.supertrace.aitrace.service.domain;
 
+import com.supertrace.aitrace.domain.core.prompt.Prompt;
+import com.supertrace.aitrace.domain.core.prompt.PromptGroup;
+import com.supertrace.aitrace.domain.core.prompt.PromptRef;
+import com.supertrace.aitrace.domain.core.prompt.PromptStatus;
 import com.supertrace.aitrace.dto.prompt.CreateOrUpdateStatusRequest;
 import com.supertrace.aitrace.dto.prompt.CreatePromptGroupRequest;
 import com.supertrace.aitrace.dto.prompt.CreatePromptRequest;
-import com.supertrace.aitrace.vo.prompt.PromptGroupVO;
-import com.supertrace.aitrace.domain.core.prompt.PromptRef;
-import com.supertrace.aitrace.vo.prompt.PromptResolveVO;
-import com.supertrace.aitrace.vo.prompt.PromptStatusVO;
-import com.supertrace.aitrace.vo.prompt.PromptVO;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -41,24 +41,22 @@ public interface PromptService {
     UUID createPromptGroup(CreatePromptGroupRequest request, UUID userId);
 
     /**
-     * Returns all prompt groups belonging to the given project, including their
-     * version count and current deployment statuses.
+     * Returns all prompt groups belonging to the given project.
      *
      * @param projectId the project to list groups for
-     * @return list of prompt group view objects; empty list if none exist
+     * @return list of prompt groups; empty list if none exist
      */
-    List<PromptGroupVO> listPromptGroups(Long projectId);
+    List<PromptGroup> listPromptGroups(Long projectId);
 
     /**
-     * Returns the detail of a single prompt group identified by project and name,
-     * including its version count and current deployment statuses.
+     * Returns a single prompt group identified by project and name.
      *
      * @param projectId       the project the group belongs to
      * @param promptGroupName the unique name of the group within the project
-     * @return the prompt group view object
+     * @return the prompt group
      * @throws NoSuchElementException if no group with the given name exists in the project
      */
-    PromptGroupVO getPromptGroupDetail(Long projectId, String promptGroupName);
+    PromptGroup getPromptGroupDetail(Long projectId, String promptGroupName);
 
     /**
      * Deletes a prompt group and all associated prompts and deployment statuses.
@@ -100,25 +98,41 @@ public interface PromptService {
      * @param promptGroupName the name of the prompt group; created if absent
      * @param version         the version string of the prompt; created if absent
      * @param content         the prompt content, used only when a new prompt is created
-     * @return the UUID of the existing or newly created prompt
+     * @return a {@code PromptRef} holding both the prompt group ID and the prompt version ID
      */
     @Transactional
     PromptRef findOrCreatePrompt(Long projectId, String promptGroupName, String version, String content);
 
     /**
+     * Returns a single prompt by its UUID.
+     *
+     * @param promptId the UUID of the prompt
+     * @return an {@code Optional} containing the prompt, or empty if not found
+     */
+    Optional<Prompt> findPromptById(UUID promptId);
+
+    /**
      * Returns all prompt versions for the given group, ordered by creation time descending.
      *
      * @param promptGroupId the UUID of the prompt group
-     * @return list of prompt view objects; empty list if none exist
+     * @return list of prompts; empty list if none exist
      */
-    List<PromptVO> listPrompts(UUID promptGroupId);
+    List<Prompt> listPrompts(UUID promptGroupId);
+
+    /**
+     * Returns the number of prompt versions in the given group.
+     *
+     * @param promptGroupId the UUID of the prompt group
+     * @return the version count
+     */
+    long countPrompts(UUID promptGroupId);
 
     // -------------------------------------------------------------------------
     // Prompt Resolution
     // -------------------------------------------------------------------------
 
     /**
-     * Resolves the active prompt for a given project, group, and deployment status label.
+     * Resolves the active prompt ID for a given project, group, and deployment status label.
      *
      * <p>Looks up the project by {@code projectName} scoped to the user, then finds the
      * prompt group by name, and finally returns the prompt ID mapped to the given status.
@@ -127,10 +141,10 @@ public interface PromptService {
      * @param projectName     the name of the project
      * @param promptGroupName the name of the prompt group
      * @param status          the deployment label to resolve (e.g. {@code "production"})
-     * @return a view object containing the resolved prompt ID
+     * @return the UUID of the resolved prompt
      * @throws NoSuchElementException if the project, group, or status label is not found
      */
-    PromptResolveVO resolvePrompt(UUID userId, String projectName, String promptGroupName, String status);
+    UUID resolvePrompt(UUID userId, String projectName, String promptGroupName, String status);
 
     // -------------------------------------------------------------------------
     // Prompt Status (Deployment Label)
@@ -146,18 +160,18 @@ public interface PromptService {
      *
      * @param request contains {@code promptGroupId}, {@code status} label, and {@code promptId}
      * @param userId  the ID of the user performing the deployment
-     * @return the updated or newly created status view object, including the resolved version string
+     * @return the updated or newly created {@code PromptStatus} entity
      */
     @Transactional
-    PromptStatusVO createOrUpdateStatus(CreateOrUpdateStatusRequest request, UUID userId);
+    PromptStatus createOrUpdateStatus(CreateOrUpdateStatusRequest request, UUID userId);
 
     /**
      * Returns all deployment statuses for the given prompt group.
      *
      * @param promptGroupId the UUID of the prompt group
-     * @return list of status view objects; empty list if none exist
+     * @return list of prompt statuses; empty list if none exist
      */
-    List<PromptStatusVO> listStatuses(UUID promptGroupId);
+    List<PromptStatus> listStatuses(UUID promptGroupId);
 
     /**
      * Deletes a deployment status by its ID.

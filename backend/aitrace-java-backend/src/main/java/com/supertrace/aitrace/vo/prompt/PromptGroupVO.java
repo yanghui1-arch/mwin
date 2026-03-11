@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import lombok.Builder;
 import lombok.Data;
 
+import com.supertrace.aitrace.domain.core.prompt.PromptGroup;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -20,4 +21,16 @@ public class PromptGroupVO {
     private LocalDateTime createdAt;
     private long versionCount;
     private List<PromptStatusVO> statuses;
+
+    public static PromptGroupVO from(PromptGroup group, long versionCount, List<PromptStatusVO> statuses) {
+        return PromptGroupVO.builder()
+            .id(group.getId())
+            .projectId(group.getProjectId())
+            .name(group.getName())
+            .description(group.getDescription())
+            .createdAt(group.getCreatedAt())
+            .versionCount(versionCount)
+            .statuses(statuses)
+            .build();
+    }
 }

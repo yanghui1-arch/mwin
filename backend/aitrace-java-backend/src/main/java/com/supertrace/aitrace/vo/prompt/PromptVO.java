@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import com.supertrace.aitrace.domain.core.prompt.ModelConfig;
+import com.supertrace.aitrace.domain.core.prompt.Prompt;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -20,4 +21,16 @@ public class PromptVO {
     private ModelConfig modelConfig;
     private UUID createdBy;
     private LocalDateTime createdAt;
+
+    public static PromptVO from(Prompt p) {
+        return PromptVO.builder()
+            .id(p.getId())
+            .promptGroupId(p.getPromptGroupId())
+            .version(p.getVersion())
+            .content(p.getContent())
+            .modelConfig(p.getModelConfig())
+            .createdBy(p.getCreatedBy())
+            .createdAt(p.getCreatedAt())
+            .build();
+    }
 }

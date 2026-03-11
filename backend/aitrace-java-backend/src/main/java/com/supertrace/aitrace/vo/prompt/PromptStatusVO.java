@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import lombok.Builder;
 import lombok.Data;
 
+import com.supertrace.aitrace.domain.core.prompt.PromptStatus;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -19,4 +20,16 @@ public class PromptStatusVO {
     private String version;
     private UUID deployedBy;
     private LocalDateTime deployedAt;
+
+    public static PromptStatusVO from(PromptStatus s, String version) {
+        return PromptStatusVO.builder()
+            .id(s.getId())
+            .promptGroupId(s.getPromptGroupId())
+            .status(s.getStatus())
+            .promptId(s.getPromptId())
+            .version(version)
+            .deployedBy(s.getDeployedBy())
+            .deployedAt(s.getDeployedAt())
+            .build();
+    }
 }
