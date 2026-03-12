@@ -13,6 +13,8 @@
         "projects": "Projects",
         "optimizer": "Optimizer",
         "kubent": "Kubent",
+        "prompts": "Prompts",
+        "promptManagement": "Prompt Management",
         "manageApiKey": "Manage API Key",
         "apiKey": "API key",
         "settings": "Settings",
@@ -222,6 +224,76 @@
         "overview": "Overview",
         "projects": "Projects",
         "kubent": "Kubent",
-        "apiKey": "API Key"
+        "apiKey": "API Key",
+        "prompts": "Prompts"
+    },
+    "prompts": {
+        "title": "Prompt Management",
+        "description": "Visualize and optimize your agent system's prompt combinations",
+        "selectProject": "Select a project",
+        "stats": {
+            "totalPipelines": "Total Pipelines",
+            "totalPrompts": "Total Prompts",
+            "avgQualityScore": "Avg Quality Score",
+            "bestSuccessRate": "Best Success Rate",
+            "activeArchived": "{{active}} active · {{archived}} archived",
+            "currentVersions": "{{count}} current versions",
+            "acrossCurrentVersions": "Across current versions",
+            "topPerformingPrompt": "Top performing prompt"
+        },
+        "pipeline": {
+            "title": "Pipelines",
+            "active": "Active",
+            "archived": "Archived",
+            "promptCount": "{{count}} prompts",
+            "selectHint": "Select a pipeline or prompt",
+            "selectHintDescription": "Click any item in the left panel to explore its performance and details"
+        },
+        "prompt": {
+            "current": "Current",
+            "deprecated": "Deprecated",
+            "testing": "Testing",
+            "model": "Model",
+            "createdAt": "Created",
+            "content": "Content",
+            "metrics": "Metrics",
+            "history": "History",
+            "qualityScore": "Quality Score",
+            "successRate": "Success Rate",
+            "latency": "Latency",
+            "tokenCost": "Token Cost",
+            "usageCount": "Usage",
+            "changelog": "What changed",
+            "copyContent": "Copy",
+            "copied": "Copied!",
+            "perThousandCalls": "per 1k calls",
+            "totalCalls": "total calls"
+        },
+        "chart": {
+            "title": "Success Rate Trends",
+            "description": "Performance across all active pipelines over time",
+            "versionComparison": "Version performance over time",
+            "versionTimeline": "Version over time",
+            "avgPerformance": "Average by version",
+            "showing": "Showing",
+            "noHistory": "No tracking history available",
+            "compareVersions": "Versions",
+            "successRate": "Success Rate (%)",
+            "latency": "Latency (ms)",
+            "tokenCost": "Token Cost (¢)"
+        },
+        "recommendations": {
+            "title": "AI Recommendations",
+            "description": "Optimized combinations discovered by analyzing your prompt history and performance data",
+            "high": "High",
+            "medium": "Medium",
+            "low": "Low",
+            "confidence": "Confidence",
+            "tradeoffs": "Trade-offs",
+            "rationale": "Rationale",
+            "involvedPipelines": "Involved Pipelines",
+            "explore": "Explore Combination",
+            "analyzed": "{{count}} combinations found"
+        }
     }
 }

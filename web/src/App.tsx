@@ -11,6 +11,7 @@ import GitHubAuthPage from "./pages/auth/github";
 import { APIKeyPage } from "./pages/apikey";
 import { UserProvider } from "./components/user-provider";
 import KubentPage from "./pages/kubent";
+import PromptsPage from "./pages/prompts";
 import { NotFoundPage } from "./pages/error";
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
               <Route path="/projects/:name" element={<ProjectDetailPage />} />
               <Route path="/get_apikey" element={<APIKeyPage />} />
               <Route path="/kubent" element={<KubentPage />} />
+              <Route path="/prompts" element={<PromptsPage />} />
             </Route>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/auth/github/callback" element={<GitHubAuthPage />} />

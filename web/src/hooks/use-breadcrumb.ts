@@ -57,6 +57,13 @@ export function useBreadcrumb(): BreadcrumbItem[] {
           isCurrentPage: isLast,
         })
         break
+      case "prompts":
+        breadcrumbs.push({
+          label: t("breadcrumb.prompts"),
+          href: isLast ? undefined : path,
+          isCurrentPage: isLast,
+        })
+        break
       default:
         // Handle dynamic segments like project names
         if (params.name && segment === params.name) {

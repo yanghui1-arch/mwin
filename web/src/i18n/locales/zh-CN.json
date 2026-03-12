@@ -13,6 +13,8 @@
         "projects": "项目",
         "optimizer": "优化",
         "kubent": "Kubent",
+        "prompts": "提示词",
+        "promptManagement": "提示词管理",
         "manageApiKey": "管理API Key",
         "apiKey": "API key",
         "settings": "设置",
@@ -224,6 +226,73 @@
         "overview": "概览",
         "projects": "项目",
         "kubent": "Kubent",
-        "apiKey": "API Key"
+        "apiKey": "API Key",
+        "prompts": "提示词"
+    },
+    "prompts": {
+        "title": "提示词管理",
+        "description": "可视化并优化你的 Agent 系统提示词组合",
+        "stats": {
+            "totalPipelines": "Pipeline 总数",
+            "totalPrompts": "提示词总数",
+            "avgQualityScore": "平均质量分",
+            "bestSuccessRate": "最高成功率",
+            "activeArchived": "{{active}} 活跃 · {{archived}} 已归档",
+            "currentVersions": "{{count}} 个当前版本",
+            "acrossCurrentVersions": "当前版本平均值",
+            "topPerformingPrompt": "表现最优提示词"
+        },
+        "pipeline": {
+            "title": "Pipeline",
+            "active": "活跃",
+            "archived": "已归档",
+            "promptCount": "{{count}} 个提示词",
+            "selectHint": "选择 Pipeline 或提示词",
+            "selectHintDescription": "点击左侧面板中的任意项目，探索其性能和详细信息"
+        },
+        "prompt": {
+            "current": "当前版本",
+            "deprecated": "已废弃",
+            "testing": "测试中",
+            "model": "模型",
+            "createdAt": "创建时间",
+            "content": "内容",
+            "metrics": "指标",
+            "history": "历史",
+            "qualityScore": "质量分",
+            "successRate": "成功率",
+            "latency": "延迟",
+            "tokenCost": "Token 费用",
+            "usageCount": "使用次数",
+            "changelog": "变更说明",
+            "copyContent": "复制",
+            "copied": "已复制！",
+            "perThousandCalls": "每千次调用",
+            "totalCalls": "总调用次数"
+        },
+        "chart": {
+            "title": "成功率趋势",
+            "description": "所有活跃 Pipeline 随时间的性能变化",
+            "versionComparison": "各版本性能随时间变化",
+            "versionTimeline": "版本随时间变化",
+            "avgPerformance": "各版本平均值",
+            "showing": "查看",
+            "noHistory": "暂无跟踪历史数据",
+            "compareVersions": "版本对比",
+            "successRate": "成功率 (%)",
+            "latency": "延迟 (ms)",
+            "tokenCost": "Token 费用 (¢)"
+        },
+        "recommendations": {
+            "title": "AI 推荐",
+            "description": "基于你的提示词历史和性能数据，发现最优组合方案",
+            "high": "高",
+            "medium": "中",
+            "low": "低",
+            "confidence": "置信度",
+            "tradeoffs": "权衡取舍",
+            "explore": "探索组合",
+            "analyzed": "发现 {{count}} 个组合方案"
+        }
     }
 }
