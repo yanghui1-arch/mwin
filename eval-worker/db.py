@@ -165,9 +165,9 @@ async def insert_score(
     await conn.execute(
         """
         INSERT INTO eval_score
-            (step_id, trace_id, prompt_version_id, eval_metric_id,
+            (id, step_id, trace_id, prompt_version_id, eval_metric_id,
              evaluator_type, score, reasoning)
-        VALUES ($1, $2, $3, $4, 'llm', $5, $6)
+        VALUES (gen_random_uuid(), $1, $2, $3, $4, 'llm', $5, $6)
         """,
         step_id,
         trace_id,
