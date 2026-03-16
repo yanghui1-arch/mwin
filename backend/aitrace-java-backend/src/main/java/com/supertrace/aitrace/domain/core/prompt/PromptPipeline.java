@@ -37,4 +37,9 @@ public class PromptPipeline {
     @Column(name = "created_at")
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Convert(converter = PromptPipelineStatus.JpaConverter.class)
+    @Column(name = "status", nullable = false, length = 20, columnDefinition = "varchar(20) not null default 'active'")
+    @Builder.Default
+    private PromptPipelineStatus status = PromptPipelineStatus.ACTIVE;
 }

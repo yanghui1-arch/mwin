@@ -23,4 +23,9 @@ public class CreatePromptRequest {
 
     private ModelConfig modelConfig;
 
+    private String name;
+
+    private String description;
+
+    private String changelog;
 }

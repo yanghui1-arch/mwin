@@ -6,12 +6,14 @@ import com.supertrace.aitrace.domain.core.prompt.PromptStatus;
 import com.supertrace.aitrace.dto.prompt.CreateOrUpdateStatusRequest;
 import com.supertrace.aitrace.dto.prompt.CreatePromptPipelineRequest;
 import com.supertrace.aitrace.dto.prompt.CreatePromptRequest;
+import com.supertrace.aitrace.dto.prompt.UpdatePromptStatusRequest;
 import com.supertrace.aitrace.exception.AuthenticationException;
 import com.supertrace.aitrace.exception.UserIdNotFoundException;
 import com.supertrace.aitrace.response.APIResponse;
 import com.supertrace.aitrace.service.application.ApiKeyService;
 import com.supertrace.aitrace.service.domain.PromptService;
 import com.supertrace.aitrace.utils.ApiKeyUtils;
+import com.supertrace.aitrace.vo.prompt.PromptGroupVO;
 import com.supertrace.aitrace.vo.prompt.PromptPipelineVO;
 import com.supertrace.aitrace.vo.prompt.PromptResolveVO;
 import com.supertrace.aitrace.vo.prompt.PromptStatusVO;
@@ -21,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -196,14 +199,77 @@ public class PromptController {
         }
     }
 
+    /** Update pipeline status (active / archived) */
+    @PatchMapping("/pipeline/{pipelineId}/status")
+    public ResponseEntity<APIResponse<Void>> updatePipelineStatus(
+        @PathVariable UUID pipelineId,
+        @RequestBody UpdatePromptStatusRequest body
+    ) {
+        try {
+            promptService.updatePipelineStatus(pipelineId, body.getStatus());
+            return ResponseEntity.ok(APIResponse.success(null));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(404).body(APIResponse.notFound(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(APIResponse.error(e.getMessage()));
+        }
+    }
 
-    // Complex VO assembler
+    /** Update prompt version status (current / deprecated / testing) */
+    @PatchMapping("/{promptId}/status")
+    public ResponseEntity<APIResponse<PromptVO>> updatePromptStatus(
+        @PathVariable UUID promptId,
+        @RequestBody UpdatePromptStatusRequest body
+    ) {
+        try {
+            Prompt updated = promptService.updatePromptStatus(promptId, body);
+            return ResponseEntity.ok(APIResponse.success(PromptVO.from(updated)));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(404).body(APIResponse.notFound(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(APIResponse.error(e.getMessage()));
+        }
+    }
+
+
+    // ─── Assembler ────────────────────────────────────────────────────────────
+
     private PromptPipelineVO toPromptPipelineVO(PromptPipeline pipeline) {
-        Map<UUID, String> versionMap = promptService.listPrompts(pipeline.getId()).stream()
+        List<Prompt> allPrompts = promptService.listPrompts(pipeline.getId());
+
+        // Build version map for status VO resolution
+        Map<UUID, String> versionMap = allPrompts.stream()
             .collect(Collectors.toMap(Prompt::getId, Prompt::getVersion));
         List<PromptStatusVO> statusVOs = promptService.listStatuses(pipeline.getId()).stream()
             .map(s -> PromptStatusVO.from(s, versionMap.get(s.getPromptId())))
             .toList();
-        return PromptPipelineVO.from(pipeline, promptService.countPrompts(pipeline.getId()), statusVOs);
+
+        // Group prompt versions by name (null name → "" as fallback key)
+        Map<String, List<Prompt>> grouped = allPrompts.stream()
+            .collect(Collectors.groupingBy(
+                p -> p.getName() != null ? p.getName() : "",
+                LinkedHashMap::new,
+                Collectors.toList()
+            ));
+
+        List<PromptGroupVO> promptGroups = grouped.entrySet().stream()
+            .map(entry -> {
+                List<PromptVO> versions = entry.getValue().stream()
+                    .map(PromptVO::from)
+                    .toList();
+                String desc = entry.getValue().stream()
+                    .map(Prompt::getDescription)
+                    .filter(d -> d != null && !d.isEmpty())
+                    .findFirst()
+                    .orElse(null);
+                return PromptGroupVO.builder()
+                    .name(entry.getKey())
+                    .description(desc)
+                    .versions(versions)
+                    .build();
+            })
+            .toList();
+
+        return PromptPipelineVO.from(pipeline, allPrompts.size(), statusVOs, promptGroups);
     }
 }

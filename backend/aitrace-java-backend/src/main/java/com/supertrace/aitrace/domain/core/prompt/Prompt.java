@@ -47,4 +47,17 @@ public class Prompt {
     @Column(name = "created_at")
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "status", nullable = false, length = 20, columnDefinition = "varchar(20) not null default 'active'")
+    @Builder.Default
+    private String status = "active";
+
+    @Column(name = "name", length = 200)
+    private String name;
+
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
+
+    @Column(name = "changelog", columnDefinition = "TEXT")
+    private String changelog;
 }

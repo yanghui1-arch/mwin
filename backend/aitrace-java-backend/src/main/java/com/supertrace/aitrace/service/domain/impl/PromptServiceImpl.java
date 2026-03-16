@@ -3,11 +3,13 @@ package com.supertrace.aitrace.service.domain.impl;
 import com.supertrace.aitrace.domain.Project;
 import com.supertrace.aitrace.domain.core.prompt.Prompt;
 import com.supertrace.aitrace.domain.core.prompt.PromptPipeline;
+import com.supertrace.aitrace.domain.core.prompt.PromptPipelineStatus;
 import com.supertrace.aitrace.domain.core.prompt.PromptRef;
 import com.supertrace.aitrace.domain.core.prompt.PromptStatus;
 import com.supertrace.aitrace.dto.prompt.CreateOrUpdateStatusRequest;
 import com.supertrace.aitrace.dto.prompt.CreatePromptPipelineRequest;
 import com.supertrace.aitrace.dto.prompt.CreatePromptRequest;
+import com.supertrace.aitrace.dto.prompt.UpdatePromptStatusRequest;
 import com.supertrace.aitrace.repository.ProjectRepository;
 import com.supertrace.aitrace.repository.PromptPipelineRepository;
 import com.supertrace.aitrace.repository.PromptRepository;
@@ -69,6 +71,9 @@ public class PromptServiceImpl implements PromptService {
             .content(request.getContent())
             .modelConfig(request.getModelConfig())
             .createdBy(userId)
+            .name(request.getName())
+            .description(request.getDescription())
+            .changelog(request.getChangelog())
             .build();
         return promptRepository.save(prompt).getId();
     }
@@ -110,6 +115,14 @@ public class PromptServiceImpl implements PromptService {
     @Override
     public long countPrompts(UUID promptPipelineId) {
         return promptRepository.countByPromptPipelineId(promptPipelineId);
+    }
+
+    @Override
+    public Prompt updatePromptStatus(UUID promptId, UpdatePromptStatusRequest request) {
+        Prompt prompt = promptRepository.findById(promptId)
+            .orElseThrow(() -> new NoSuchElementException("Prompt not found: " + promptId));
+        prompt.setStatus(request.getStatus());
+        return promptRepository.save(prompt);
     }
 
     @Override
@@ -159,5 +172,13 @@ public class PromptServiceImpl implements PromptService {
     @Override
     public void deleteStatus(UUID statusId) {
         promptStatusRepository.deleteById(statusId);
+    }
+
+    @Override
+    public void updatePipelineStatus(UUID pipelineId, String status) {
+        PromptPipeline pipeline = promptPipelineRepository.findById(pipelineId)
+            .orElseThrow(() -> new NoSuchElementException("Prompt pipeline not found: " + pipelineId));
+        pipeline.setStatus(PromptPipelineStatus.fromValue(status));
+        promptPipelineRepository.save(pipeline);
     }
 }

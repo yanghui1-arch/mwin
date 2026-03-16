@@ -21,6 +21,10 @@ public class PromptVO {
     private ModelConfig modelConfig;
     private UUID createdBy;
     private LocalDateTime createdAt;
+    private String status;
+    private String name;
+    private String description;
+    private String changelog;
 
     public static PromptVO from(Prompt p) {
         return PromptVO.builder()
@@ -31,6 +35,10 @@ public class PromptVO {
             .modelConfig(p.getModelConfig())
             .createdBy(p.getCreatedBy())
             .createdAt(p.getCreatedAt())
+            .status(p.getStatus())
+            .name(p.getName())
+            .description(p.getDescription())
+            .changelog(p.getChangelog())
             .build();
     }
 }

@@ -7,6 +7,7 @@ import com.supertrace.aitrace.domain.core.prompt.PromptStatus;
 import com.supertrace.aitrace.dto.prompt.CreateOrUpdateStatusRequest;
 import com.supertrace.aitrace.dto.prompt.CreatePromptPipelineRequest;
 import com.supertrace.aitrace.dto.prompt.CreatePromptRequest;
+import com.supertrace.aitrace.dto.prompt.UpdatePromptStatusRequest;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -126,6 +127,25 @@ public interface PromptService {
      * @return the version count
      */
     long countPrompts(UUID promptPipelineId);
+
+    /**
+     * Updates the status of a prompt version (e.g. {@code "current"}, {@code "deprecated"}).
+     *
+     * @param promptId the UUID of the prompt to update
+     * @param request  contains the new {@code status} value
+     * @return the updated {@code Prompt} entity
+     * @throws java.util.NoSuchElementException if the prompt does not exist
+     */
+    Prompt updatePromptStatus(UUID promptId, UpdatePromptStatusRequest request);
+
+    /**
+     * Updates the status of a prompt pipeline (e.g. {@code "active"}, {@code "archived"}).
+     *
+     * @param pipelineId the UUID of the pipeline to update
+     * @param status     the new status value
+     * @throws java.util.NoSuchElementException if the pipeline does not exist
+     */
+    void updatePipelineStatus(UUID pipelineId, String status);
 
     // -------------------------------------------------------------------------
     // Prompt Resolution
