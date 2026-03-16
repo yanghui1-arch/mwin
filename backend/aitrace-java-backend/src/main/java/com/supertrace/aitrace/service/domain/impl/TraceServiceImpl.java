@@ -1,11 +1,13 @@
 package com.supertrace.aitrace.service.domain.impl;
 
 import com.supertrace.aitrace.domain.core.Trace;
+import com.supertrace.aitrace.domain.event.TraceFinishedEvent;
 import com.supertrace.aitrace.dto.trace.LogTraceRequest;
 import com.supertrace.aitrace.factory.TraceFactory;
 import com.supertrace.aitrace.repository.TraceRepository;
 import com.supertrace.aitrace.service.domain.TraceService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +25,7 @@ public class TraceServiceImpl implements TraceService {
 
     private final TraceRepository traceRepository;
     private final TraceFactory traceFactory;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public Optional<Trace> findById(UUID traceId) {
@@ -41,7 +44,10 @@ public class TraceServiceImpl implements TraceService {
         Trace trace = traceFactory.createTrace(logTraceRequest, projectId);
         // 2. save trace
         traceRepository.saveAndFlush(trace);
-        // 3. logger
+        // 3. publish event when output is populated — trace is finished
+        if (logTraceRequest.getOutput() != null && !logTraceRequest.getOutput().isEmpty()) {
+            eventPublisher.publishEvent(new TraceFinishedEvent(trace.getId(), projectId));
+        }
         // 4. return trace id
         return trace.getId();
     }

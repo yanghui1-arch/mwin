@@ -2,6 +2,7 @@ package com.supertrace.aitrace.service.domain.impl;
 
 import com.supertrace.aitrace.domain.core.step.Step;
 import com.supertrace.aitrace.domain.core.step.StepRef;
+import com.supertrace.aitrace.domain.event.StepLoggedEvent;
 import com.supertrace.aitrace.dto.step.LogStepRequest;
 import com.supertrace.aitrace.factory.StepFactory;
 import com.supertrace.aitrace.repository.StepRefRepository;
@@ -10,6 +11,7 @@ import com.supertrace.aitrace.service.domain.StepService;
 import com.supertrace.aitrace.domain.core.prompt.PromptRef;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -26,6 +28,7 @@ public class StepServiceImpl implements StepService {
     private final StepRepository stepRepository;
     private final StepRefRepository stepRefRepository;
     private final StepFactory stepFactory;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * Validate request and persist step.
@@ -43,6 +46,7 @@ public class StepServiceImpl implements StepService {
     @Transactional(rollbackFor = Exception.class)
     public UUID logStep(@NotNull UUID userId, @NotNull LogStepRequest logStepRequest, @NotNull Long projectId, PromptRef promptRef) {
         Step newStep;
+        boolean shouldEval = logStepRequest.getOutput().getLlmOutputs() != null;
         // 1. merge or create step
         UUID stepId = UUID.fromString(logStepRequest.getStepId());
         Optional<Step> dbStep = stepRepository.findById(stepId);
@@ -74,7 +78,14 @@ public class StepServiceImpl implements StepService {
             stepRefRepository.save(stepRef);
         }
 
-        // 4. return step id
+        // 4. publish event after enrich — picked up by EvalJobServiceImpl after commit
+        if (shouldEval) {
+            UUID traceId = UUID.fromString(logStepRequest.getTraceId());
+            UUID promptVersionId = (promptRef != null) ? promptRef.promptVersionId() : null;
+            eventPublisher.publishEvent(new StepLoggedEvent(newStep.getId(), traceId, projectId, promptVersionId));
+        }
+
+        // 5. return step id
         return newStep.getId();
     }
 
