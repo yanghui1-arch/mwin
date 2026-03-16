@@ -1,0 +1,21 @@
+# Environment
+.env
+.venv/
+venv/
+
+# uv
+.python-version
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Logs
+*.log
