@@ -1,5 +1,14 @@
 # Version log
 Every version updates, fixes and removings could be checked here.
+## 0.2.1
+### Feature
+- Offer a function to track system prompt effect. - @yanghui1-arch [# 0a406df](https://github.com/yanghui1-arch/mwin/commit/0a406dfa5d3558941c8b6439f24133bcbef33648) [#070d693](https://github.com/yanghui1-arch/mwin/commit/070d693f5fdb01fb66d103e4636a7a90976c758f)
+
+- Add a `prompt_group` field to manage prompts of an agent system easily. - @yanghui1-arch [# abcb972](https://github.com/yanghui1-arch/mwin/commit/abcb972a007b5a188b941230bc5cab27b7cb4e92)
+
+### Fix
+- Replace `prompt_group` to `pipeline`. - @yanghui1-arch [# bd29fc9](https://github.com/yanghui1-arch/mwin/commit/bd29fc97b26e6c3b9fdb5c33888801162a157be9)
+
 ## 0.1.10
 ### Feature
 - Offer a context manager to manually decide when start and end a trace. - @yanghui1-arch [# 43a212b](https://github.com/yanghui1-arch/mwin/commit/43a212b446c291e2613383f73173b0c80a46d36c)
