@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useTranslation } from "react-i18next"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
@@ -6,18 +6,11 @@ import { GitBranch, MousePointerClick, FolderOpen, TrendingUp, FileText, Chevron
 import { PipelineTree } from "./components/pipeline-tree"
 import { PerformanceChart } from "./components/performance-chart"
 import { PromptDetail } from "./components/prompt-detail"
-import { RecommendationDetail } from "./components/recommendation-detail"
 import { CompactRecommendations } from "./components/compact-recommendations"
-import {
-  mockProjects,
-  mockPipelines,
-  mockPerformanceData,
-  mockRecommendations,
-} from "./mock-data"
 import { cn } from "@/lib/utils"
-import type { Pipeline, PromptVersionStatus } from "./types"
-
-const PIPELINE_COLORS = ["#C96442", "#9C7BB5", "#5A9E92", "#C9954A", "#B86070"]
+import type { Pipeline, Project, PromptVersionStatus } from "./types"
+import { promptApi } from "@/api/prompt"
+import { projectApi } from "@/api/project"
 
 type ViewMode = "performance" | "prompt"
 
@@ -69,56 +62,92 @@ function ViewToggle({ value, onChange }: { value: ViewMode; onChange: (v: ViewMo
   )
 }
 
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default function PromptsPage() {
   const { t } = useTranslation()
 
-  const [pipelines, setPipelines] = useState<Pipeline[]>(mockPipelines)
-  const [selectedProjectId, setSelectedProjectId] = useState(mockProjects[0].id)
+  const [projects, setProjects] = useState<Project[]>([])
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
+  const [pipelines, setPipelines] = useState<Pipeline[]>([])
   const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>(null)
   const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null)
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null)
-  const [selectedRecId, setSelectedRecId] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>("performance")
 
-  const handleSelectProject = (id: string) => {
-    setSelectedProjectId(id)
+  // ── Load projects on mount ──────────────────────────────────────────────────
+  useEffect(() => {
+    projectApi.getAllProjects().then((res) => {
+      const data = res.data.data
+      if (Array.isArray(data) && data.length > 0) {
+        const mapped: Project[] = data.map((p) => ({
+          id: String(p.projectId),
+          name: p.projectName,
+          description: p.description,
+        }))
+        setProjects(mapped)
+        setSelectedProjectId(mapped[0].id)
+      }
+    }).catch(() => {/* silent */})
+  }, [])
+
+  // ── Load pipelines when project changes ────────────────────────────────────
+  const loadPipelines = useCallback((projectId: string) => {
+    promptApi.listPipelines(Number(projectId))
+      .then(setPipelines)
+      .catch(() => setPipelines([]))
+  }, [])
+
+  useEffect(() => {
+    if (!selectedProjectId) return
+    loadPipelines(selectedProjectId)
     setSelectedPipelineId(null)
     setSelectedPromptId(null)
     setSelectedVersionId(null)
-    setSelectedRecId(null)
+  }, [selectedProjectId, loadPipelines])
+
+  // ── Handlers ───────────────────────────────────────────────────────────────
+
+  const handleSelectProject = (id: string) => {
+    setSelectedProjectId(id)
   }
 
   const handleSelectPipeline = (pipelineId: string) => {
     setSelectedPipelineId(pipelineId)
     setSelectedPromptId(null)
     setSelectedVersionId(null)
-    setSelectedRecId(null)
   }
 
   const handleSelectPrompt = (pipelineId: string, promptId: string) => {
     setSelectedPipelineId(pipelineId)
     setSelectedPromptId(promptId)
     setSelectedVersionId(null)
-    setSelectedRecId(null)
   }
 
   const handleSelectVersion = (pipelineId: string, promptId: string, versionId: string) => {
     setSelectedPipelineId(pipelineId)
     setSelectedPromptId(promptId)
     setSelectedVersionId(versionId)
-    setSelectedRecId(null)
   }
 
-  const handleSetPipelineStatus = (pipelineId: string, status: "active" | "archived") => {
+  const handleSetPipelineStatus = async (pipelineId: string, status: "active" | "archived") => {
+    // Optimistic update
     setPipelines((prev) => prev.map((p) => (p.id === pipelineId ? { ...p, status } : p)))
+    try {
+      await promptApi.updatePipelineStatus(pipelineId, status)
+    } catch {
+      // Revert on failure
+      if (selectedProjectId) loadPipelines(selectedProjectId)
+    }
   }
 
-  const handleSetVersionStatus = (
+  const handleSetVersionStatus = async (
     pipelineId: string,
     promptId: string,
     versionId: string,
     status: PromptVersionStatus
   ) => {
+    // Optimistic update
     setPipelines((prev) =>
       prev.map((pipeline) => {
         if (pipeline.id !== pipelineId) return pipeline
@@ -139,35 +168,27 @@ export default function PromptsPage() {
         }
       })
     )
+    try {
+      await promptApi.updatePromptStatus(versionId, status)
+    } catch {
+      // Revert on failure
+      if (selectedProjectId) loadPipelines(selectedProjectId)
+    }
   }
 
-  const handleAddPipeline = (name: string, projectId: string) => {
-    const existing = pipelines.filter((p) => p.projectId === projectId)
-    const color = PIPELINE_COLORS[existing.length % PIPELINE_COLORS.length]
-    setPipelines((prev) => [
-      ...prev,
-      {
-        id: `pipeline-${Date.now()}`,
-        projectId,
-        name,
-        description: "",
-        status: "active",
-        chartColor: color,
-        prompts: [],
-        createdAt: new Date().toISOString(),
-        lastUsedAt: new Date().toISOString(),
-      },
-    ])
+  const handleAddPipeline = async (name: string, projectId: string) => {
+    try {
+      await promptApi.createPipeline({ project_id: Number(projectId), name })
+      loadPipelines(projectId)
+    } catch {/* silent */}
   }
+
+  // ── Derived state ──────────────────────────────────────────────────────────
 
   const projectPipelines = pipelines.filter((p) => p.projectId === selectedProjectId)
-  const projectRecommendations = mockRecommendations.filter((r) => r.projectId === selectedProjectId)
-  const projectPerformanceData = mockPerformanceData[selectedProjectId] ?? []
-
   const selectedPipeline = projectPipelines.find((p) => p.id === selectedPipelineId) ?? null
   const selectedPrompt = selectedPipeline?.prompts.find((p) => p.id === selectedPromptId) ?? null
   const selectedVersion = selectedPrompt?.versions.find((v) => v.id === selectedVersionId) ?? null
-  const selectedRec = projectRecommendations.find((r) => r.id === selectedRecId) ?? null
 
   const versionSelected = !!(selectedVersion && selectedPipeline && selectedPrompt)
 
@@ -181,12 +202,12 @@ export default function PromptsPage() {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <FolderOpen className="size-4 text-muted-foreground" />
-          <Select value={selectedProjectId} onValueChange={handleSelectProject}>
+          <Select value={selectedProjectId ?? ""} onValueChange={handleSelectProject}>
             <SelectTrigger className="h-9 w-[220px] text-sm">
-              <SelectValue />
+              <SelectValue placeholder={t("prompts.selectProject")} />
             </SelectTrigger>
             <SelectContent>
-              {mockProjects.map((project) => (
+              {projects.map((project) => (
                 <SelectItem key={project.id} value={project.id}>
                   {project.name}
                 </SelectItem>
@@ -201,14 +222,9 @@ export default function PromptsPage() {
         {/* Left Panel */}
         <div className="w-[260px] shrink-0 flex flex-col overflow-hidden border-r border-border/30">
           <CompactRecommendations
-            recommendations={projectRecommendations}
-            selectedId={selectedRecId}
-            onSelect={(id) => {
-              setSelectedRecId(id)
-              setSelectedPipelineId(null)
-              setSelectedPromptId(null)
-              setSelectedVersionId(null)
-            }}
+            recommendations={[]}
+            selectedId={null}
+            onSelect={() => {}}
           />
           <div className="px-3 py-2 flex items-center gap-2">
             <GitBranch className="size-3.5 text-muted-foreground" />
@@ -226,7 +242,7 @@ export default function PromptsPage() {
               onSetPipelineStatus={handleSetPipelineStatus}
               onSetVersionStatus={handleSetVersionStatus}
               onAddPipeline={handleAddPipeline}
-              projectId={selectedProjectId}
+              projectId={selectedProjectId ?? ""}
             />
           </div>
         </div>
@@ -234,12 +250,7 @@ export default function PromptsPage() {
         {/* Right Panel */}
         <div className="flex-1 min-w-0 min-h-0 flex flex-col gap-3 pl-4 overflow-hidden">
 
-          {selectedRec ? (
-            /* ── Rec selected: always takes priority ── */
-            <div className="flex-1 overflow-y-auto">
-              <RecommendationDetail recommendation={selectedRec} pipelines={projectPipelines} />
-            </div>
-          ) : versionSelected ? (
+          {versionSelected ? (
             /* ── Version selected: header row + toggle ── */
             <>
               <div className="flex items-center justify-between gap-4 shrink-0 pb-3 border-b border-border/25">
@@ -276,7 +287,7 @@ export default function PromptsPage() {
                 <div className="rounded-xl bg-card/40 border border-border/25 px-5 py-4">
                   <PerformanceChart
                     pipelines={projectPipelines}
-                    performanceData={projectPerformanceData}
+                    performanceData={[]}
                     selectedPipeline={selectedPipeline}
                     selectedPrompt={selectedPrompt}
                     selectedVersionId={selectedVersionId}
@@ -292,7 +303,7 @@ export default function PromptsPage() {
               <div className="rounded-xl bg-card/40 border border-border/25 px-5 py-4">
                 <PerformanceChart
                   pipelines={projectPipelines}
-                  performanceData={projectPerformanceData}
+                  performanceData={[]}
                   selectedPipeline={selectedPipeline}
                   selectedPrompt={selectedPrompt}
                   selectedVersionId={selectedVersionId}

@@ -40,25 +40,25 @@ export interface PromptVersion {
 export interface Prompt {
   id: string
   name: string
-  description: string
+  description?: string
   versions: PromptVersion[]
 }
 
 export interface Project {
   id: string
   name: string
-  description: string
+  description?: string
 }
 
 export interface Pipeline {
   id: string
   projectId: string
   name: string
-  description: string
+  description?: string
   status: PipelineStatus
   prompts: Prompt[]            // named prompts — each has its own version history
   createdAt: string
-  lastUsedAt: string
+  lastUsedAt?: string
   chartColor: string
 }
 
