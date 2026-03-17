@@ -57,6 +57,7 @@ def patch_async_openai_chat_completions():
 
         _mwin_prompt = extract_system_prompt_from_messages(raw_openai_inputs.get('messages'))
         pipeline: str | None = _mwin_prompt._pipeline if _mwin_prompt else None
+        prompt_name: str | None = _mwin_prompt._prompt_name if _mwin_prompt else None
         system_prompt: str | None = _mwin_prompt._original_template if _mwin_prompt else None
         prompt_version: str | None = _mwin_prompt._version if _mwin_prompt else None
 
@@ -67,6 +68,7 @@ def patch_async_openai_chat_completions():
                 step=step,
                 inputs=async_openai_inputs,
                 pipeline=pipeline,
+                prompt_name=prompt_name,
                 system_prompt=system_prompt,
                 prompt_version=prompt_version
             )
@@ -90,6 +92,7 @@ def patch_async_openai_chat_completions():
             description=tracker_options.description,
             llm_provider=tracker_options.llm_provider,
             pipeline=pipeline,
+            prompt_name=prompt_name,
             system_prompt=system_prompt,
             prompt_version_id=prompt_version,
         )
@@ -109,6 +112,7 @@ class ProxyAsyncStream(AsyncStream):
         inputs: Dict[str, Any],
         tracker_options: TrackerOptions,
         pipeline: str | None = None,
+        prompt_name: str | None = None,
         system_prompt: str | None = None,
         prompt_version: str | None = None,
     ):
@@ -117,6 +121,7 @@ class ProxyAsyncStream(AsyncStream):
         self.inputs = inputs
         self.tracker_options = tracker_options
         self.pipeline = pipeline
+        self.prompt_name = prompt_name
         self.system_prompt = system_prompt
         self.prompt_version = prompt_version
         self._output: List[ChatCompletionChunk] = []
@@ -157,6 +162,7 @@ class ProxyAsyncStream(AsyncStream):
                 description=self.tracker_options.description,
                 llm_provider=self.tracker_options.llm_provider,
                 pipeline=self.pipeline,
+                prompt_name=self.prompt_name,
                 system_prompt=self.system_prompt,
                 prompt_version_id=self.prompt_version,
             )
@@ -197,6 +203,7 @@ class ProxyAsyncStream(AsyncStream):
                     description=self.tracker_options.description,
                     llm_provider=self.tracker_options.llm_provider,
                     pipeline=self.pipeline,
+                    prompt_name=self.prompt_name,
                     system_prompt=self.system_prompt,
                     prompt_version_id=self.prompt_version,
                 )

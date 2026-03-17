@@ -399,6 +399,7 @@ class BaseTracker(ABC):
             description=tracker_options.description,
             llm_provider=tracker_options.llm_provider,
             pipeline=None,
+            prompt_name=None,
             system_prompt=None,
             prompt_version_id=None,
         )

@@ -56,6 +56,9 @@ class LogStepRequest(BaseModel):
     prompt_pipeline: str | None = None
     """Pipeline"""
 
+    prompt_name: str | None = None
+    """Prompt name"""
+
     prompt_version_id: str | None = None
     """Prompt version id"""
 

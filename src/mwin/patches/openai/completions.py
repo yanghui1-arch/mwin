@@ -68,6 +68,7 @@ def patch_openai_chat_completions():
         )
         _mwin_prompt = extract_system_prompt_from_messages(raw_openai_inputs.get('messages'))
         pipeline: str | None = _mwin_prompt._pipeline if _mwin_prompt else None
+        prompt_name: str | None = _mwin_prompt._prompt_name if _mwin_prompt else None
         system_prompt = _mwin_prompt._original_template if _mwin_prompt else None
         prompt_version = _mwin_prompt._version if _mwin_prompt else None
 
@@ -78,6 +79,7 @@ def patch_openai_chat_completions():
                 step=step,
                 inputs=openai_inputs,
                 pipeline=pipeline,
+                prompt_name=prompt_name,
                 system_prompt=system_prompt,
                 prompt_version=prompt_version
             )
@@ -106,6 +108,7 @@ def patch_openai_chat_completions():
             description=tracker_options.description,
             llm_provider=tracker_options.llm_provider,
             pipeline=pipeline,
+            prompt_name=prompt_name,
             system_prompt=system_prompt,
             prompt_version_id=prompt_version,
         )
@@ -126,8 +129,9 @@ class ProxyStream(Stream):
         step: Step,
         inputs: Dict[str, Any],
         pipeline: str | None,
-        system_prompt: str | None = None,
-        prompt_version: str | None = None,
+        prompt_name: str | None,
+        system_prompt: str | None,
+        prompt_version: str | None,
     ):
         """Initialize ProxyOpenAIStream
         Wrapper openai.chat.completion.create(stream=True)
@@ -139,6 +143,7 @@ class ProxyStream(Stream):
         self.step = step
         self.inputs = inputs
         self.pipeline = pipeline
+        self.prompt_name = prompt_name
         self.system_prompt = system_prompt
         self.prompt_version = prompt_version
         self.model = inputs.get('model', step.model)
@@ -182,6 +187,7 @@ class ProxyStream(Stream):
                 description=self.tracker_options.description,
                 llm_provider=self.tracker_options.llm_provider,
                 pipeline=self.pipeline,
+                prompt_name=self.prompt_name,
                 system_prompt=self.system_prompt,
                 prompt_version_id=self.prompt_version,
             )
@@ -224,6 +230,7 @@ class ProxyStream(Stream):
                     description=self.tracker_options.description,
                     llm_provider=self.tracker_options.llm_provider,
                     pipeline=self.pipeline,
+                    prompt_name=self.prompt_name,
                     system_prompt=self.system_prompt,
                     prompt_version_id=self.prompt_version,
                 )

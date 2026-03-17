@@ -57,6 +57,7 @@ class SyncClient:
         description: str | None,
         llm_provider: LLMProvider,
         pipeline: str | None,
+        prompt_name: str | None,
         system_prompt: str | None,
         prompt_version_id: str | None,
     ) -> LogStepResponse:
@@ -90,6 +91,7 @@ class SyncClient:
             description=description,
             llm_provider=llm_provider,
             prompt_pipeline=pipeline,
+            prompt_name=prompt_name,
             system_prompt=system_prompt,
             prompt_version_id=prompt_version_id,
         )
