@@ -9,6 +9,7 @@ import com.supertrace.aitrace.dto.prompt.CreatePromptPipelineRequest;
 import com.supertrace.aitrace.dto.prompt.CreatePromptRequest;
 import com.supertrace.aitrace.domain.core.prompt.PromptMetrics;
 import com.supertrace.aitrace.dto.prompt.UpdatePromptStatusRequest;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -104,7 +105,7 @@ public interface PromptService {
      * @return a {@code PromptRef} holding both the prompt pipeline ID and the prompt version ID
      */
     @Transactional
-    PromptRef findOrCreatePrompt(Long projectId, String promptPipelineName, String version, String content);
+    PromptRef findOrCreatePrompt(Long projectId, @NotNull String promptPipelineName, String promptName, @NotNull String version, @NotNull String content);
 
     /**
      * Returns a single prompt by its UUID.

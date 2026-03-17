@@ -25,6 +25,7 @@ import com.supertrace.aitrace.repository.StepRefRepository;
 import com.supertrace.aitrace.repository.StepRepository;
 import com.supertrace.aitrace.domain.core.prompt.PromptMetrics;
 import com.supertrace.aitrace.service.domain.PromptService;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -100,7 +101,7 @@ public class PromptServiceImpl implements PromptService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public PromptRef findOrCreatePrompt(Long projectId, String promptPipelineName, String version, String content) {
+    public PromptRef findOrCreatePrompt(Long projectId, @NotNull String promptPipelineName, String promptName, @NotNull String version, @NotNull String content) {
         PromptPipeline pipeline = promptPipelineRepository.findByProjectIdAndName(projectId, promptPipelineName)
             .orElseGet(() -> promptPipelineRepository.save(
                 PromptPipeline.builder()
@@ -109,6 +110,7 @@ public class PromptServiceImpl implements PromptService {
                     .build()
             ));
 
+        String finalPromptName = promptName == null || promptName.isEmpty() ? "Default-" + version : promptName;
         UUID promptVersionId = promptRepository.findByPromptPipelineIdAndVersion(pipeline.getId(), version)
             .map(Prompt::getId)
             .orElseGet(() -> promptRepository.save(
@@ -116,6 +118,7 @@ public class PromptServiceImpl implements PromptService {
                     .promptPipelineId(pipeline.getId())
                     .version(version)
                     .content(content)
+                    .name(finalPromptName)
                     .build()
             ).getId());
 

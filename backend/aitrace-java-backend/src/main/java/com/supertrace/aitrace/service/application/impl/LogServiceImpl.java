@@ -46,11 +46,15 @@ public class LogServiceImpl implements LogService {
         Long projectId = projectOwnedByUserId.getId();
 
         String promptPipelineName = logStepRequest.getPromptPipeline();
+        String promptName = logStepRequest.getPromptName();
         String promptVersion = logStepRequest.getPromptVersionId();
         String systemPrompt = logStepRequest.getSystemPrompt();
         PromptRef promptRef = null;
         if (promptPipelineName != null && promptVersion != null && systemPrompt != null) {
-            promptRef = promptService.findOrCreatePrompt(projectId, promptPipelineName, promptVersion, systemPrompt);
+            promptRef = promptService.findOrCreatePrompt(
+                projectId, promptPipelineName,
+                promptName, promptVersion, systemPrompt
+            );
         }
 
         UUID stepId = this.stepService.logStep(userId, logStepRequest, projectId, promptRef);
