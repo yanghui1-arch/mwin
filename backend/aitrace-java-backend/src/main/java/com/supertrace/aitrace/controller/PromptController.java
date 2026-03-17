@@ -75,24 +75,6 @@ public class PromptController {
         }
     }
 
-    /** Get a single pipeline with counts */
-    @GetMapping("/{projectId}/{promptPipelineName}")
-    public ResponseEntity<APIResponse<PromptPipelineVO>> getPromptPipelineDetail(
-        @PathVariable Long projectId,
-        @PathVariable String promptPipelineName
-    ) {
-        try {
-            PromptPipeline pipeline = promptService.getPromptPipelineDetail(projectId, promptPipelineName);
-            long[] counts = promptService.countPromptsByPipelines(List.of(pipeline.getId()))
-                .getOrDefault(pipeline.getId(), new long[]{0L, 0L});
-            return ResponseEntity.ok(APIResponse.success(PromptPipelineVO.from(pipeline, counts[0], counts[1])));
-        } catch (NoSuchElementException e) {
-            return ResponseEntity.status(404).body(APIResponse.notFound(e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(APIResponse.error(e.getMessage()));
-        }
-    }
-
     /** Delete a prompt pipeline and cascade */
     @DeleteMapping("/{promptPipelineId}")
     public ResponseEntity<APIResponse<Void>> deletePromptPipeline(@PathVariable UUID promptPipelineId) {
@@ -113,19 +95,6 @@ public class PromptController {
         try {
             UUID userId = (UUID) request.getAttribute("userId");
             return ResponseEntity.ok(APIResponse.success(promptService.createPrompt(body, userId)));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(APIResponse.error(e.getMessage()));
-        }
-    }
-
-    /** List prompt versions for a pipeline */
-    @GetMapping("/version/{promptPipelineId}")
-    public ResponseEntity<APIResponse<List<PromptVO>>> listPrompts(@PathVariable UUID promptPipelineId) {
-        try {
-            List<PromptVO> vos = promptService.listPrompts(promptPipelineId).stream()
-                .map(PromptVO::from)
-                .toList();
-            return ResponseEntity.ok(APIResponse.success(vos));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(APIResponse.error(e.getMessage()));
         }
