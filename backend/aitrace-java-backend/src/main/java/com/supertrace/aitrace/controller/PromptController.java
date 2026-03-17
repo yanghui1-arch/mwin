@@ -228,15 +228,16 @@ public class PromptController {
         }
     }
 
-    /** Update prompt version status (current / deprecated / testing) */
-    @PatchMapping("/{promptId}/status")
-    public ResponseEntity<APIResponse<PromptVO>> updatePromptStatus(
+    /** Update prompt version status (current / deprecated) */
+    @PostMapping("/{promptId}/status")
+    public ResponseEntity<APIResponse<String>> updatePromptStatus(
         @PathVariable UUID promptId,
-        @RequestBody UpdatePromptStatusRequest body
+        @RequestBody UpdatePromptStatusRequest request
     ) {
         try {
-            Prompt updated = promptService.updatePromptStatus(promptId, body);
-            return ResponseEntity.ok(APIResponse.success(PromptVO.from(updated)));
+            String newStatus = request.getStatus();
+            Prompt updatedPrompt = promptService.updatePromptStatus(promptId, newStatus);
+            return ResponseEntity.ok(APIResponse.success(updatedPrompt.getStatus()));
         } catch (NoSuchElementException e) {
             return ResponseEntity.status(404).body(APIResponse.notFound(e.getMessage()));
         } catch (Exception e) {

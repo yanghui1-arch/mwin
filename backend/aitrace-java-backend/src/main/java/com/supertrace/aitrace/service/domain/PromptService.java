@@ -8,7 +8,6 @@ import com.supertrace.aitrace.dto.prompt.CreateOrUpdateStatusRequest;
 import com.supertrace.aitrace.dto.prompt.CreatePromptPipelineRequest;
 import com.supertrace.aitrace.dto.prompt.CreatePromptRequest;
 import com.supertrace.aitrace.domain.core.prompt.PromptMetrics;
-import com.supertrace.aitrace.dto.prompt.UpdatePromptStatusRequest;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,16 +50,6 @@ public interface PromptService {
      * @return list of prompt pipelines; empty list if none exist
      */
     List<PromptPipeline> listPromptPipelines(Long projectId);
-
-    /**
-     * Returns a single prompt pipeline identified by project and name.
-     *
-     * @param projectId            the project the pipeline belongs to
-     * @param promptPipelineName   the unique name of the pipeline within the project
-     * @return the prompt pipeline
-     * @throws NoSuchElementException if no pipeline with the given name exists in the project
-     */
-    PromptPipeline getPromptPipelineDetail(Long projectId, String promptPipelineName);
 
     /**
      * Deletes a prompt pipeline and all associated prompts and deployment statuses.
@@ -124,14 +113,16 @@ public interface PromptService {
     List<Prompt> listPrompts(UUID promptPipelineId);
 
     /**
-     * Updates the status of a prompt version (e.g. {@code "current"}, {@code "deprecated"}).
+     * Updates the status of a prompt version.
+     * If update its status as current other prompts which are belongs to this prompt's pipeline are marked deprecated.
+     * In other words one and only one prompt status of a pipeline is current.
      *
      * @param promptId the UUID of the prompt to update
-     * @param request  contains the new {@code status} value
+     * @param status  prompt status to update
      * @return the updated {@code Prompt} entity
      * @throws java.util.NoSuchElementException if the prompt does not exist
      */
-    Prompt updatePromptStatus(UUID promptId, UpdatePromptStatusRequest request);
+    Prompt updatePromptStatus(UUID promptId, String status);
 
     /**
      * Updates the status of a prompt pipeline (e.g. {@code "active"}, {@code "archived"}).

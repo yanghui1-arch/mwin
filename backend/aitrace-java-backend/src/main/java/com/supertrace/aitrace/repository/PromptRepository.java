@@ -14,7 +14,6 @@ import java.util.UUID;
 public interface PromptRepository extends JpaRepository<Prompt, UUID> {
     List<Prompt> findByPromptPipelineIdOrderByCreatedAtDesc(UUID promptPipelineId);
     Optional<Prompt> findByPromptPipelineIdAndVersion(UUID promptPipelineId, String version);
-    long countByPromptPipelineId(UUID promptPipelineId);
     void deleteByPromptPipelineId(UUID promptPipelineId);
 
     interface PipelineCounts {
@@ -26,7 +25,7 @@ public interface PromptRepository extends JpaRepository<Prompt, UUID> {
     @Query("""
         SELECT p.promptPipelineId AS pipelineId,
                COUNT(p)           AS versionCount,
-               COUNT(DISTINCT COALESCE(p.name, ''))  AS promptCount
+               COUNT(DISTINCTCOALESCE(p.name, ''))  AS promptCount
         FROM Prompt p
         WHERE p.promptPipelineId IN :pipelineIds
         GROUP BY p.promptPipelineId

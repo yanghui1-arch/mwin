@@ -13,7 +13,6 @@ import com.supertrace.aitrace.domain.core.step.metadata.StepMeta;
 import com.supertrace.aitrace.dto.prompt.CreateOrUpdateStatusRequest;
 import com.supertrace.aitrace.dto.prompt.CreatePromptPipelineRequest;
 import com.supertrace.aitrace.dto.prompt.CreatePromptRequest;
-import com.supertrace.aitrace.dto.prompt.UpdatePromptStatusRequest;
 import com.supertrace.aitrace.repository.EvalMetricRepository;
 import com.supertrace.aitrace.repository.EvalScoreRepository;
 import com.supertrace.aitrace.repository.ProjectRepository;
@@ -68,12 +67,6 @@ public class PromptServiceImpl implements PromptService {
     @Override
     public List<PromptPipeline> listPromptPipelines(Long projectId) {
         return promptPipelineRepository.findByProjectId(projectId);
-    }
-
-    @Override
-    public PromptPipeline getPromptPipelineDetail(Long projectId, String promptPipelineName) {
-        return promptPipelineRepository.findByProjectIdAndName(projectId, promptPipelineName)
-            .orElseThrow(() -> new NoSuchElementException("Prompt pipeline not found: " + promptPipelineName));
     }
 
     @Override
@@ -136,10 +129,25 @@ public class PromptServiceImpl implements PromptService {
     }
 
     @Override
-    public Prompt updatePromptStatus(UUID promptId, UpdatePromptStatusRequest request) {
+    @Transactional(rollbackFor = Exception.class)
+    public Prompt updatePromptStatus(UUID promptId, String status) {
         Prompt prompt = promptRepository.findById(promptId)
             .orElseThrow(() -> new NoSuchElementException("Prompt not found: " + promptId));
-        prompt.setStatus(request.getStatus());
+        if ("current".equals(status)) {
+            // 1. Get the pipeline id of this promptId belongs to
+            // 2. Get all prompts of this pipeline id
+            // 3. Traverse the prompts and check whether prompt is set current. If exist current prompt, set it as deprecated.
+            // 4. Set the promptId status as current
+            UUID pipelineId = prompt.getPromptPipelineId();
+            List<Prompt> pipelinePrompts = promptRepository.findByPromptPipelineIdOrderByCreatedAtDesc(pipelineId);
+            pipelinePrompts.stream()
+                .filter(p -> "current".equals(p.getStatus()) && !p.getId().equals(promptId))
+                .forEach(p -> {
+                    p.setStatus("deprecated");
+                    promptRepository.save(p);
+                });
+        }
+        prompt.setStatus(status);
         return promptRepository.save(prompt);
     }
 
@@ -296,7 +304,7 @@ public class PromptServiceImpl implements PromptService {
             .map(successRateByStep::get)
             .filter(Objects::nonNull)
             .mapToDouble(Double::doubleValue)
-            .average().orElse(0.0);
+            .average().orElse(0.0) * 100.0; // score 1.0 = 100%
 
         return PromptMetrics.builder()
             .usageCount(completed.size())
