@@ -16,7 +16,7 @@ class _MwinPromptStr(str):
     _version: str
     _pipeline: str
 
-    def __new__(cls, value: str, original_template: str, version: str, pipeline: str) -> "_MwinPromptStr":
+    def __new__(cls, value: str, version: str, pipeline: str, original_template: str = None) -> "_MwinPromptStr":
         instance = super().__new__(cls, value)
         # If original_template is not supplied, this instance IS the template
         instance._original_template = original_template if original_template is not None else str(value)
