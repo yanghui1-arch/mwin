@@ -132,16 +132,16 @@ public class PromptServiceImpl implements PromptService {
         Prompt prompt = promptRepository.findById(promptId)
             .orElseThrow(() -> new NoSuchElementException("Prompt not found: " + promptId));
         if ("current".equals(status)) {
-            // 1. Get the pipeline id of this promptId belongs to
-            // 2. Get all prompts of this pipeline id
-            // 3. Traverse the prompts and check whether prompt is set current. If exist current prompt, set it as deprecated.
+            // 1. Get the prompt name of this promptId belongs to
+            // 2. Get all prompts of this prompt name
+            // 3. Traverse the prompts and check whether prompt is set current. If exist current prompt, set it as active.
             // 4. Set the promptId status as current
-            UUID pipelineId = prompt.getPromptPipelineId();
-            List<Prompt> pipelinePrompts = promptRepository.findByPromptPipelineIdOrderByCreatedAtDesc(pipelineId);
-            pipelinePrompts.stream()
+            String promptName = prompt.getName();
+            List<Prompt> sameNamePrompts = promptRepository.findByPromptPipelineIdAndName(prompt.getPromptPipelineId(), promptName);
+            sameNamePrompts.stream()
                 .filter(p -> "current".equals(p.getStatus()) && !p.getId().equals(promptId))
                 .forEach(p -> {
-                    p.setStatus("deprecated");
+                    p.setStatus("active");
                     promptRepository.save(p);
                 });
         }

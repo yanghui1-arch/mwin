@@ -13,6 +13,7 @@ import java.util.UUID;
 @Repository
 public interface PromptRepository extends JpaRepository<Prompt, UUID> {
     List<Prompt> findByPromptPipelineIdOrderByCreatedAtDesc(UUID promptPipelineId);
+    List<Prompt> findByPromptPipelineIdAndName(UUID promptPipelineId, String name);
     Optional<Prompt> findByPromptPipelineIdAndVersion(UUID promptPipelineId, String version);
     void deleteByPromptPipelineId(UUID promptPipelineId);
 
@@ -25,7 +26,7 @@ public interface PromptRepository extends JpaRepository<Prompt, UUID> {
     @Query("""
         SELECT p.promptPipelineId AS pipelineId,
                COUNT(p)           AS versionCount,
-               COUNT(DISTINCTCOALESCE(p.name, ''))  AS promptCount
+               COUNT(DISTINCT COALESCE(p.name, ''))  AS promptCount
         FROM Prompt p
         WHERE p.promptPipelineId IN :pipelineIds
         GROUP BY p.promptPipelineId
