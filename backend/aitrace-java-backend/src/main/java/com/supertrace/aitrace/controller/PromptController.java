@@ -1,6 +1,7 @@
 package com.supertrace.aitrace.controller;
 
 import com.supertrace.aitrace.domain.core.prompt.Prompt;
+import com.supertrace.aitrace.domain.core.prompt.PromptMetrics;
 import com.supertrace.aitrace.domain.core.prompt.PromptPipeline;
 import com.supertrace.aitrace.domain.core.prompt.PromptStatus;
 import com.supertrace.aitrace.dto.prompt.CreateOrUpdateStatusRequest;
@@ -14,6 +15,7 @@ import com.supertrace.aitrace.service.application.ApiKeyService;
 import com.supertrace.aitrace.service.domain.PromptService;
 import com.supertrace.aitrace.utils.ApiKeyUtils;
 import com.supertrace.aitrace.vo.prompt.PromptGroupVO;
+import com.supertrace.aitrace.vo.prompt.PromptMetricsVO;
 import com.supertrace.aitrace.vo.prompt.PromptPipelineVO;
 import com.supertrace.aitrace.vo.prompt.PromptResolveVO;
 import com.supertrace.aitrace.vo.prompt.PromptStatusVO;
@@ -46,21 +48,20 @@ public class PromptController {
     ) {
         try {
             UUID userId = (UUID) request.getAttribute("userId");
-            UUID promptPipelineId = promptService.createPromptPipeline(body, userId);
-            return ResponseEntity.ok(APIResponse.success(promptPipelineId));
+            return ResponseEntity.ok(APIResponse.success(promptService.createPromptPipeline(body, userId)));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(APIResponse.error(e.getMessage()));
         }
     }
 
-    /** List all prompt pipelines for a project */
+    /** List all prompt pipelines for a project, including metrics */
     @GetMapping("/{projectId}")
     public ResponseEntity<APIResponse<List<PromptPipelineVO>>> listPromptPipelines(
         @PathVariable Long projectId
     ) {
         try {
             List<PromptPipelineVO> vos = promptService.listPromptPipelines(projectId).stream()
-                .map(this::toPromptPipelineVO)
+                .map(this::assemblePipelineVO)
                 .toList();
             return ResponseEntity.ok(APIResponse.success(vos));
         } catch (Exception e) {
@@ -76,7 +77,7 @@ public class PromptController {
     ) {
         try {
             PromptPipeline pipeline = promptService.getPromptPipelineDetail(projectId, promptPipelineName);
-            return ResponseEntity.ok(APIResponse.success(toPromptPipelineVO(pipeline)));
+            return ResponseEntity.ok(APIResponse.success(assemblePipelineVO(pipeline)));
         } catch (NoSuchElementException e) {
             return ResponseEntity.status(404).body(APIResponse.notFound(e.getMessage()));
         } catch (Exception e) {
@@ -95,7 +96,7 @@ public class PromptController {
         }
     }
 
-    /** Create a new prompt */
+    /** Create a new prompt version */
     @PostMapping("/version")
     public ResponseEntity<APIResponse<UUID>> createPrompt(
         HttpServletRequest request,
@@ -103,14 +104,13 @@ public class PromptController {
     ) {
         try {
             UUID userId = (UUID) request.getAttribute("userId");
-            UUID promptId = promptService.createPrompt(body, userId);
-            return ResponseEntity.ok(APIResponse.success(promptId));
+            return ResponseEntity.ok(APIResponse.success(promptService.createPrompt(body, userId)));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(APIResponse.error(e.getMessage()));
         }
     }
 
-    /** List prompts for a prompt pipeline */
+    /** List prompt versions for a pipeline */
     @GetMapping("/version/{promptPipelineId}")
     public ResponseEntity<APIResponse<List<PromptVO>>> listPrompts(@PathVariable UUID promptPipelineId) {
         try {
@@ -124,8 +124,8 @@ public class PromptController {
     }
 
     /**
-     * Resolve (prompt pipeline name + status) → prompt_id (API Key auth, whitelisted from JWT).
-     * Called by mwin SDK. Uses Authorization header for API key validation.
+     * Resolve (pipeline name + status) → prompt_id.
+     * Uses API Key auth (whitelisted from JWT). Called by the mwin SDK.
      */
     @GetMapping("/resolve")
     public ResponseEntity<APIResponse<PromptResolveVO>> resolvePrompt(
@@ -136,11 +136,8 @@ public class PromptController {
     ) {
         try {
             String apiKey = ApiKeyUtils.extractApiKeyFromHttpHeader(authorization);
-            if (!apiKeyService.isApiKeyExist(apiKey)) {
-                throw new AuthenticationException();
-            }
-            UUID userId = apiKeyService.resolveUserIdFromApiKey(apiKey)
-                .orElseThrow(UserIdNotFoundException::new);
+            if (!apiKeyService.isApiKeyExist(apiKey)) throw new AuthenticationException();
+            UUID userId = apiKeyService.resolveUserIdFromApiKey(apiKey).orElseThrow(UserIdNotFoundException::new);
             UUID promptId = promptService.resolvePrompt(userId, projectName, name, status);
             return ResponseEntity.ok(APIResponse.success(PromptResolveVO.from(promptId)));
         } catch (AuthenticationException | UserIdNotFoundException e) {
@@ -154,7 +151,7 @@ public class PromptController {
         }
     }
 
-    /** Create or update a status pointer */
+    /** Create or update a deployment status label */
     @PostMapping("/status")
     public ResponseEntity<APIResponse<PromptStatusVO>> createOrUpdateStatus(
         HttpServletRequest request,
@@ -164,22 +161,20 @@ public class PromptController {
             UUID userId = (UUID) request.getAttribute("userId");
             PromptStatus status = promptService.createOrUpdateStatus(body, userId);
             String version = promptService.findPromptById(status.getPromptId())
-                .map(Prompt::getVersion)
-                .orElse(null);
+                .map(Prompt::getVersion).orElse(null);
             return ResponseEntity.ok(APIResponse.success(PromptStatusVO.from(status, version)));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(APIResponse.error(e.getMessage()));
         }
     }
 
-    /** List statuses for a prompt pipeline */
+    /** List deployment statuses for a pipeline */
     @GetMapping("/status/{promptPipelineId}")
     public ResponseEntity<APIResponse<List<PromptStatusVO>>> listStatuses(@PathVariable UUID promptPipelineId) {
         try {
-            List<PromptStatus> statuses = promptService.listStatuses(promptPipelineId);
             Map<UUID, String> versionMap = promptService.listPrompts(promptPipelineId).stream()
                 .collect(Collectors.toMap(Prompt::getId, Prompt::getVersion));
-            List<PromptStatusVO> vos = statuses.stream()
+            List<PromptStatusVO> vos = promptService.listStatuses(promptPipelineId).stream()
                 .map(s -> PromptStatusVO.from(s, versionMap.get(s.getPromptId())))
                 .toList();
             return ResponseEntity.ok(APIResponse.success(vos));
@@ -188,7 +183,7 @@ public class PromptController {
         }
     }
 
-    /** Delete a status */
+    /** Delete a deployment status */
     @DeleteMapping("/status/{statusId}")
     public ResponseEntity<APIResponse<Void>> deleteStatus(@PathVariable UUID statusId) {
         try {
@@ -231,45 +226,29 @@ public class PromptController {
         }
     }
 
-
-    // ─── Assembler ────────────────────────────────────────────────────────────
-
-    private PromptPipelineVO toPromptPipelineVO(PromptPipeline pipeline) {
-        List<Prompt> allPrompts = promptService.listPrompts(pipeline.getId());
-
-        // Build version map for status VO resolution
-        Map<UUID, String> versionMap = allPrompts.stream()
+    private PromptPipelineVO assemblePipelineVO(PromptPipeline pipeline) {
+        List<Prompt> prompts = promptService.listPrompts(pipeline.getId());
+        Map<UUID, String> versionMap = prompts.stream()
             .collect(Collectors.toMap(Prompt::getId, Prompt::getVersion));
-        List<PromptStatusVO> statusVOs = promptService.listStatuses(pipeline.getId()).stream()
+        List<PromptStatusVO> statuses = promptService.listStatuses(pipeline.getId()).stream()
             .map(s -> PromptStatusVO.from(s, versionMap.get(s.getPromptId())))
             .toList();
-
-        // Group prompt versions by name (null name → "" as fallback key)
-        Map<String, List<Prompt>> grouped = allPrompts.stream()
+        Map<UUID, PromptMetrics> metricsMap = promptService.buildMetricsMap(prompts);
+        List<PromptGroupVO> groups = prompts.stream()
             .collect(Collectors.groupingBy(
                 p -> p.getName() != null ? p.getName() : "",
-                LinkedHashMap::new,
-                Collectors.toList()
-            ));
-
-        List<PromptGroupVO> promptGroups = grouped.entrySet().stream()
-            .map(entry -> {
-                List<PromptVO> versions = entry.getValue().stream()
-                    .map(PromptVO::from)
+                LinkedHashMap::new, Collectors.toList()
+            ))
+            .entrySet().stream()
+            .map(e -> {
+                List<PromptVO> versions = e.getValue().stream()
+                    .map(p -> PromptVO.from(p, PromptMetricsVO.from(metricsMap.getOrDefault(p.getId(), PromptMetrics.empty()))))
                     .toList();
-                String desc = entry.getValue().stream()
-                    .map(Prompt::getDescription)
-                    .filter(d -> d != null && !d.isEmpty())
-                    .findFirst()
-                    .orElse(null);
-                return PromptGroupVO.builder()
-                    .name(entry.getKey())
-                    .description(desc)
-                    .versions(versions)
-                    .build();
+                String desc = e.getValue().stream().map(Prompt::getDescription)
+                    .filter(d -> d != null && !d.isEmpty()).findFirst().orElse(null);
+                return PromptGroupVO.builder().name(e.getKey()).description(desc).versions(versions).build();
             })
             .toList();
-
-        return PromptPipelineVO.from(pipeline, allPrompts.size(), statusVOs, promptGroups);
+        return PromptPipelineVO.from(pipeline, prompts.size(), statuses, groups);
     }
 }

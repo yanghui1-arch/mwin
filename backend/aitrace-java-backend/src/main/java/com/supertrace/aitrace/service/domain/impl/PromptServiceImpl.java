@@ -1,29 +1,44 @@
 package com.supertrace.aitrace.service.domain.impl;
 
 import com.supertrace.aitrace.domain.Project;
+import com.supertrace.aitrace.domain.core.eval.EvalScore;
 import com.supertrace.aitrace.domain.core.prompt.Prompt;
 import com.supertrace.aitrace.domain.core.prompt.PromptPipeline;
 import com.supertrace.aitrace.domain.core.prompt.PromptPipelineStatus;
 import com.supertrace.aitrace.domain.core.prompt.PromptRef;
 import com.supertrace.aitrace.domain.core.prompt.PromptStatus;
+import com.supertrace.aitrace.domain.core.step.Step;
+import com.supertrace.aitrace.domain.core.step.StepRef;
+import com.supertrace.aitrace.domain.core.step.metadata.StepMeta;
 import com.supertrace.aitrace.dto.prompt.CreateOrUpdateStatusRequest;
 import com.supertrace.aitrace.dto.prompt.CreatePromptPipelineRequest;
 import com.supertrace.aitrace.dto.prompt.CreatePromptRequest;
 import com.supertrace.aitrace.dto.prompt.UpdatePromptStatusRequest;
+import com.supertrace.aitrace.repository.EvalMetricRepository;
+import com.supertrace.aitrace.repository.EvalScoreRepository;
 import com.supertrace.aitrace.repository.ProjectRepository;
 import com.supertrace.aitrace.repository.PromptPipelineRepository;
 import com.supertrace.aitrace.repository.PromptRepository;
 import com.supertrace.aitrace.repository.PromptStatusRepository;
+import com.supertrace.aitrace.repository.StepMetaRepository;
+import com.supertrace.aitrace.repository.StepRefRepository;
+import com.supertrace.aitrace.repository.StepRepository;
+import com.supertrace.aitrace.domain.core.prompt.PromptMetrics;
 import com.supertrace.aitrace.service.domain.PromptService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +48,11 @@ public class PromptServiceImpl implements PromptService {
     private final PromptRepository promptRepository;
     private final PromptStatusRepository promptStatusRepository;
     private final ProjectRepository projectRepository;
+    private final StepRefRepository stepRefRepository;
+    private final StepRepository stepRepository;
+    private final StepMetaRepository stepMetaRepository;
+    private final EvalMetricRepository evalMetricRepository;
+    private final EvalScoreRepository evalScoreRepository;
 
     @Override
     public UUID createPromptPipeline(CreatePromptPipelineRequest request, UUID userId) {
@@ -113,11 +133,6 @@ public class PromptServiceImpl implements PromptService {
     }
 
     @Override
-    public long countPrompts(UUID promptPipelineId) {
-        return promptRepository.countByPromptPipelineId(promptPipelineId);
-    }
-
-    @Override
     public Prompt updatePromptStatus(UUID promptId, UpdatePromptStatusRequest request) {
         Prompt prompt = promptRepository.findById(promptId)
             .orElseThrow(() -> new NoSuchElementException("Prompt not found: " + promptId));
@@ -181,4 +196,99 @@ public class PromptServiceImpl implements PromptService {
         pipeline.setStatus(PromptPipelineStatus.fromValue(status));
         promptPipelineRepository.save(pipeline);
     }
+
+    // ── Metrics computation ───────────────────────────────────────────────────────
+
+    @Override
+    public Map<UUID, PromptMetrics> buildMetricsMap(List<Prompt> prompts) {
+        if (prompts.isEmpty()) return Map.of();
+
+        List<UUID> versionIds = prompts.stream().map(Prompt::getId).toList();
+
+        // step_ref: version → step IDs
+        Map<UUID, List<UUID>> versionToStepIds = stepRefRepository
+            .findByPromptVersionIdIn(versionIds).stream()
+            .collect(Collectors.groupingBy(
+                StepRef::getPromptVersionId,
+                Collectors.mapping(StepRef::getId, Collectors.toList())
+            ));
+
+        Set<UUID> allStepIds = versionToStepIds.values().stream()
+            .flatMap(List::stream).collect(Collectors.toSet());
+
+        if (allStepIds.isEmpty()) return Map.of();
+
+        // step: latency + token counts
+        Map<UUID, Step> stepById = stepRepository.findAllById(allStepIds).stream()
+            .collect(Collectors.toMap(Step::getId, s -> s));
+
+        // step_meta: cost
+        Map<UUID, StepMeta> metaById = stepMetaRepository.findAllById(allStepIds).stream()
+            .collect(Collectors.toMap(StepMeta::getId, m -> m));
+
+        // eval_score: success rate by step_id (more reliable than prompt_version_id)
+        Map<UUID, Double> successRateByStep = fetchSuccessRateByStep(allStepIds);
+
+        return versionToStepIds.entrySet().stream()
+            .collect(Collectors.toMap(
+                Map.Entry::getKey,
+                e -> computeMetrics(e.getValue(), stepById, metaById, successRateByStep)
+            ));
+    }
+
+    private Map<UUID, Double> fetchSuccessRateByStep(Set<UUID> stepIds) {
+        return evalMetricRepository.findByName("Success Rate")
+            .map(metric -> evalScoreRepository
+                .findByStepIdInAndEvalMetricId(List.copyOf(stepIds), metric.getId())
+                .stream()
+                .filter(s -> s.getStepId() != null)
+                .collect(Collectors.toMap(
+                    EvalScore::getStepId,
+                    s -> s.getScore().doubleValue(),
+                    Double::max  // keep the highest if duplicate
+                ))
+            )
+            .orElse(Map.of());
+    }
+
+    private PromptMetrics computeMetrics(
+        List<UUID> stepIds,
+        Map<UUID, Step> stepById,
+        Map<UUID, StepMeta> metaById,
+        Map<UUID, Double> successRateByStep
+    ) {
+        List<Step> completed = stepIds.stream()
+            .map(stepById::get)
+            .filter(s -> s != null && s.getEndTime() != null)
+            .toList();
+
+        double avgLatencyMs = completed.stream()
+            .mapToLong(s -> Duration.between(s.getStartTime(), s.getEndTime()).toMillis())
+            .average().orElse(0.0);
+
+        double totalCost = stepIds.stream()
+            .map(metaById::get)
+            .filter(m -> m != null && m.getCost() != null)
+            .mapToDouble(m -> m.getCost().doubleValue())
+            .sum();
+
+        long totalTokens = completed.stream()
+            .filter(s -> s.getUsage() != null && s.getUsage().getTotalTokens() != null)
+            .mapToLong(s -> s.getUsage().getTotalTokens())
+            .sum();
+
+        double successRate = stepIds.stream()
+            .map(successRateByStep::get)
+            .filter(Objects::nonNull)
+            .mapToDouble(Double::doubleValue)
+            .average().orElse(0.0);
+
+        return PromptMetrics.builder()
+            .usageCount(completed.size())
+            .avgLatencyMs(avgLatencyMs)
+            .tokenCostPer1k(totalTokens > 0 ? totalCost * 1000.0 / totalTokens : 0.0)
+            .successRate(successRate)
+            .build();
+    }
+
 }

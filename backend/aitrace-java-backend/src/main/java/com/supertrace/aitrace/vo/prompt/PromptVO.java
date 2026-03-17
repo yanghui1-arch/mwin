@@ -25,8 +25,13 @@ public class PromptVO {
     private String name;
     private String description;
     private String changelog;
+    private PromptMetricsVO metrics;
 
     public static PromptVO from(Prompt p) {
+        return from(p, PromptMetricsVO.empty());
+    }
+
+    public static PromptVO from(Prompt p, PromptMetricsVO metrics) {
         return PromptVO.builder()
             .id(p.getId())
             .promptPipelineId(p.getPromptPipelineId())
@@ -39,6 +44,7 @@ public class PromptVO {
             .name(p.getName())
             .description(p.getDescription())
             .changelog(p.getChangelog())
+            .metrics(metrics)
             .build();
     }
 }

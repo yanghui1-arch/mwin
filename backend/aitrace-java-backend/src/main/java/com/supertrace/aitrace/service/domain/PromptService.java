@@ -7,10 +7,12 @@ import com.supertrace.aitrace.domain.core.prompt.PromptStatus;
 import com.supertrace.aitrace.dto.prompt.CreateOrUpdateStatusRequest;
 import com.supertrace.aitrace.dto.prompt.CreatePromptPipelineRequest;
 import com.supertrace.aitrace.dto.prompt.CreatePromptRequest;
+import com.supertrace.aitrace.domain.core.prompt.PromptMetrics;
 import com.supertrace.aitrace.dto.prompt.UpdatePromptStatusRequest;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
@@ -121,14 +123,6 @@ public interface PromptService {
     List<Prompt> listPrompts(UUID promptPipelineId);
 
     /**
-     * Returns the number of prompt versions in the given pipeline.
-     *
-     * @param promptPipelineId the UUID of the prompt pipeline
-     * @return the version count
-     */
-    long countPrompts(UUID promptPipelineId);
-
-    /**
      * Updates the status of a prompt version (e.g. {@code "current"}, {@code "deprecated"}).
      *
      * @param promptId the UUID of the prompt to update
@@ -199,4 +193,16 @@ public interface PromptService {
      * @param statusId the UUID of the status to delete
      */
     void deleteStatus(UUID statusId);
+
+    // -------------------------------------------------------------------------
+    // Metrics
+    // -------------------------------------------------------------------------
+
+    /**
+     * Computes usage metrics for a list of prompt versions.
+     *
+     * @param prompts the prompt versions to compute metrics for
+     * @return a map from prompt version ID to its computed metrics
+     */
+    Map<UUID, PromptMetrics> buildMetricsMap(List<Prompt> prompts);
 }

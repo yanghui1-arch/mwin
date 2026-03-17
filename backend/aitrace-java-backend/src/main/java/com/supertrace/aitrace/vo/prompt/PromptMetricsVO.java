@@ -2,6 +2,7 @@ package com.supertrace.aitrace.vo.prompt;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.supertrace.aitrace.domain.core.prompt.PromptMetrics;
 import lombok.Builder;
 import lombok.Data;
 
@@ -17,5 +18,14 @@ public class PromptMetricsVO {
 
     public static PromptMetricsVO empty() {
         return PromptMetricsVO.builder().build();
+    }
+
+    public static PromptMetricsVO from(PromptMetrics metrics) {
+        return PromptMetricsVO.builder()
+            .usageCount(metrics.getUsageCount())
+            .avgLatencyMs(metrics.getAvgLatencyMs())
+            .tokenCostPer1k(metrics.getTokenCostPer1k())
+            .successRate(metrics.getSuccessRate())
+            .build();
     }
 }
