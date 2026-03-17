@@ -54,10 +54,10 @@ async def process_job(pool: asyncpg.Pool, job_id: UUID) -> None:
             await db.mark_job_failed(conn, job_id, f"unknown job_type: {job['job_type']}")
             return
 
-        metrics = await db.fetch_metrics(conn, job["project_id"])
+        metrics = await db.fetch_metrics(conn)
 
     if not metrics:
-        logger.debug("project %s has no eval metrics — skipping", job["project_id"])
+        logger.debug("no global eval metrics defined — skipping job %s", job_id)
         async with pool.acquire() as conn:
             await db.mark_job_done(conn, job_id)
         return

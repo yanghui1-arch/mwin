@@ -137,15 +137,13 @@ async def fetch_steps_for_trace(conn: asyncpg.Connection, trace_id: UUID) -> lis
     return [dict(r) for r in rows]
 
 
-async def fetch_metrics(conn: asyncpg.Connection, project_id: int) -> list[dict]:
+async def fetch_metrics(conn: asyncpg.Connection) -> list[dict]:
     rows = await conn.fetch(
         """
         SELECT id, name, description, judge_prompt,
                score_range_min, score_range_max
           FROM eval_metric
-         WHERE project_id = $1
-        """,
-        project_id,
+        """
     )
     return [dict(r) for r in rows]
 
