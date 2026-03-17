@@ -130,6 +130,6 @@ export const promptApi = {
   },
 
   updatePromptStatus(promptId: string, status: string) {
-    return http.patch<APIResponse<void>>(`/v0/prompt/${promptId}/status`, { status })
+    return http.post<APIResponse<void>>(`/v0/prompt/${promptId}/status`, { status })
   },
 }

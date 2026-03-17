@@ -161,15 +161,53 @@ export default function PromptsPage() {
   }
 
   const handleSetVersionStatus = async (
-    _pipelineId: string,
-    _promptId: string,
+    pipelineId: string,
+    promptId: string,
     versionId: string,
-    _status: PromptVersionStatus
+    status: PromptVersionStatus
   ) => {
+    // IDs of all versions in the same prompt group (needed to demote siblings)
+    const siblingIds = new Set(
+      (pipelinePrompts[pipelineId] ?? [])
+        .find((p) => p.id === promptId)?.versions.map((v) => v.id) ?? []
+    )
+
+    const resolveStatus = (currentStatus: PromptVersionStatus, id: string): PromptVersionStatus =>
+      id === versionId ? status
+      : status === "current" && currentStatus === "current" && siblingIds.has(id) ? "deprecated"
+      : currentStatus
+
+    // Optimistic update: pipelinePrompts
+    setPipelinePrompts((prev) => {
+      const prompts = prev[pipelineId]
+      if (!prompts) return prev
+      return {
+        ...prev,
+        [pipelineId]: prompts.map((p) =>
+          p.id !== promptId ? p : {
+            ...p,
+            versions: p.versions.map((v) => ({ ...v, status: resolveStatus(v.status, v.id) })),
+          }
+        ),
+      }
+    })
+
+    // Optimistic update: versionDetails (for any cached full versions)
+    setVersionDetails((prev) => {
+      const updated = { ...prev }
+      siblingIds.forEach((id) => {
+        if (updated[id]) updated[id] = { ...updated[id], status: resolveStatus(updated[id].status, id) }
+      })
+      return updated
+    })
+
     try {
-      await promptApi.updatePromptStatus(versionId, _status)
+      await promptApi.updatePromptStatus(versionId, status)
     } catch {
-      if (selectedProjectId) loadPipelines(selectedProjectId)
+      // Revert: reload prompt list for this pipeline
+      promptApi.listPipelinePrompts(pipelineId)
+        .then((prompts) => setPipelinePrompts((prev) => ({ ...prev, [pipelineId]: prompts })))
+        .catch(() => {})
     }
   }
 
