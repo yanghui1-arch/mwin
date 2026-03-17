@@ -179,12 +179,6 @@ public interface PromptService {
      */
     List<PromptStatus> listStatuses(UUID promptPipelineId);
 
-    /**
-     * Deletes a deployment status by its ID.
-     *
-     * @param statusId the UUID of the status to delete
-     */
-    void deleteStatus(UUID statusId);
 
     // -------------------------------------------------------------------------
     // Metrics

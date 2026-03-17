@@ -201,16 +201,6 @@ public class PromptController {
         }
     }
 
-    /** Delete a deployment status */
-    @DeleteMapping("/status/{statusId}")
-    public ResponseEntity<APIResponse<Void>> deleteStatus(@PathVariable UUID statusId) {
-        try {
-            promptService.deleteStatus(statusId);
-            return ResponseEntity.ok(APIResponse.success(null));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(APIResponse.error(e.getMessage()));
-        }
-    }
 
     /** Update pipeline status (active / archived) */
     @PatchMapping("/pipeline/{pipelineId}/status")

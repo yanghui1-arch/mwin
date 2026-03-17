@@ -195,10 +195,6 @@ public class PromptServiceImpl implements PromptService {
         return promptStatusRepository.findByPromptPipelineId(promptPipelineId);
     }
 
-    @Override
-    public void deleteStatus(UUID statusId) {
-        promptStatusRepository.deleteById(statusId);
-    }
 
     @Override
     public void updatePipelineStatus(UUID pipelineId, String status) {
