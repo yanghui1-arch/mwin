@@ -4,7 +4,6 @@ import com.supertrace.aitrace.domain.core.prompt.Prompt;
 import com.supertrace.aitrace.domain.core.prompt.PromptPipeline;
 import com.supertrace.aitrace.domain.core.prompt.PromptRef;
 import com.supertrace.aitrace.domain.core.prompt.PromptStatus;
-import com.supertrace.aitrace.dto.prompt.CreateOrUpdateStatusRequest;
 import com.supertrace.aitrace.dto.prompt.CreatePromptPipelineRequest;
 import com.supertrace.aitrace.dto.prompt.CreatePromptRequest;
 import com.supertrace.aitrace.domain.core.prompt.PromptMetrics;
@@ -156,20 +155,6 @@ public interface PromptService {
     // Prompt Status (Deployment Label)
     // -------------------------------------------------------------------------
 
-    /**
-     * Creates or updates a deployment status label for a prompt pipeline, pointing it at
-     * the specified prompt version.
-     *
-     * <p>If a status with the given label already exists for the pipeline, its target prompt
-     * and deployer information are updated in place. Otherwise a new status record is created.
-     * The operation is transactional to ensure the upsert is atomic.
-     *
-     * @param request contains {@code promptPipelineId}, {@code status} label, and {@code promptId}
-     * @param userId  the ID of the user performing the deployment
-     * @return the updated or newly created {@code PromptStatus} entity
-     */
-    @Transactional
-    PromptStatus createOrUpdateStatus(CreateOrUpdateStatusRequest request, UUID userId);
 
     /**
      * Returns all deployment statuses for the given prompt pipeline.

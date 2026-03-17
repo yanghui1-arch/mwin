@@ -10,7 +10,6 @@ import com.supertrace.aitrace.domain.core.prompt.PromptStatus;
 import com.supertrace.aitrace.domain.core.step.Step;
 import com.supertrace.aitrace.domain.core.step.StepRef;
 import com.supertrace.aitrace.domain.core.step.metadata.StepMeta;
-import com.supertrace.aitrace.dto.prompt.CreateOrUpdateStatusRequest;
 import com.supertrace.aitrace.dto.prompt.CreatePromptPipelineRequest;
 import com.supertrace.aitrace.dto.prompt.CreatePromptRequest;
 import com.supertrace.aitrace.repository.EvalMetricRepository;
@@ -30,7 +29,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -167,27 +165,6 @@ public class PromptServiceImpl implements PromptService {
                 "Status '" + status + "' not found for prompt pipeline: " + promptPipelineName));
 
         return promptStatus.getPromptId();
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public PromptStatus createOrUpdateStatus(CreateOrUpdateStatusRequest request, UUID userId) {
-        PromptStatus statusEntity = promptStatusRepository
-            .findByPromptPipelineIdAndStatus(request.getPromptPipelineId(), request.getStatus())
-            .map(existing -> {
-                existing.setPromptId(request.getPromptId());
-                existing.setDeployedBy(userId);
-                existing.setDeployedAt(LocalDateTime.now());
-                return existing;
-            })
-            .orElseGet(() -> PromptStatus.builder()
-                .promptPipelineId(request.getPromptPipelineId())
-                .status(request.getStatus())
-                .promptId(request.getPromptId())
-                .deployedBy(userId)
-                .build());
-
-        return promptStatusRepository.save(statusEntity);
     }
 
     @Override

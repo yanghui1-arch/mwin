@@ -2,8 +2,6 @@ package com.supertrace.aitrace.controller;
 
 import com.supertrace.aitrace.domain.core.prompt.Prompt;
 import com.supertrace.aitrace.domain.core.prompt.PromptPipeline;
-import com.supertrace.aitrace.domain.core.prompt.PromptStatus;
-import com.supertrace.aitrace.dto.prompt.CreateOrUpdateStatusRequest;
 import com.supertrace.aitrace.dto.prompt.CreatePromptPipelineRequest;
 import com.supertrace.aitrace.dto.prompt.CreatePromptRequest;
 import com.supertrace.aitrace.dto.prompt.UpdatePromptStatusRequest;
@@ -169,22 +167,6 @@ public class PromptController {
         }
     }
 
-    /** Create or update a deployment status label */
-    @PostMapping("/status")
-    public ResponseEntity<APIResponse<PromptStatusVO>> createOrUpdateStatus(
-        HttpServletRequest request,
-        @RequestBody CreateOrUpdateStatusRequest body
-    ) {
-        try {
-            UUID userId = (UUID) request.getAttribute("userId");
-            PromptStatus status = promptService.createOrUpdateStatus(body, userId);
-            String version = promptService.findPromptById(status.getPromptId())
-                .map(Prompt::getVersion).orElse(null);
-            return ResponseEntity.ok(APIResponse.success(PromptStatusVO.from(status, version)));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(APIResponse.error(e.getMessage()));
-        }
-    }
 
     /** List deployment statuses for a pipeline */
     @GetMapping("/status/{promptPipelineId}")
