@@ -106,7 +106,7 @@ function PromptDetailCharts({
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
     .map((v) => ({
       version: v.version,
-      value: v.metrics[metric],
+      value: v.metrics?.[metric] ?? 0,
       isCurrent: v.status === "current",
       isSelected: v.id === selectedVersionId,
     }))
@@ -124,6 +124,7 @@ function PromptDetailCharts({
     if (!avgData.length) return ["auto", "auto"]
     const vals = avgData.map((d) => d.value)
     const min = Math.min(...vals), max = Math.max(...vals)
+    if (max === 0) return ["auto", "auto"]
     if (metric === "successRate") return [Math.max(60, Math.floor(min - 4)), Math.ceil(max + 1)]
     if (metric === "latencyMs")   return [Math.max(0, Math.floor(min * 0.9)), Math.ceil(max * 1.05)]
     return [Math.max(0, Math.floor(min * 0.85)), Math.ceil(max * 1.1)]

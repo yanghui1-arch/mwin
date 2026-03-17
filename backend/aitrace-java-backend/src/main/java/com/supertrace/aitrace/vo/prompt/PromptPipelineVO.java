@@ -8,7 +8,6 @@ import lombok.Data;
 import com.supertrace.aitrace.domain.core.prompt.PromptPipeline;
 import com.supertrace.aitrace.domain.core.prompt.PromptPipelineStatus;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -21,12 +20,10 @@ public class PromptPipelineVO {
     private String description;
     private LocalDateTime createdAt;
     private PromptPipelineStatus status;
+    private long promptCount;
     private long versionCount;
-    private List<PromptStatusVO> statuses;
-    private List<PromptGroupVO> prompts;
 
-    public static PromptPipelineVO from(PromptPipeline pipeline, long versionCount,
-                                        List<PromptStatusVO> statuses, List<PromptGroupVO> prompts) {
+    public static PromptPipelineVO from(PromptPipeline pipeline, long promptCount, long versionCount) {
         return PromptPipelineVO.builder()
             .id(pipeline.getId())
             .projectId(pipeline.getProjectId())
@@ -34,9 +31,8 @@ public class PromptPipelineVO {
             .description(pipeline.getDescription())
             .createdAt(pipeline.getCreatedAt())
             .status(pipeline.getStatus())
+            .promptCount(promptCount)
             .versionCount(versionCount)
-            .statuses(statuses)
-            .prompts(prompts)
             .build();
     }
 }

@@ -8,7 +8,7 @@ import { PerformanceChart } from "./components/performance-chart"
 import { PromptDetail } from "./components/prompt-detail"
 import { CompactRecommendations } from "./components/compact-recommendations"
 import { cn } from "@/lib/utils"
-import type { Pipeline, Project, PromptVersionStatus } from "./types"
+import type { Pipeline, Prompt, PromptVersion, PerformanceDataPoint, Project, PromptVersionStatus } from "./types"
 import { promptApi } from "@/api/prompt"
 import { projectApi } from "@/api/project"
 
@@ -70,6 +70,9 @@ export default function PromptsPage() {
   const [projects, setProjects] = useState<Project[]>([])
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [pipelines, setPipelines] = useState<Pipeline[]>([])
+  const [performanceData, setPerformanceData] = useState<PerformanceDataPoint[]>([])
+  const [pipelinePrompts, setPipelinePrompts] = useState<Record<string, Prompt[]>>({})
+  const [versionDetails, setVersionDetails] = useState<Record<string, PromptVersion>>({})
   const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>(null)
   const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null)
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null)
@@ -101,9 +104,15 @@ export default function PromptsPage() {
   useEffect(() => {
     if (!selectedProjectId) return
     loadPipelines(selectedProjectId)
+    setPerformanceData([])
+    promptApi.getPerformanceData(Number(selectedProjectId))
+      .then(setPerformanceData)
+      .catch(() => {/* backend not ready yet */})
     setSelectedPipelineId(null)
     setSelectedPromptId(null)
     setSelectedVersionId(null)
+    setPipelinePrompts({})
+    setVersionDetails({})
   }, [selectedProjectId, loadPipelines])
 
   // ── Handlers ───────────────────────────────────────────────────────────────
@@ -116,6 +125,11 @@ export default function PromptsPage() {
     setSelectedPipelineId(pipelineId)
     setSelectedPromptId(null)
     setSelectedVersionId(null)
+    if (!pipelinePrompts[pipelineId]) {
+      promptApi.listPipelinePrompts(pipelineId)
+        .then((prompts) => setPipelinePrompts((prev) => ({ ...prev, [pipelineId]: prompts })))
+        .catch(() => setPipelinePrompts((prev) => ({ ...prev, [pipelineId]: [] })))
+    }
   }
 
   const handleSelectPrompt = (pipelineId: string, promptId: string) => {
@@ -128,6 +142,11 @@ export default function PromptsPage() {
     setSelectedPipelineId(pipelineId)
     setSelectedPromptId(promptId)
     setSelectedVersionId(versionId)
+    if (!versionDetails[versionId]) {
+      promptApi.getVersionDetail(versionId)
+        .then((detail) => setVersionDetails((prev) => ({ ...prev, [versionId]: detail })))
+        .catch(() => {/* leave null — right panel stays on chart */})
+    }
   }
 
   const handleSetPipelineStatus = async (pipelineId: string, status: "active" | "archived") => {
@@ -142,36 +161,14 @@ export default function PromptsPage() {
   }
 
   const handleSetVersionStatus = async (
-    pipelineId: string,
-    promptId: string,
+    _pipelineId: string,
+    _promptId: string,
     versionId: string,
-    status: PromptVersionStatus
+    _status: PromptVersionStatus
   ) => {
-    // Optimistic update
-    setPipelines((prev) =>
-      prev.map((pipeline) => {
-        if (pipeline.id !== pipelineId) return pipeline
-        return {
-          ...pipeline,
-          prompts: pipeline.prompts.map((prompt) => {
-            if (prompt.id !== promptId) return prompt
-            return {
-              ...prompt,
-              versions: prompt.versions.map((v) => {
-                if (v.id === versionId) return { ...v, status }
-                if (status === "current" && v.status === "current")
-                  return { ...v, status: "deprecated" as PromptVersionStatus }
-                return v
-              }),
-            }
-          }),
-        }
-      })
-    )
     try {
-      await promptApi.updatePromptStatus(versionId, status)
+      await promptApi.updatePromptStatus(versionId, _status)
     } catch {
-      // Revert on failure
       if (selectedProjectId) loadPipelines(selectedProjectId)
     }
   }
@@ -187,8 +184,14 @@ export default function PromptsPage() {
 
   const projectPipelines = pipelines.filter((p) => p.projectId === selectedProjectId)
   const selectedPipeline = projectPipelines.find((p) => p.id === selectedPipelineId) ?? null
-  const selectedPrompt = selectedPipeline?.prompts.find((p) => p.id === selectedPromptId) ?? null
-  const selectedVersion = selectedPrompt?.versions.find((v) => v.id === selectedVersionId) ?? null
+  const selectedPrompt = selectedPipelineId && selectedPromptId
+    ? (() => {
+        const p = (pipelinePrompts[selectedPipelineId] ?? []).find((p) => p.id === selectedPromptId) ?? null
+        if (!p) return null
+        return { ...p, versions: p.versions.map((v) => versionDetails[v.id] ?? v) }
+      })()
+    : null
+  const selectedVersion = selectedVersionId ? (versionDetails[selectedVersionId] ?? null) : null
 
   const versionSelected = !!(selectedVersion && selectedPipeline && selectedPrompt)
 
@@ -233,6 +236,7 @@ export default function PromptsPage() {
           <div className="flex-1 px-2 pb-2 min-h-0 overflow-hidden">
             <PipelineTree
               pipelines={projectPipelines}
+              pipelinePrompts={pipelinePrompts}
               selectedPipelineId={selectedPipelineId}
               selectedPromptId={selectedPromptId}
               selectedVersionId={selectedVersionId}
@@ -287,7 +291,7 @@ export default function PromptsPage() {
                 <div className="rounded-xl bg-card/40 border border-border/25 px-5 py-4">
                   <PerformanceChart
                     pipelines={projectPipelines}
-                    performanceData={[]}
+                    performanceData={performanceData}
                     selectedPipeline={selectedPipeline}
                     selectedPrompt={selectedPrompt}
                     selectedVersionId={selectedVersionId}
@@ -303,7 +307,7 @@ export default function PromptsPage() {
               <div className="rounded-xl bg-card/40 border border-border/25 px-5 py-4">
                 <PerformanceChart
                   pipelines={projectPipelines}
-                  performanceData={[]}
+                  performanceData={performanceData}
                   selectedPipeline={selectedPipeline}
                   selectedPrompt={selectedPrompt}
                   selectedVersionId={selectedVersionId}

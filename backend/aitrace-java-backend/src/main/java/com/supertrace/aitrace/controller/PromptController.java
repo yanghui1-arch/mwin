@@ -1,7 +1,6 @@
 package com.supertrace.aitrace.controller;
 
 import com.supertrace.aitrace.domain.core.prompt.Prompt;
-import com.supertrace.aitrace.domain.core.prompt.PromptMetrics;
 import com.supertrace.aitrace.domain.core.prompt.PromptPipeline;
 import com.supertrace.aitrace.domain.core.prompt.PromptStatus;
 import com.supertrace.aitrace.dto.prompt.CreateOrUpdateStatusRequest;
@@ -14,7 +13,7 @@ import com.supertrace.aitrace.response.APIResponse;
 import com.supertrace.aitrace.service.application.ApiKeyService;
 import com.supertrace.aitrace.service.domain.PromptService;
 import com.supertrace.aitrace.utils.ApiKeyUtils;
-import com.supertrace.aitrace.vo.prompt.PromptGroupVO;
+import com.supertrace.aitrace.vo.prompt.PromptGroupSummaryVO;
 import com.supertrace.aitrace.vo.prompt.PromptMetricsVO;
 import com.supertrace.aitrace.vo.prompt.PromptPipelineVO;
 import com.supertrace.aitrace.vo.prompt.PromptResolveVO;
@@ -25,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,14 +54,20 @@ public class PromptController {
         }
     }
 
-    /** List all prompt pipelines for a project, including metrics */
+    /** List all prompt pipelines for a project — counts only, no prompt data or metrics */
     @GetMapping("/{projectId}")
     public ResponseEntity<APIResponse<List<PromptPipelineVO>>> listPromptPipelines(
         @PathVariable Long projectId
     ) {
         try {
-            List<PromptPipelineVO> vos = promptService.listPromptPipelines(projectId).stream()
-                .map(this::assemblePipelineVO)
+            List<PromptPipeline> pipelines = promptService.listPromptPipelines(projectId);
+            List<UUID> ids = pipelines.stream().map(PromptPipeline::getId).toList();
+            Map<UUID, long[]> counts = promptService.countPromptsByPipelines(ids);
+            List<PromptPipelineVO> vos = pipelines.stream()
+                .map(p -> {
+                    long[] c = counts.getOrDefault(p.getId(), new long[]{0L, 0L});
+                    return PromptPipelineVO.from(p, c[0], c[1]);
+                })
                 .toList();
             return ResponseEntity.ok(APIResponse.success(vos));
         } catch (Exception e) {
@@ -69,7 +75,7 @@ public class PromptController {
         }
     }
 
-    /** Get prompt pipeline detail with prompt list and statuses */
+    /** Get a single pipeline with counts */
     @GetMapping("/{projectId}/{promptPipelineName}")
     public ResponseEntity<APIResponse<PromptPipelineVO>> getPromptPipelineDetail(
         @PathVariable Long projectId,
@@ -77,7 +83,9 @@ public class PromptController {
     ) {
         try {
             PromptPipeline pipeline = promptService.getPromptPipelineDetail(projectId, promptPipelineName);
-            return ResponseEntity.ok(APIResponse.success(assemblePipelineVO(pipeline)));
+            long[] counts = promptService.countPromptsByPipelines(List.of(pipeline.getId()))
+                .getOrDefault(pipeline.getId(), new long[]{0L, 0L});
+            return ResponseEntity.ok(APIResponse.success(PromptPipelineVO.from(pipeline, counts[0], counts[1])));
         } catch (NoSuchElementException e) {
             return ResponseEntity.status(404).body(APIResponse.notFound(e.getMessage()));
         } catch (Exception e) {
@@ -118,6 +126,47 @@ public class PromptController {
                 .map(PromptVO::from)
                 .toList();
             return ResponseEntity.ok(APIResponse.success(vos));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(APIResponse.error(e.getMessage()));
+        }
+    }
+
+    /** Get full detail (content + metrics) for a single prompt version */
+    @GetMapping("/version/{promptId}/detail")
+    public ResponseEntity<APIResponse<PromptVO>> getVersionDetail(@PathVariable UUID promptId) {
+        try {
+            Prompt prompt = promptService.findPromptById(promptId)
+                .orElseThrow(() -> new NoSuchElementException("Prompt not found: " + promptId));
+            PromptMetricsVO metrics = promptService.buildMetricsMap(List.of(prompt))
+                .entrySet().stream()
+                .filter(e -> e.getKey().equals(promptId))
+                .findFirst()
+                .map(e -> PromptMetricsVO.from(e.getValue()))
+                .orElse(PromptMetricsVO.empty());
+            return ResponseEntity.ok(APIResponse.success(PromptVO.from(prompt, metrics)));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(404).body(APIResponse.notFound(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(APIResponse.error(e.getMessage()));
+        }
+    }
+
+    /** List prompts grouped by name for a pipeline — lightweight: id, version, status, createdAt only */
+    @GetMapping("/pipeline/{pipelineId}/prompts")
+    public ResponseEntity<APIResponse<List<PromptGroupSummaryVO>>> listPipelinePrompts(
+        @PathVariable UUID pipelineId
+    ) {
+        try {
+            List<Prompt> prompts = promptService.listPrompts(pipelineId);
+            Map<String, List<Prompt>> grouped = new LinkedHashMap<>();
+            for (Prompt p : prompts) {
+                String key = p.getName() != null ? p.getName() : "";
+                grouped.computeIfAbsent(key, k -> new ArrayList<>()).add(p);
+            }
+            List<PromptGroupSummaryVO> result = grouped.entrySet().stream()
+                .map(e -> PromptGroupSummaryVO.from(e.getKey(), e.getValue()))
+                .toList();
+            return ResponseEntity.ok(APIResponse.success(result));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(APIResponse.error(e.getMessage()));
         }
@@ -224,31 +273,5 @@ public class PromptController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(APIResponse.error(e.getMessage()));
         }
-    }
-
-    private PromptPipelineVO assemblePipelineVO(PromptPipeline pipeline) {
-        List<Prompt> prompts = promptService.listPrompts(pipeline.getId());
-        Map<UUID, String> versionMap = prompts.stream()
-            .collect(Collectors.toMap(Prompt::getId, Prompt::getVersion));
-        List<PromptStatusVO> statuses = promptService.listStatuses(pipeline.getId()).stream()
-            .map(s -> PromptStatusVO.from(s, versionMap.get(s.getPromptId())))
-            .toList();
-        Map<UUID, PromptMetrics> metricsMap = promptService.buildMetricsMap(prompts);
-        List<PromptGroupVO> groups = prompts.stream()
-            .collect(Collectors.groupingBy(
-                p -> p.getName() != null ? p.getName() : "",
-                LinkedHashMap::new, Collectors.toList()
-            ))
-            .entrySet().stream()
-            .map(e -> {
-                List<PromptVO> versions = e.getValue().stream()
-                    .map(p -> PromptVO.from(p, PromptMetricsVO.from(metricsMap.getOrDefault(p.getId(), PromptMetrics.empty()))))
-                    .toList();
-                String desc = e.getValue().stream().map(Prompt::getDescription)
-                    .filter(d -> d != null && !d.isEmpty()).findFirst().orElse(null);
-                return PromptGroupVO.builder().name(e.getKey()).description(desc).versions(versions).build();
-            })
-            .toList();
-        return PromptPipelineVO.from(pipeline, prompts.size(), statuses, groups);
     }
 }

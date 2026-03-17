@@ -199,6 +199,15 @@ public interface PromptService {
     // -------------------------------------------------------------------------
 
     /**
+     * Returns prompt and version counts for the given pipelines in a single query.
+     * Each {@code long[]} contains {@code [promptCount, versionCount]}.
+     *
+     * @param pipelineIds the pipeline UUIDs to count for
+     * @return map from pipeline ID to {@code [promptCount, versionCount]}; missing entry means zero
+     */
+    Map<UUID, long[]> countPromptsByPipelines(List<UUID> pipelineIds);
+
+    /**
      * Computes usage metrics for a list of prompt versions.
      *
      * @param prompts the prompt versions to compute metrics for

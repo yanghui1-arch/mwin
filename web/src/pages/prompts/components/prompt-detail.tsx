@@ -34,7 +34,7 @@ export function PromptDetail({ version: prompt }: PromptDetailProps) {
   const [copied, setCopied] = useState(false)
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(prompt.content)
+    await navigator.clipboard.writeText(prompt.content ?? "")
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -43,6 +43,7 @@ export function PromptDetail({ version: prompt }: PromptDetailProps) {
     new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
   const formatNumber = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n))
   const cfg = prompt.modelConfig
+  const metrics = prompt.metrics
 
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
@@ -91,45 +92,51 @@ export function PromptDetail({ version: prompt }: PromptDetailProps) {
           </div>
 
           {/* Model Config */}
-          <div className="rounded-xl bg-muted/20 border border-border/25 px-4 py-3 shrink-0">
-            <p className="text-[10px] font-semibold text-muted-foreground/40 uppercase tracking-widest mb-3">
-              Model Configuration
-            </p>
-            <div className="flex items-stretch gap-0 divide-x divide-border/30">
-              <div className="flex flex-col gap-0.5 pr-6">
-                <span className="text-[10px] text-muted-foreground/50 uppercase tracking-wider">Model</span>
-                <span className="text-sm font-mono font-semibold text-foreground/90">{cfg.model}</span>
+          {cfg && (
+            <div className="rounded-xl bg-muted/20 border border-border/25 px-4 py-3 shrink-0">
+              <p className="text-[10px] font-semibold text-muted-foreground/40 uppercase tracking-widest mb-3">
+                Model Configuration
+              </p>
+              <div className="flex items-stretch gap-0 divide-x divide-border/30">
+                <div className="flex flex-col gap-0.5 pr-6">
+                  <span className="text-[10px] text-muted-foreground/50 uppercase tracking-wider">Model</span>
+                  <span className="text-sm font-mono font-semibold text-foreground/90">{cfg.model}</span>
+                </div>
+                {cfg.temperature != null && (
+                  <div className="flex flex-col gap-0.5 px-6">
+                    <span className="text-[10px] text-muted-foreground/50 uppercase tracking-wider">Temperature</span>
+                    <span className="text-sm font-mono font-semibold text-foreground/90">{cfg.temperature}</span>
+                  </div>
+                )}
+                {cfg.topP != null && (
+                  <div className="flex flex-col gap-0.5 px-6">
+                    <span className="text-[10px] text-muted-foreground/50 uppercase tracking-wider">Top-P</span>
+                    <span className="text-sm font-mono font-semibold text-foreground/90">{cfg.topP}</span>
+                  </div>
+                )}
+                {cfg.topK != null && (
+                  <div className="flex flex-col gap-0.5 px-6">
+                    <span className="text-[10px] text-muted-foreground/50 uppercase tracking-wider">Top-K</span>
+                    <span className="text-sm font-mono font-semibold text-foreground/90">{cfg.topK}</span>
+                  </div>
+                )}
               </div>
-              {cfg.temperature != null && (
-                <div className="flex flex-col gap-0.5 px-6">
-                  <span className="text-[10px] text-muted-foreground/50 uppercase tracking-wider">Temperature</span>
-                  <span className="text-sm font-mono font-semibold text-foreground/90">{cfg.temperature}</span>
-                </div>
-              )}
-              {cfg.topP != null && (
-                <div className="flex flex-col gap-0.5 px-6">
-                  <span className="text-[10px] text-muted-foreground/50 uppercase tracking-wider">Top-P</span>
-                  <span className="text-sm font-mono font-semibold text-foreground/90">{cfg.topP}</span>
-                </div>
-              )}
-              {cfg.topK != null && (
-                <div className="flex flex-col gap-0.5 px-6">
-                  <span className="text-[10px] text-muted-foreground/50 uppercase tracking-wider">Top-K</span>
-                  <span className="text-sm font-mono font-semibold text-foreground/90">{cfg.topK}</span>
-                </div>
-              )}
             </div>
-          </div>
+          )}
         </TabsContent>
 
         {/* ── Metrics tab ── */}
         <TabsContent value="metrics" className="flex-1 min-h-0 mt-0 overflow-y-auto">
-          <div className="grid grid-cols-2 gap-3 pt-1">
-            <MetricCard label={t("prompts.prompt.successRate")} value={`${prompt.metrics.successRate}%`} quality={scoreQuality(prompt.metrics.successRate)} />
-            <MetricCard label={t("prompts.prompt.latency")} value={`${prompt.metrics.latencyMs}`} sub="ms avg" quality={latencyQuality(prompt.metrics.latencyMs)} />
-            <MetricCard label={t("prompts.prompt.tokenCost")} value={`${prompt.metrics.tokenCostPer1k}¢`} sub={t("prompts.prompt.perThousandCalls")} quality="neutral" />
-            <MetricCard label={t("prompts.prompt.usageCount")} value={formatNumber(prompt.metrics.usageCount)} sub={t("prompts.prompt.totalCalls")} quality="neutral" />
-          </div>
+          {metrics ? (
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <MetricCard label={t("prompts.prompt.successRate")} value={`${metrics.successRate}%`} quality={scoreQuality(metrics.successRate)} />
+              <MetricCard label={t("prompts.prompt.latency")} value={`${metrics.latencyMs}`} sub="ms avg" quality={latencyQuality(metrics.latencyMs)} />
+              <MetricCard label={t("prompts.prompt.tokenCost")} value={`${metrics.tokenCostPer1k}¢`} sub={t("prompts.prompt.perThousandCalls")} quality="neutral" />
+              <MetricCard label={t("prompts.prompt.usageCount")} value={formatNumber(metrics.usageCount)} sub={t("prompts.prompt.totalCalls")} quality="neutral" />
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground pt-1">{t("prompts.prompt.noMetrics", "No metrics available")}</p>
+          )}
         </TabsContent>
 
         {/* ── History tab ── */}

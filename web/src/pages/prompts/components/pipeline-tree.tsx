@@ -22,7 +22,7 @@ import {
   Zap, FileText, MoreHorizontal, Plus, CheckCircle, MinusCircle,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { Pipeline, Prompt, PromptVersion, PromptVersionStatus } from "../types"
+import type { Pipeline, Prompt, PromptVersionStatus } from "../types"
 
 const PIPELINE_COLORS = ["#C96442", "#9C7BB5", "#5A9E92", "#C9954A", "#B86070"]
 
@@ -163,6 +163,7 @@ function PromptItem({
 
 function PipelineItem({
   pipeline,
+  prompts,
   isSelected,
   selectedPromptId,
   selectedVersionId,
@@ -173,6 +174,7 @@ function PipelineItem({
   onSetVersionStatus,
 }: {
   pipeline: Pipeline
+  prompts: Prompt[]
   isSelected: boolean
   selectedPromptId: string | null
   selectedVersionId: string | null
@@ -183,7 +185,7 @@ function PipelineItem({
   onSetVersionStatus: (promptId: string, versionId: string, status: PromptVersionStatus) => void
 }) {
   const [expanded, setExpanded] = useState(pipeline.status === "active")
-  const totalVersions = pipeline.prompts.reduce((sum, p) => sum + p.versions.length, 0)
+  const totalVersions = pipeline.versionCount
 
   return (
     <div className="group/pipe">
@@ -201,7 +203,7 @@ function PipelineItem({
           </span>
           <span className="text-sm font-medium flex-1 min-w-0 truncate">{pipeline.name}</span>
           <span className="text-xs text-muted-foreground shrink-0 tabular-nums">
-            {pipeline.prompts.length}p · {totalVersions}v
+            {pipeline.promptCount}p · {totalVersions}v
           </span>
         </button>
 
@@ -220,9 +222,9 @@ function PipelineItem({
         </button>
       </div>
 
-      {expanded && (
-        <div className="ml-3 mt-0.5 mb-1 pl-2.5 border-l border-border/50 space-y-0.5 overflow-hidden">
-          {pipeline.prompts.map((prompt) => (
+      {expanded && prompts.length > 0 && (
+        <div className="ml-3 pl-2 border-l border-border/30 mt-0.5 mb-1 space-y-0.5">
+          {prompts.map((prompt) => (
             <PromptItem
               key={prompt.id}
               prompt={prompt}
@@ -243,6 +245,7 @@ function PipelineItem({
 
 interface PipelineTreeProps {
   pipelines: Pipeline[]
+  pipelinePrompts: Record<string, Prompt[]>
   selectedPipelineId: string | null
   selectedPromptId: string | null
   selectedVersionId: string | null
@@ -257,6 +260,7 @@ interface PipelineTreeProps {
 
 export function PipelineTree({
   pipelines,
+  pipelinePrompts,
   selectedPipelineId,
   selectedPromptId,
   selectedVersionId,
@@ -325,6 +329,7 @@ export function PipelineTree({
             <PipelineItem
               key={pipeline.id}
               pipeline={pipeline}
+              prompts={pipelinePrompts[pipeline.id] ?? []}
               isSelected={selectedPipelineId === pipeline.id}
               selectedPromptId={selectedPipelineId === pipeline.id ? selectedPromptId : null}
               selectedVersionId={selectedPipelineId === pipeline.id ? selectedVersionId : null}
@@ -352,6 +357,7 @@ export function PipelineTree({
                 <PipelineItem
                   key={pipeline.id}
                   pipeline={pipeline}
+                  prompts={pipelinePrompts[pipeline.id] ?? []}
                   isSelected={selectedPipelineId === pipeline.id}
                   selectedPromptId={selectedPipelineId === pipeline.id ? selectedPromptId : null}
                   selectedVersionId={selectedPipelineId === pipeline.id ? selectedVersionId : null}

@@ -28,10 +28,10 @@ export interface PromptVersion {
   id: string
   version: string
   status: PromptVersionStatus
-  content: string
-  modelConfig: ModelConfig
   createdAt: string
-  metrics: PromptMetrics
+  content?: string
+  modelConfig?: ModelConfig
+  metrics?: PromptMetrics
   changelog?: string
   performanceHistory?: VersionHistoryPoint[]
 }
@@ -56,9 +56,9 @@ export interface Pipeline {
   name: string
   description?: string
   status: PipelineStatus
-  prompts: Prompt[]            // named prompts — each has its own version history
+  promptCount: number
+  versionCount: number
   createdAt: string
-  lastUsedAt?: string
   chartColor: string
 }
 

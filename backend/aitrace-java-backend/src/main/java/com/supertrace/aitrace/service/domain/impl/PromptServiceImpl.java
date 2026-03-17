@@ -197,6 +197,18 @@ public class PromptServiceImpl implements PromptService {
         promptPipelineRepository.save(pipeline);
     }
 
+    // ── Counts ────────────────────────────────────────────────────────────────────
+
+    @Override
+    public Map<UUID, long[]> countPromptsByPipelines(List<UUID> pipelineIds) {
+        if (pipelineIds.isEmpty()) return Map.of();
+        return promptRepository.findCountsByPipelineIds(pipelineIds).stream()
+            .collect(Collectors.toMap(
+                PromptRepository.PipelineCounts::getPipelineId,
+                c -> new long[]{c.getPromptCount(), c.getVersionCount()}
+            ));
+    }
+
     // ── Metrics computation ───────────────────────────────────────────────────────
 
     @Override

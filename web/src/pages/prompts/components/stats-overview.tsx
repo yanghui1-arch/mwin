@@ -13,18 +13,8 @@ export function StatsOverview({ pipelines }: StatsOverviewProps) {
   const activePipelines = pipelines.filter((p) => p.status === "active")
   const archivedPipelines = pipelines.filter((p) => p.status === "archived")
 
-  const allPrompts = pipelines.flatMap((p) => p.prompts)
-  const currentPrompts = allPrompts.filter((p) => p.status === "current")
-
-  const avgQuality =
-    currentPrompts.length > 0
-      ? (currentPrompts.reduce((sum, p) => sum + p.metrics.qualityScore, 0) / currentPrompts.length).toFixed(1)
-      : "—"
-
-  const bestSuccessRate =
-    currentPrompts.length > 0
-      ? Math.max(...currentPrompts.map((p) => p.metrics.successRate)).toFixed(1)
-      : "—"
+  const avgQuality = "—"
+  const bestSuccessRate = "—"
 
   const stats = [
     {
