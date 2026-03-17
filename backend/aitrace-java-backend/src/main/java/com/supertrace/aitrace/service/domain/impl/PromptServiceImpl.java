@@ -1,6 +1,5 @@
 package com.supertrace.aitrace.service.domain.impl;
 
-import com.supertrace.aitrace.domain.Project;
 import com.supertrace.aitrace.domain.core.eval.EvalScore;
 import com.supertrace.aitrace.domain.core.prompt.Prompt;
 import com.supertrace.aitrace.domain.core.prompt.PromptPipeline;
@@ -14,7 +13,6 @@ import com.supertrace.aitrace.dto.prompt.CreatePromptPipelineRequest;
 import com.supertrace.aitrace.dto.prompt.CreatePromptRequest;
 import com.supertrace.aitrace.repository.EvalMetricRepository;
 import com.supertrace.aitrace.repository.EvalScoreRepository;
-import com.supertrace.aitrace.repository.ProjectRepository;
 import com.supertrace.aitrace.repository.PromptPipelineRepository;
 import com.supertrace.aitrace.repository.PromptRepository;
 import com.supertrace.aitrace.repository.PromptStatusRepository;
@@ -45,7 +43,6 @@ public class PromptServiceImpl implements PromptService {
     private final PromptPipelineRepository promptPipelineRepository;
     private final PromptRepository promptRepository;
     private final PromptStatusRepository promptStatusRepository;
-    private final ProjectRepository projectRepository;
     private final StepRefRepository stepRefRepository;
     private final StepRepository stepRepository;
     private final StepMetaRepository stepMetaRepository;
@@ -149,23 +146,6 @@ public class PromptServiceImpl implements PromptService {
         return promptRepository.save(prompt);
     }
 
-    @Override
-    public UUID resolvePrompt(UUID userId, String projectName, String promptPipelineName, String status) {
-        List<Project> projects = projectRepository.findProjectsByName(projectName);
-        Project project = projects.stream()
-            .filter(p -> p.getUserId().equals(userId))
-            .findFirst()
-            .orElseThrow(() -> new NoSuchElementException("Project not found: " + projectName));
-
-        PromptPipeline pipeline = promptPipelineRepository.findByProjectIdAndName(project.getId(), promptPipelineName)
-            .orElseThrow(() -> new NoSuchElementException("Prompt pipeline not found: " + promptPipelineName));
-
-        PromptStatus promptStatus = promptStatusRepository.findByPromptPipelineIdAndStatus(pipeline.getId(), status)
-            .orElseThrow(() -> new NoSuchElementException(
-                "Status '" + status + "' not found for prompt pipeline: " + promptPipelineName));
-
-        return promptStatus.getPromptId();
-    }
 
     @Override
     public List<PromptStatus> listStatuses(UUID promptPipelineId) {

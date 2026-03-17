@@ -5,16 +5,11 @@ import com.supertrace.aitrace.domain.core.prompt.PromptPipeline;
 import com.supertrace.aitrace.dto.prompt.CreatePromptPipelineRequest;
 import com.supertrace.aitrace.dto.prompt.CreatePromptRequest;
 import com.supertrace.aitrace.dto.prompt.UpdatePromptStatusRequest;
-import com.supertrace.aitrace.exception.AuthenticationException;
-import com.supertrace.aitrace.exception.UserIdNotFoundException;
 import com.supertrace.aitrace.response.APIResponse;
-import com.supertrace.aitrace.service.application.ApiKeyService;
 import com.supertrace.aitrace.service.domain.PromptService;
-import com.supertrace.aitrace.utils.ApiKeyUtils;
 import com.supertrace.aitrace.vo.prompt.PromptGroupSummaryVO;
 import com.supertrace.aitrace.vo.prompt.PromptMetricsVO;
 import com.supertrace.aitrace.vo.prompt.PromptPipelineVO;
-import com.supertrace.aitrace.vo.prompt.PromptResolveVO;
 import com.supertrace.aitrace.vo.prompt.PromptStatusVO;
 import com.supertrace.aitrace.vo.prompt.PromptVO;
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,7 +31,6 @@ import java.util.stream.Collectors;
 public class PromptController {
 
     private final PromptService promptService;
-    private final ApiKeyService apiKeyService;
 
     /** Create a new prompt pipeline */
     @PostMapping("/create_prompt_pipeline")
@@ -139,34 +133,6 @@ public class PromptController {
         }
     }
 
-    /**
-     * Resolve (pipeline name + status) → prompt_id.
-     * Uses API Key auth (whitelisted from JWT). Called by the mwin SDK.
-     */
-    @GetMapping("/resolve")
-    public ResponseEntity<APIResponse<PromptResolveVO>> resolvePrompt(
-        @RequestHeader(value = "Authorization") String authorization,
-        @RequestParam String name,
-        @RequestParam(defaultValue = "production") String status,
-        @RequestParam String projectName
-    ) {
-        try {
-            String apiKey = ApiKeyUtils.extractApiKeyFromHttpHeader(authorization);
-            if (!apiKeyService.isApiKeyExist(apiKey)) throw new AuthenticationException();
-            UUID userId = apiKeyService.resolveUserIdFromApiKey(apiKey).orElseThrow(UserIdNotFoundException::new);
-            UUID promptId = promptService.resolvePrompt(userId, projectName, name, status);
-            return ResponseEntity.ok(APIResponse.success(PromptResolveVO.from(promptId)));
-        } catch (AuthenticationException | UserIdNotFoundException e) {
-            return ResponseEntity.badRequest().body(
-                APIResponse.error("Invalid AITrace API key. Please ensure your API Key is valid and not expired.")
-            );
-        } catch (NoSuchElementException e) {
-            return ResponseEntity.status(404).body(APIResponse.notFound(e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(APIResponse.error(e.getMessage()));
-        }
-    }
-
 
     /** List deployment statuses for a pipeline */
     @GetMapping("/status/{promptPipelineId}")
@@ -199,6 +165,7 @@ public class PromptController {
             return ResponseEntity.badRequest().body(APIResponse.error(e.getMessage()));
         }
     }
+
 
     /** Update prompt version status (current / deprecated) */
     @PostMapping("/{promptId}/status")

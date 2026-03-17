@@ -12,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -132,24 +131,6 @@ public interface PromptService {
      */
     void updatePipelineStatus(UUID pipelineId, String status);
 
-    // -------------------------------------------------------------------------
-    // Prompt Resolution
-    // -------------------------------------------------------------------------
-
-    /**
-     * Resolves the active prompt ID for a given project, pipeline, and deployment status label.
-     *
-     * <p>Looks up the project by {@code projectName} scoped to the user, then finds the
-     * prompt pipeline by name, and finally returns the prompt ID mapped to the given status.
-     *
-     * @param userId               the user who owns the project
-     * @param projectName          the name of the project
-     * @param promptPipelineName   the name of the prompt pipeline
-     * @param status               the deployment label to resolve (e.g. {@code "production"})
-     * @return the UUID of the resolved prompt
-     * @throws NoSuchElementException if the project, pipeline, or status label is not found
-     */
-    UUID resolvePrompt(UUID userId, String projectName, String promptPipelineName, String status);
 
     // -------------------------------------------------------------------------
     // Prompt Status (Deployment Label)
