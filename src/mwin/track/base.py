@@ -401,7 +401,7 @@ class BaseTracker(ABC):
             pipeline=None,
             prompt_name=None,
             system_prompt=None,
-            prompt_version_id=None,
+            prompt_version=None,
         )
 
         client.log_trace(

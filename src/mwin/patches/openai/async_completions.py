@@ -94,7 +94,7 @@ def patch_async_openai_chat_completions():
             pipeline=pipeline,
             prompt_name=prompt_name,
             system_prompt=system_prompt,
-            prompt_version_id=prompt_version,
+            prompt_version=prompt_version,
         )
 
         return resp
@@ -164,7 +164,7 @@ class ProxyAsyncStream(AsyncStream):
                 pipeline=self.pipeline,
                 prompt_name=self.prompt_name,
                 system_prompt=self.system_prompt,
-                prompt_version_id=self.prompt_version,
+                prompt_version=self.prompt_version,
             )
         return chat_completion_chunk
 
@@ -205,7 +205,7 @@ class ProxyAsyncStream(AsyncStream):
                     pipeline=self.pipeline,
                     prompt_name=self.prompt_name,
                     system_prompt=self.system_prompt,
-                    prompt_version_id=self.prompt_version,
+                    prompt_version=self.prompt_version,
                 )
             yield chunk
 

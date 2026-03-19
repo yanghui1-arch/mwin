@@ -59,8 +59,8 @@ class LogStepRequest(BaseModel):
     prompt_name: str | None = None
     """Prompt name"""
 
-    prompt_version_id: str | None = None
-    """Prompt version id"""
+    prompt_version: str | None = None
+    """Prompt version"""
 
     system_prompt: str | None = None
     """Raw system prompt string captured via template_prompt() inside the step"""
