@@ -32,7 +32,7 @@ export interface PromptVersion {
   content?: string
   modelConfig?: ModelConfig
   metrics?: PromptMetrics
-  changelog?: string
+  description?: string
   performanceHistory?: VersionHistoryPoint[]
 }
 

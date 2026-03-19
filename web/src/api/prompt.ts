@@ -4,9 +4,8 @@ import type { Pipeline, Prompt, PromptVersion, ModelConfig, PromptMetrics, Perfo
 // Raw response types (backend snake_case)
 
 type PromptVersionDetailResponse = {
-  id: string
+  name?: string
   version: string
-  status: string
   content: string
   model_config?: {
     model: string
@@ -15,8 +14,8 @@ type PromptVersionDetailResponse = {
     top_p?: number
   }
   created_at: string
-  name?: string
-  changelog?: string
+  status: string
+  description?: string
   metrics?: {
     usage_count: number
     avg_latency_ms: number
@@ -94,14 +93,14 @@ export const promptApi = {
       ? { usageCount: d.metrics.usage_count, latencyMs: d.metrics.avg_latency_ms, tokenCostPer1k: d.metrics.token_cost_per1k, successRate: d.metrics.success_rate }
       : undefined
     return {
-      id: d.id,
+      id: versionId,
       version: d.version,
       status: d.status as PromptVersion["status"],
       content: d.content,
       modelConfig,
       metrics,
       createdAt: d.created_at,
-      changelog: d.changelog,
+      description: d.description,
     }
   },
 
