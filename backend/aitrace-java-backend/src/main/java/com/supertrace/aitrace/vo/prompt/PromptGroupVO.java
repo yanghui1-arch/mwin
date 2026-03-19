@@ -10,11 +10,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-/** Lightweight summary of a named prompt and its versions — no content or metrics. */
 @Data
 @Builder
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class PromptGroupSummaryVO {
+public class PromptGroupVO {
 
     private String name;
     private List<VersionSummary> versions;
@@ -38,8 +37,8 @@ public class PromptGroupSummaryVO {
         }
     }
 
-    public static PromptGroupSummaryVO from(String name, List<Prompt> prompts) {
-        return PromptGroupSummaryVO.builder()
+    public static PromptGroupVO from(String name, List<Prompt> prompts) {
+        return PromptGroupVO.builder()
             .name(name)
             .versions(prompts.stream().map(VersionSummary::from).toList())
             .build();

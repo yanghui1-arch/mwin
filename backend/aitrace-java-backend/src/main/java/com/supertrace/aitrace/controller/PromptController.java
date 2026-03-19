@@ -7,7 +7,7 @@ import com.supertrace.aitrace.dto.prompt.CreatePromptRequest;
 import com.supertrace.aitrace.dto.prompt.UpdatePromptStatusRequest;
 import com.supertrace.aitrace.response.APIResponse;
 import com.supertrace.aitrace.service.domain.PromptService;
-import com.supertrace.aitrace.vo.prompt.PromptGroupSummaryVO;
+import com.supertrace.aitrace.vo.prompt.PromptGroupVO;
 import com.supertrace.aitrace.vo.prompt.PromptMetricsVO;
 import com.supertrace.aitrace.vo.prompt.PromptPipelineVO;
 import com.supertrace.aitrace.vo.prompt.PromptStatusVO;
@@ -114,9 +114,7 @@ public class PromptController {
 
     /** List prompts grouped by name for a pipeline — lightweight: id, version, status, createdAt only */
     @GetMapping("/pipeline/{pipelineId}/prompts")
-    public ResponseEntity<APIResponse<List<PromptGroupSummaryVO>>> listPipelinePrompts(
-        @PathVariable UUID pipelineId
-    ) {
+    public ResponseEntity<APIResponse<List<PromptGroupVO>>> listPipelinePrompts(@PathVariable UUID pipelineId) {
         try {
             List<Prompt> prompts = promptService.listPrompts(pipelineId);
             Map<String, List<Prompt>> grouped = new LinkedHashMap<>();
@@ -124,8 +122,8 @@ public class PromptController {
                 String key = p.getName() != null ? p.getName() : "";
                 grouped.computeIfAbsent(key, k -> new ArrayList<>()).add(p);
             }
-            List<PromptGroupSummaryVO> result = grouped.entrySet().stream()
-                .map(e -> PromptGroupSummaryVO.from(e.getKey(), e.getValue()))
+            List<PromptGroupVO> result = grouped.entrySet().stream()
+                .map(e -> PromptGroupVO.from(e.getKey(), e.getValue()))
                 .toList();
             return ResponseEntity.ok(APIResponse.success(result));
         } catch (Exception e) {
