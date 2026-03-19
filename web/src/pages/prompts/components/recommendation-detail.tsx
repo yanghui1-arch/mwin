@@ -6,9 +6,9 @@ import { cn } from "@/lib/utils"
 import type { RecommendedCombination, Pipeline, ConfidenceLevel } from "../types"
 
 const confidenceStyle: Record<ConfidenceLevel, string> = {
-  high: "border-emerald-500/50 text-emerald-600 dark:text-emerald-400 bg-emerald-500/8",
-  medium: "border-amber-500/50 text-amber-600 dark:text-amber-400 bg-amber-500/8",
-  low: "border-orange-500/50 text-orange-600 dark:text-orange-400 bg-orange-500/8",
+  high: "border-emerald-500/50 text-emerald-600 bg-emerald-500/8",
+  medium: "border-amber-500/50 text-amber-600 bg-amber-500/8",
+  low: "border-orange-500/50 text-orange-600 bg-orange-500/8",
 }
 
 interface RecommendationDetailProps {
@@ -38,7 +38,7 @@ export function RecommendationDetail({ recommendation: rec, pipelines }: Recomme
         <div className="shrink-0 text-right space-y-1.5">
           <div className="flex items-center gap-1 justify-end">
             <TrendingUp className="size-4 text-emerald-500" />
-            <span className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+            <span className="text-3xl font-bold text-emerald-600 tabular-nums">
               +{rec.estimatedImprovement}%
             </span>
           </div>
@@ -78,14 +78,14 @@ export function RecommendationDetail({ recommendation: rec, pipelines }: Recomme
       {rec.tradeoffs.length > 0 && (
         <div className="rounded-lg bg-amber-500/8 px-4 py-3">
           <div className="flex items-center gap-1.5 mb-2">
-            <AlertTriangle className="size-3.5 text-amber-600 dark:text-amber-400" />
-            <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide">
+            <AlertTriangle className="size-3.5 text-amber-600" />
+            <span className="text-xs font-semibold text-amber-600 uppercase tracking-wide">
               {t("prompts.recommendations.tradeoffs")}
             </span>
           </div>
           <ul className="space-y-1">
             {rec.tradeoffs.map((tradeoff, i) => (
-              <li key={i} className="text-sm text-amber-700/80 dark:text-amber-300/80 pl-1">
+              <li key={i} className="text-sm text-amber-700/80 pl-1">
                 • {tradeoff}
               </li>
             ))}

@@ -70,7 +70,7 @@ function ToolRow({ tool, index }: { tool: ToolEntry; index: number }) {
     <div>
       {/* Header row */}
       <button
-        className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-black/3 dark:hover:bg-white/4 transition-colors"
+        className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-black/3 transition-colors"
         onClick={() => setExpanded((v) => !v)}
       >
         {/* Icon */}
@@ -154,7 +154,7 @@ function ToolRow({ tool, index }: { tool: ToolEntry; index: number }) {
               <summary className="text-xs text-muted-foreground cursor-pointer select-none hover:text-foreground transition-colors w-fit">
                 {schemaOpen ? "Hide schema" : "Show schema"}
               </summary>
-              <pre className="mt-1.5 text-xs font-mono whitespace-pre-wrap wrap-anywhere bg-black/10 dark:bg-white/5 rounded p-2">
+              <pre className="mt-1.5 text-xs font-mono whitespace-pre-wrap wrap-anywhere bg-black/10 rounded p-2">
                 {JSON.stringify(parameters, null, 2)}
               </pre>
             </details>
@@ -182,7 +182,7 @@ function ParamChip({ name, type, required, description }: ParamChipProps) {
       className={cn(
         "relative inline-flex items-center gap-1 px-2 py-0.5 rounded border font-mono text-sm transition-colors",
         required
-          ? "border-violet-400/50 bg-violet-50 dark:bg-violet-950/30 text-foreground"
+          ? "border-violet-400/50 bg-violet-50 text-foreground"
           : "border-border bg-background text-foreground/80"
       )}
       onMouseEnter={() => setHover(true)}
@@ -190,7 +190,7 @@ function ParamChip({ name, type, required, description }: ParamChipProps) {
     >
       {/* Required asterisk */}
       {required && (
-        <span className="text-violet-500 dark:text-violet-400 font-bold leading-none">*</span>
+        <span className="text-violet-500 font-bold leading-none">*</span>
       )}
       <span>{name}</span>
       {type && (

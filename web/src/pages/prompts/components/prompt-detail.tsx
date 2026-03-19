@@ -11,9 +11,9 @@ function MetricCard({ label, value, sub, quality }: {
   label: string; value: string; sub?: string; quality: "good" | "neutral" | "warn"
 }) {
   const color = {
-    good: "text-emerald-600 dark:text-emerald-400",
+    good: "text-emerald-600",
     neutral: "text-foreground",
-    warn: "text-amber-600 dark:text-amber-400",
+    warn: "text-amber-600",
   }[quality]
   return (
     <div className="rounded-xl bg-muted/30 border border-border/30 px-4 py-3">

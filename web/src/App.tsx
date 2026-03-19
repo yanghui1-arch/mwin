@@ -17,7 +17,7 @@ import { NotFoundPage } from "./pages/error";
 function App() {
   return (
     <BrowserRouter>
-      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
         <UserProvider>
           <Routes>
             <Route index element={<Navigate to="/login" replace />} />

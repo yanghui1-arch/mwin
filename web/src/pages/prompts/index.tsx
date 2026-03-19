@@ -251,15 +251,15 @@ export default function PromptsPage() {
       {/* Main Content */}
       <div className="flex gap-3 h-[calc(100vh-12rem)] min-h-[500px]">
         {/* Left Panel */}
-        <div className="w-[260px] shrink-0 flex flex-col overflow-hidden rounded-xl border border-[#e0ddd6] dark:border-[#2a2926] bg-[#f5f4ed] dark:bg-[#1e1d1b]">
+        <div className="w-[260px] shrink-0 flex flex-col overflow-hidden rounded-xl border border-[#e0ddd6] bg-[#f5f4ed]">
           <CompactRecommendations
             recommendations={[]}
             selectedId={null}
             onSelect={() => {}}
           />
           <div className="px-3 py-2 flex items-center gap-2">
-            <GitBranch className="size-3.5 text-slate-400 dark:text-slate-500" />
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t("prompts.pipeline.title")}</span>
+            <GitBranch className="size-3.5 text-slate-400" />
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{t("prompts.pipeline.title")}</span>
           </div>
           <div className="flex-1 px-2 pb-2 min-h-0 overflow-hidden">
             <PipelineTree
@@ -280,32 +280,32 @@ export default function PromptsPage() {
         </div>
 
         {/* Right Panel */}
-        <div className="flex-1 min-w-0 min-h-0 flex flex-col gap-3 overflow-hidden rounded-xl bg-white dark:bg-[#141413] px-5 py-4">
+        <div className="flex-1 min-w-0 min-h-0 flex flex-col gap-3 overflow-hidden rounded-xl bg-white px-5 py-4">
 
           {versionSelected ? (
             /* ── Version selected: header row + detail ── */
             <>
-              <div className="flex items-center justify-between gap-4 shrink-0 pb-3 border-b border-[#e0ddd6] dark:border-[#2a2926]">
+              <div className="flex items-center justify-between gap-4 shrink-0 pb-3 border-b border-[#e0ddd6]">
                 {/* Breadcrumb */}
                 <div className="flex items-center gap-1.5 text-sm min-w-0">
-                  <span className="text-slate-400 dark:text-slate-500 shrink-0 truncate max-w-[120px] text-xs">{selectedPipeline!.name}</span>
-                  <ChevronRight className="size-3 shrink-0 text-slate-300 dark:text-slate-600" />
-                  <span className="font-medium text-slate-500 dark:text-slate-400 truncate max-w-[140px] text-xs">{selectedPrompt!.name}</span>
-                  <ChevronRight className="size-3 shrink-0 text-slate-300 dark:text-slate-600" />
-                  <span className="font-mono font-semibold text-slate-800 dark:text-slate-100 shrink-0 text-sm">{selectedVersion!.version}</span>
+                  <span className="text-slate-400 shrink-0 truncate max-w-[120px] text-xs">{selectedPipeline!.name}</span>
+                  <ChevronRight className="size-3 shrink-0 text-slate-300" />
+                  <span className="font-medium text-slate-500 truncate max-w-[140px] text-xs">{selectedPrompt!.name}</span>
+                  <ChevronRight className="size-3 shrink-0 text-slate-300" />
+                  <span className="font-mono font-semibold text-slate-800 shrink-0 text-sm">{selectedVersion!.version}</span>
                   <div className="ml-2 shrink-0">
                     {selectedVersion!.status === "current" && (
-                      <Badge variant="outline" className="h-5 px-2 text-xs bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/60 dark:border-emerald-700/50 dark:text-emerald-400">
+                      <Badge variant="outline" className="h-5 px-2 text-xs bg-emerald-50 border-emerald-200 text-emerald-700">
                         {t("prompts.prompt.current")}
                       </Badge>
                     )}
                     {selectedVersion!.status === "deprecated" && (
-                      <Badge variant="outline" className="h-5 px-2 text-xs bg-slate-100 border-slate-200 text-slate-500 dark:bg-slate-800/60 dark:border-slate-600/50 dark:text-slate-400">
+                      <Badge variant="outline" className="h-5 px-2 text-xs bg-slate-100 border-slate-200 text-slate-500">
                         {t("prompts.prompt.deprecated")}
                       </Badge>
                     )}
                     {selectedVersion!.status === "testing" && (
-                      <Badge variant="outline" className="h-5 px-2 text-xs bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/60 dark:border-amber-700/50 dark:text-amber-400">
+                      <Badge variant="outline" className="h-5 px-2 text-xs bg-amber-50 border-amber-200 text-amber-700">
                         {t("prompts.prompt.testing")}
                       </Badge>
                     )}
@@ -316,7 +316,7 @@ export default function PromptsPage() {
               </div>
 
               {viewMode === "performance" ? (
-                <div className="flex-1 min-h-0 rounded-xl bg-[#faf9f6] dark:bg-[#1a1917] px-5 py-4">
+                <div className="flex-1 min-h-0 rounded-xl bg-[#faf9f6] px-5 py-4">
                   <PerformanceChart
                     pipelines={projectPipelines}
                     performanceData={performanceData}
@@ -334,7 +334,7 @@ export default function PromptsPage() {
             <VersionLoadingSkeleton />
           ) : (
             /* ── Nothing selected: chart ── */
-            <div className="flex-1 min-h-0 rounded-xl bg-[#faf9f6] dark:bg-[#1a1917] px-5 py-4">
+            <div className="flex-1 min-h-0 rounded-xl bg-[#faf9f6] px-5 py-4">
               <PerformanceChart
                 pipelines={projectPipelines}
                 performanceData={performanceData}

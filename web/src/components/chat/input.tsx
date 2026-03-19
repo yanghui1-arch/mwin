@@ -17,7 +17,7 @@ type ChatInputToolBarProps = {
 
 export function ChatInputToolBar({ onSend, disabled }: ChatInputToolBarProps) {
   return (
-    <div className="flex items-center justify-end gap-2 dark:bg-input/30 bg-transparent px-2 py-2">
+    <div className="flex items-center justify-end gap-2 bg-transparent px-2 py-2">
       <Button
         type="button"
         onClick={onSend}

@@ -18,7 +18,6 @@ import {
 } from "@/components/ui/breadcrumb"
 import { Languages } from "lucide-react"
 import { useTranslation } from "react-i18next"
-import { ModeToggle } from "@/components/ui/theme-provider/mode-toggle"
 import { Link } from "react-router-dom"
 import { useBreadcrumb } from "@/hooks/use-breadcrumb"
 
@@ -70,7 +69,6 @@ export function SiteHeader() {
           </BreadcrumbList>
         </Breadcrumb>
         <div className="ml-auto flex items-center gap-2">
-          <ModeToggle />
           <Select value={currentLang} onValueChange={handleLanguageChange}>
             <SelectTrigger size="sm" className="hidden sm:flex">
               <Languages className="size-4" />
@@ -89,7 +87,7 @@ export function SiteHeader() {
               href="https://github.com/yanghui1-arch/Mwin"
               rel="noopener noreferrer"
               target="_blank"
-              className="dark:text-foreground"
+              className=""
             >
               GitHub
             </a>

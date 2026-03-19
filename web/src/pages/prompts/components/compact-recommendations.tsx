@@ -48,7 +48,7 @@ export function CompactRecommendations({ recommendations, selectedId, onSelect }
               <TrendingUp className="size-3 text-emerald-500/80 shrink-0" />
               <span className={cn(
                 "text-xs font-bold tabular-nums w-8",
-                selectedId === rec.id ? "text-primary" : "text-emerald-500 dark:text-emerald-400"
+                selectedId === rec.id ? "text-primary" : "text-emerald-500"
               )}>
                 +{rec.estimatedImprovement}%
               </span>

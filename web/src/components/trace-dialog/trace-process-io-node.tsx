@@ -17,8 +17,8 @@ export const TraceIONode = memo(({ data }: NodeProps) => {
   const Icon = isInput ? ArrowDownToLine : ArrowUpFromLine;
   const color = isInput ? "border-l-emerald-500" : "border-l-sky-500";
   const bg = isInput
-    ? "bg-emerald-500/5 dark:bg-emerald-500/10"
-    : "bg-sky-500/5 dark:bg-sky-500/10";
+    ? "bg-emerald-500/5"
+    : "bg-sky-500/5";
   const label = (data.title as string | undefined) ?? (isInput ? t("traceDialog.input") : t("traceDialog.output"));
 
   return (

@@ -61,10 +61,10 @@ function getRoleExpandedBg(role: string): string {
 
 function getRoleDot(role: string): string {
   switch (role) {
-    case "user":      return "bg-blue-400 dark:bg-blue-500";
-    case "assistant": return "bg-emerald-400 dark:bg-emerald-500";
-    case "tool":      return "bg-amber-400 dark:bg-amber-500";
-    default:          return "bg-slate-400 dark:bg-slate-500";
+    case "user":      return "bg-blue-400";
+    case "assistant": return "bg-emerald-400";
+    case "tool":      return "bg-amber-400";
+    default:          return "bg-slate-400";
   }
 }
 
@@ -99,7 +99,7 @@ function MessageRow({ message, index, isExpanded, onToggle }: MessageRowProps) {
     <div className={cn(isExpanded && getRoleExpandedBg(role))}>
       {/* ── Collapsed / header row ── */}
       <button
-        className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-black/3 dark:hover:bg-white/4 transition-colors"
+        className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-black/3 transition-colors"
         onClick={onToggle}
       >
         {/* Role dot */}
@@ -161,7 +161,7 @@ function MessageRow({ message, index, isExpanded, onToggle }: MessageRowProps) {
               {markdownMode && hasStringContent ? (
                 <Markdown content={contentStr} className="text-sm" />
               ) : (
-                <pre className="text-sm font-mono whitespace-pre-wrap wrap-anywhere bg-black/10 dark:bg-white/5 rounded p-2.5">
+                <pre className="text-sm font-mono whitespace-pre-wrap wrap-anywhere bg-black/10 rounded p-2.5">
                   {contentStr}
                 </pre>
               )}
@@ -174,7 +174,7 @@ function MessageRow({ message, index, isExpanded, onToggle }: MessageRowProps) {
               <summary className="text-xs text-muted-foreground cursor-pointer select-none hover:text-foreground transition-colors">
                 Other fields ({Object.keys(rest).join(", ")})
               </summary>
-              <pre className="mt-1.5 text-xs font-mono whitespace-pre-wrap wrap-anywhere bg-black/10 dark:bg-white/5 rounded p-2">
+              <pre className="mt-1.5 text-xs font-mono whitespace-pre-wrap wrap-anywhere bg-black/10 rounded p-2">
                 {JSON.stringify(rest, null, 2)}
               </pre>
             </details>

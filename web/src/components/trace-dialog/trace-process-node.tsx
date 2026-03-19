@@ -27,25 +27,25 @@ const typeConfig: Record<
   llm_response: {
     icon: Brain,
     color: "border-l-blue-500",
-    bg: "bg-blue-500/5 dark:bg-blue-500/10",
+    bg: "bg-blue-500/5",
     label: "LLM",
   },
   tool: {
     icon: Wrench,
     color: "border-l-amber-500",
-    bg: "bg-amber-500/5 dark:bg-amber-500/10",
+    bg: "bg-amber-500/5",
     label: "Tool",
   },
   retrieve: {
     icon: Search,
     color: "border-l-emerald-500",
-    bg: "bg-emerald-500/5 dark:bg-emerald-500/10",
+    bg: "bg-emerald-500/5",
     label: "Retrieve",
   },
   customized: {
     icon: Settings,
     color: "border-l-violet-500",
-    bg: "bg-violet-500/5 dark:bg-violet-500/10",
+    bg: "bg-violet-500/5",
     label: "General",
   },
 };
