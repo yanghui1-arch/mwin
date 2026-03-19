@@ -8,6 +8,7 @@ import { PerformanceChart } from "./components/performance-chart"
 import { PromptDetail } from "./components/prompt-detail"
 import { CompactRecommendations } from "./components/compact-recommendations"
 import { VersionLoadingSkeleton } from "./components/version-loading-skeleton"
+import { PageLoadingSkeleton } from "./components/page-loading-skeleton"
 import { cn } from "@/lib/utils"
 import type { Pipeline, Prompt, PromptVersion, PerformanceDataPoint, Project, PromptVersionStatus } from "./types"
 import { promptApi } from "@/api/prompt"
@@ -62,6 +63,7 @@ export default function PromptsPage() {
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null)
   const [loadingVersionId, setLoadingVersionId] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>("performance")
+  const [pageLoading, setPageLoading] = useState(true)
 
   // ── Load projects on mount ──────────────────────────────────────────────────
   useEffect(() => {
@@ -76,7 +78,7 @@ export default function PromptsPage() {
         setProjects(mapped)
         setSelectedProjectId(mapped[0].id)
       }
-    }).catch(() => {/* silent */})
+    }).catch(() => {/* silent */}).finally(() => setPageLoading(false))
   }, [])
 
   // ── Load pipelines when project changes ────────────────────────────────────
@@ -222,6 +224,8 @@ export default function PromptsPage() {
 
   const versionSelected = !!(selectedVersion && selectedPipeline && selectedPrompt)
   const versionLoading = !!(selectedVersionId && loadingVersionId === selectedVersionId && !selectedVersion)
+
+  if (pageLoading) return <PageLoadingSkeleton />
 
   return (
     <div className="px-4 lg:px-6 space-y-4">
