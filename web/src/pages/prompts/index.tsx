@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react"
 import { useTranslation } from "react-i18next"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { GitBranch, MousePointerClick, FolderOpen, TrendingUp, FileText, ChevronRight } from "lucide-react"
+import { GitBranch, FolderOpen, TrendingUp, FileText, ChevronRight } from "lucide-react"
 import { PipelineTree } from "./components/pipeline-tree"
 import { PerformanceChart } from "./components/performance-chart"
 import { PromptDetail } from "./components/prompt-detail"
@@ -14,23 +14,6 @@ import { promptApi } from "@/api/prompt"
 import { projectApi } from "@/api/project"
 
 type ViewMode = "performance" | "prompt"
-
-function EmptyState() {
-  const { t } = useTranslation()
-  return (
-    <div className="flex flex-col items-center justify-center h-full min-h-[200px] gap-3 text-center px-6">
-      <div className="flex items-center justify-center size-12 rounded-xl bg-muted/60">
-        <MousePointerClick className="size-5 text-muted-foreground" />
-      </div>
-      <div>
-        <p className="text-sm font-medium">{t("prompts.pipeline.selectHint")}</p>
-        <p className="text-xs text-muted-foreground mt-1 max-w-[240px]">
-          {t("prompts.pipeline.selectHintDescription")}
-        </p>
-      </div>
-    </div>
-  )
-}
 
 function ViewToggle({ value, onChange }: { value: ViewMode; onChange: (v: ViewMode) => void }) {
   return (
@@ -360,9 +343,6 @@ export default function PromptsPage() {
                   selectedPrompt={selectedPrompt}
                   selectedVersionId={selectedVersionId}
                 />
-              </div>
-              <div className="flex-1">
-                <EmptyState />
               </div>
             </>
           )}
