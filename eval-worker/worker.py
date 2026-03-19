@@ -71,7 +71,7 @@ async def process_job(pool: asyncpg.Pool, job_id: UUID) -> None:
                 scores.append(dict(
                     step_id=job["step_id"],
                     trace_id=job["trace_id"],
-                    prompt_version_id=job.get("prompt_version_id"),
+                    prompt_version=job.get("prompt_version"),
                     eval_metric_id=metric["id"],
                     score=result["score"],
                     reasoning=result["reasoning"],
@@ -81,7 +81,7 @@ async def process_job(pool: asyncpg.Pool, job_id: UUID) -> None:
                 scores.append(dict(
                     step_id=None,
                     trace_id=job["trace_id"],
-                    prompt_version_id=None,
+                    prompt_version=None,
                     eval_metric_id=metric["id"],
                     score=result["score"],
                     reasoning=result["reasoning"],

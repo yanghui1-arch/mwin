@@ -41,7 +41,7 @@ async def claim_job(conn: asyncpg.Connection, job_id: UUID) -> Optional[dict]:
          WHERE id = $1
            AND status IN ('pending', 'failed')
            AND retry_count < 3
-        RETURNING id, job_type, step_id, trace_id, project_id, prompt_version_id, retry_count
+        RETURNING id, job_type, step_id, trace_id, project_id, prompt_version, retry_count
         """,
         job_id,
     )
@@ -94,7 +94,7 @@ async def reset_stuck_jobs(conn: asyncpg.Connection) -> int:
 async def fetch_pending_jobs(conn: asyncpg.Connection) -> list[dict]:
     rows = await conn.fetch(
         """
-        SELECT id, job_type, step_id, trace_id, project_id, prompt_version_id
+        SELECT id, job_type, step_id, trace_id, project_id, prompt_version
           FROM eval_job
          WHERE status IN ('pending', 'failed')
            AND retry_count < 3
@@ -155,7 +155,7 @@ async def insert_score(
     *,
     step_id: Optional[UUID],
     trace_id: UUID,
-    prompt_version_id: Optional[UUID],
+    prompt_version: Optional[str],
     eval_metric_id: UUID,
     score: float,
     reasoning: str,
@@ -163,13 +163,13 @@ async def insert_score(
     await conn.execute(
         """
         INSERT INTO eval_score
-            (id, step_id, trace_id, prompt_version_id, eval_metric_id,
+            (id, step_id, trace_id, prompt_version, eval_metric_id,
              evaluator_type, score, reasoning)
         VALUES (gen_random_uuid(), $1, $2, $3, $4, 'llm', $5, $6)
         """,
         step_id,
         trace_id,
-        prompt_version_id,
+        prompt_version,
         eval_metric_id,
         score,
         reasoning,
