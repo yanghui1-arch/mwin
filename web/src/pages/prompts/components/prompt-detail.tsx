@@ -10,7 +10,11 @@ import type { PromptVersion } from "../types"
 function MetricCard({ label, value, sub, quality }: {
   label: string; value: string; sub?: string; quality: "good" | "neutral" | "warn"
 }) {
-  const color = { good: "text-emerald-400", neutral: "text-foreground", warn: "text-amber-400" }[quality]
+  const color = {
+    good: "text-emerald-600 dark:text-emerald-400",
+    neutral: "text-foreground",
+    warn: "text-amber-600 dark:text-amber-400",
+  }[quality]
   return (
     <div className="rounded-xl bg-muted/30 border border-border/30 px-4 py-3">
       <p className="text-[11px] text-muted-foreground/70 font-medium uppercase tracking-wide">{label}</p>
@@ -48,16 +52,25 @@ export function PromptDetail({ version: prompt }: PromptDetailProps) {
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
       <Tabs defaultValue="content" className="flex flex-col flex-1 min-h-0">
-        <TabsList className="h-9 w-fit rounded-lg bg-muted/40 border border-border/30 p-0.5 mb-4 shrink-0">
-          <TabsTrigger value="content" className="h-8 px-4 text-xs gap-1.5 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
+        <TabsList className="h-auto w-fit rounded-none bg-transparent border-b border-border/50 p-0 gap-0 mb-4 shrink-0">
+          <TabsTrigger
+            value="content"
+            className="h-9 px-4 text-xs gap-1.5 rounded-none bg-transparent font-medium text-muted-foreground border-b-2 border-transparent -mb-px data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-foreground data-[state=active]:border-[#d97757]"
+          >
             <FileText className="size-3" />
             {t("prompts.prompt.content")}
           </TabsTrigger>
-          <TabsTrigger value="metrics" className="h-8 px-4 text-xs gap-1.5 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
+          <TabsTrigger
+            value="metrics"
+            className="h-9 px-4 text-xs gap-1.5 rounded-none bg-transparent font-medium text-muted-foreground border-b-2 border-transparent -mb-px data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-foreground data-[state=active]:border-[#d97757]"
+          >
             <BarChart3 className="size-3" />
             {t("prompts.prompt.metrics")}
           </TabsTrigger>
-          <TabsTrigger value="history" className="h-8 px-4 text-xs gap-1.5 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
+          <TabsTrigger
+            value="history"
+            className="h-9 px-4 text-xs gap-1.5 rounded-none bg-transparent font-medium text-muted-foreground border-b-2 border-transparent -mb-px data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-foreground data-[state=active]:border-[#d97757]"
+          >
             <History className="size-3" />
             {t("prompts.prompt.history")}
           </TabsTrigger>

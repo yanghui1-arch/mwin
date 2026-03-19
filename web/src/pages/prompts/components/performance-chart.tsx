@@ -35,7 +35,7 @@ function OverviewChart({
   const activePipelines = pipelines.filter((p) => p.status === "active")
 
   return (
-    <ChartContainer config={chartConfig} className="h-[240px] w-full">
+    <ChartContainer config={chartConfig} className="h-full w-full">
       <AreaChart data={performanceData} margin={{ top: 18, right: 16, left: -10, bottom: 0 }}>
         <defs>
           {activePipelines.map((p) => (
@@ -247,10 +247,10 @@ export function PerformanceChart({
     : t("prompts.chart.description")
 
   return (
-    <div>
+    <div className="flex flex-col h-full">
       <p className="text-sm font-semibold">{title}</p>
       <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
-      <div className="mt-4">
+      <div className="flex-1 min-h-0 mt-4">
         {selectedPrompt && selectedPipeline ? (
           <PromptDetailCharts
             pipeline={selectedPipeline}
