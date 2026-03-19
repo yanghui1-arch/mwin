@@ -1,13 +1,11 @@
 package com.supertrace.aitrace.service.domain.impl;
 
-import com.supertrace.aitrace.domain.core.eval.EvalScore;
 import com.supertrace.aitrace.domain.core.prompt.Prompt;
 import com.supertrace.aitrace.domain.core.prompt.PromptPipeline;
 import com.supertrace.aitrace.domain.core.prompt.PromptPipelineStatus;
 import com.supertrace.aitrace.domain.core.prompt.PromptRef;
 import com.supertrace.aitrace.domain.core.prompt.PromptStatus;
 import com.supertrace.aitrace.domain.core.step.Step;
-import com.supertrace.aitrace.domain.core.step.StepRef;
 import com.supertrace.aitrace.domain.core.step.metadata.StepMeta;
 import com.supertrace.aitrace.dto.prompt.CreatePromptPipelineRequest;
 import com.supertrace.aitrace.dto.prompt.CreatePromptRequest;
@@ -27,13 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -173,94 +165,69 @@ public class PromptServiceImpl implements PromptService {
             ));
     }
 
-    // ── Metrics computation ───────────────────────────────────────────────────────
 
     @Override
-    public Map<UUID, PromptMetrics> buildMetricsMap(List<Prompt> prompts) {
-        if (prompts.isEmpty()) return Map.of();
+    public PromptMetrics buildMetric(@NotNull Prompt prompt) {
 
-        List<UUID> versionIds = prompts.stream().map(Prompt::getId).toList();
+        UUID promptId = prompt.getId();
 
         // step_ref: version → step IDs
-        Map<UUID, List<UUID>> versionToStepIds = stepRefRepository
-            .findByPromptVersionIdIn(versionIds).stream()
-            .collect(Collectors.groupingBy(
-                StepRef::getPromptVersionId,
-                Collectors.mapping(StepRef::getId, Collectors.toList())
-            ));
-
-        Set<UUID> allStepIds = versionToStepIds.values().stream()
-            .flatMap(List::stream).collect(Collectors.toSet());
-
-        if (allStepIds.isEmpty()) return Map.of();
+        List<UUID> stepIds = this.stepRefRepository.findIdsByPromptVersionId(promptId);
+        Set<UUID> allStepIds = new HashSet<>(stepIds);
+        if (allStepIds.isEmpty()) return PromptMetrics.empty();
 
         // step: latency + token counts
-        Map<UUID, Step> stepById = stepRepository.findAllById(allStepIds).stream()
-            .collect(Collectors.toMap(Step::getId, s -> s));
+        List<Step> steps = this.stepRepository.findAllById(allStepIds);
 
         // step_meta: cost
-        Map<UUID, StepMeta> metaById = stepMetaRepository.findAllById(allStepIds).stream()
-            .collect(Collectors.toMap(StepMeta::getId, m -> m));
+        List<StepMeta> stepMetas = stepMetaRepository.findAllById(allStepIds);
 
         // eval_score: success rate by step_id (more reliable than prompt_version_id)
-        Map<UUID, Double> successRateByStep = fetchSuccessRateByStep(allStepIds);
-
-        return versionToStepIds.entrySet().stream()
-            .collect(Collectors.toMap(
-                Map.Entry::getKey,
-                e -> computeMetrics(e.getValue(), stepById, metaById, successRateByStep)
-            ));
+        List<Double> successScoreList = fetchSuccessRateByStep(allStepIds);
+        return this.computeMetrics(steps, stepMetas, successScoreList);
     }
 
-    private Map<UUID, Double> fetchSuccessRateByStep(Set<UUID> stepIds) {
+    private List<Double> fetchSuccessRateByStep(Set<UUID> stepIds) {
         return evalMetricRepository.findByName("Success Rate")
             .map(metric -> evalScoreRepository
                 .findByStepIdInAndEvalMetricId(List.copyOf(stepIds), metric.getId())
                 .stream()
                 .filter(s -> s.getStepId() != null)
-                .collect(Collectors.toMap(
-                    EvalScore::getStepId,
-                    s -> s.getScore().doubleValue(),
-                    Double::max  // keep the highest if duplicate
-                ))
-            )
-            .orElse(Map.of());
+                .map(s -> s.getScore().doubleValue())
+                .toList()
+            ).orElse(List.of());
     }
 
     private PromptMetrics computeMetrics(
-        List<UUID> stepIds,
-        Map<UUID, Step> stepById,
-        Map<UUID, StepMeta> metaById,
-        Map<UUID, Double> successRateByStep
+        List<Step> steps,
+        List<StepMeta> stepMetas,
+        List<Double> successScoreList
     ) {
-        List<Step> completed = stepIds.stream()
-            .map(stepById::get)
+        List<Step> completedSteps = steps.stream()
             .filter(s -> s != null && s.getEndTime() != null)
             .toList();
 
-        double avgLatencyMs = completed.stream()
+        double avgLatencyMs = completedSteps.stream()
             .mapToLong(s -> Duration.between(s.getStartTime(), s.getEndTime()).toMillis())
             .average().orElse(0.0);
 
-        double totalCost = stepIds.stream()
-            .map(metaById::get)
+        double totalCost = stepMetas.stream()
             .filter(m -> m != null && m.getCost() != null)
             .mapToDouble(m -> m.getCost().doubleValue())
             .sum();
 
-        long totalTokens = completed.stream()
+        long totalTokens = completedSteps.stream()
             .filter(s -> s.getUsage() != null && s.getUsage().getTotalTokens() != null)
             .mapToLong(s -> s.getUsage().getTotalTokens())
             .sum();
 
-        double successRate = stepIds.stream()
-            .map(successRateByStep::get)
+        double successRate = successScoreList.stream()
             .filter(Objects::nonNull)
             .mapToDouble(Double::doubleValue)
             .average().orElse(0.0) * 100.0; // score 1.0 = 100%
 
         return PromptMetrics.builder()
-            .usageCount(completed.size())
+            .usageCount(completedSteps.size())
             .avgLatencyMs(avgLatencyMs)
             .tokenCostPer1k(totalTokens > 0 ? totalCost * 1000.0 / totalTokens : 0.0)
             .successRate(successRate)

@@ -1,17 +1,14 @@
 package com.supertrace.aitrace.controller;
 
 import com.supertrace.aitrace.domain.core.prompt.Prompt;
+import com.supertrace.aitrace.domain.core.prompt.PromptMetrics;
 import com.supertrace.aitrace.domain.core.prompt.PromptPipeline;
 import com.supertrace.aitrace.dto.prompt.CreatePromptPipelineRequest;
 import com.supertrace.aitrace.dto.prompt.CreatePromptRequest;
 import com.supertrace.aitrace.dto.prompt.UpdatePromptStatusRequest;
 import com.supertrace.aitrace.response.APIResponse;
 import com.supertrace.aitrace.service.domain.PromptService;
-import com.supertrace.aitrace.vo.prompt.PromptGroupVO;
-import com.supertrace.aitrace.vo.prompt.PromptMetricsVO;
-import com.supertrace.aitrace.vo.prompt.PromptPipelineVO;
-import com.supertrace.aitrace.vo.prompt.PromptStatusVO;
-import com.supertrace.aitrace.vo.prompt.PromptVO;
+import com.supertrace.aitrace.vo.prompt.*;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -94,17 +91,13 @@ public class PromptController {
 
     /** Get full detail (content + metrics) for a single prompt version */
     @GetMapping("/version/{promptId}/detail")
-    public ResponseEntity<APIResponse<PromptVO>> getVersionDetail(@PathVariable UUID promptId) {
+    public ResponseEntity<APIResponse<PromptDetailVO>> getVersionDetail(@PathVariable UUID promptId) {
         try {
             Prompt prompt = promptService.findPromptById(promptId)
                 .orElseThrow(() -> new NoSuchElementException("Prompt not found: " + promptId));
-            PromptMetricsVO metrics = promptService.buildMetricsMap(List.of(prompt))
-                .entrySet().stream()
-                .filter(e -> e.getKey().equals(promptId))
-                .findFirst()
-                .map(e -> PromptMetricsVO.from(e.getValue()))
-                .orElse(PromptMetricsVO.empty());
-            return ResponseEntity.ok(APIResponse.success(PromptVO.from(prompt, metrics)));
+            PromptMetrics metrics = promptService.buildMetric(prompt);
+            PromptMetricsVO metricsVO = PromptMetricsVO.from(metrics);
+            return ResponseEntity.ok(APIResponse.success(PromptDetailVO.from(prompt, metricsVO)));
         } catch (NoSuchElementException e) {
             return ResponseEntity.status(404).body(APIResponse.notFound(e.getMessage()));
         } catch (Exception e) {

@@ -160,10 +160,10 @@ public interface PromptService {
     Map<UUID, long[]> countPromptsByPipelines(List<UUID> pipelineIds);
 
     /**
-     * Computes usage metrics for a list of prompt versions.
+     * Computes usage metrics for a prompt
      *
-     * @param prompts the prompt versions to compute metrics for
-     * @return a map from prompt version ID to its computed metrics
+     * @param prompt the prompt to compute metrics for
+     * @return prompt's computed metrics
      */
-    Map<UUID, PromptMetrics> buildMetricsMap(List<Prompt> prompts);
+    PromptMetrics buildMetric(@NotNull Prompt prompt);
 }
