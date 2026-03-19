@@ -7,6 +7,7 @@ import { PipelineTree } from "./components/pipeline-tree"
 import { PerformanceChart } from "./components/performance-chart"
 import { PromptDetail } from "./components/prompt-detail"
 import { CompactRecommendations } from "./components/compact-recommendations"
+import { VersionLoadingSkeleton } from "./components/version-loading-skeleton"
 import { cn } from "@/lib/utils"
 import type { Pipeline, Prompt, PromptVersion, PerformanceDataPoint, Project, PromptVersionStatus } from "./types"
 import { promptApi } from "@/api/prompt"
@@ -76,6 +77,7 @@ export default function PromptsPage() {
   const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>(null)
   const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null)
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null)
+  const [loadingVersionId, setLoadingVersionId] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>("performance")
 
   // ── Load projects on mount ──────────────────────────────────────────────────
@@ -143,9 +145,13 @@ export default function PromptsPage() {
     setSelectedPromptId(promptId)
     setSelectedVersionId(versionId)
     if (!versionDetails[versionId]) {
+      setLoadingVersionId(versionId)
       promptApi.getVersionDetail(versionId)
-        .then((detail) => setVersionDetails((prev) => ({ ...prev, [versionId]: detail })))
-        .catch(() => {/* leave null — right panel stays on chart */})
+        .then((detail) => {
+          setVersionDetails((prev) => ({ ...prev, [versionId]: detail }))
+          setLoadingVersionId(null)
+        })
+        .catch(() => setLoadingVersionId(null))
     }
   }
 
@@ -232,6 +238,7 @@ export default function PromptsPage() {
   const selectedVersion = selectedVersionId ? (versionDetails[selectedVersionId] ?? null) : null
 
   const versionSelected = !!(selectedVersion && selectedPipeline && selectedPrompt)
+  const versionLoading = !!(selectedVersionId && loadingVersionId === selectedVersionId && !selectedVersion)
 
   return (
     <div className="px-4 lg:px-6 space-y-4">
@@ -293,7 +300,7 @@ export default function PromptsPage() {
         <div className="flex-1 min-w-0 min-h-0 flex flex-col gap-3 pl-4 overflow-hidden">
 
           {versionSelected ? (
-            /* ── Version selected: header row + toggle ── */
+            /* ── Version selected: header row + detail ── */
             <>
               <div className="flex items-center justify-between gap-4 shrink-0 pb-3 border-b border-border/25">
                 {/* Breadcrumb */}
@@ -339,6 +346,9 @@ export default function PromptsPage() {
                 <PromptDetail version={selectedVersion!} />
               )}
             </>
+          ) : versionLoading ? (
+            /* ── Version loading: skeleton ── */
+            <VersionLoadingSkeleton />
           ) : (
             /* ── Nothing selected: chart + empty state ── */
             <>
