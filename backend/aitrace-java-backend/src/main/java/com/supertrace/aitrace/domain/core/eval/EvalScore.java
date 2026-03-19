@@ -29,8 +29,8 @@ public class EvalScore {
     @Column(name = "trace_id")
     private UUID traceId;
 
-    @Column(name = "prompt_version_id")
-    private UUID promptVersionId;
+    @Column(name = "prompt_version")
+    private UUID promptVersion;
 
     @NotNull
     @Column(name = "eval_metric_id", nullable = false)

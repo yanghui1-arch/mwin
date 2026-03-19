@@ -25,6 +25,6 @@ public class StepRef {
     @Column(name = "prompt_id")
     private UUID promptId;
 
-    @Column(name = "prompt_version_id")
-    private UUID promptVersionId;
+    @Column(name = "prompt_version")
+    private String promptVersion;
 }

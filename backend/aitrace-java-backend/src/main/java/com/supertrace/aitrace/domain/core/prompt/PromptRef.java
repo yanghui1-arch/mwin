@@ -8,6 +8,6 @@ import java.util.UUID;
  * a {@code StepRef} without a second lookup.
  *
  * @param promptPipelineId the UUID of the {@code PromptPipeline}
- * @param promptVersionId  the UUID of the specific {@code Prompt} version
+ * @param promptVersion  the name of the specific {@code Prompt} version
  */
-public record PromptRef(UUID promptPipelineId, UUID promptVersionId) {}
+public record PromptRef(UUID promptPipelineId, String promptVersion) {}

@@ -47,7 +47,7 @@ public class LogServiceImpl implements LogService {
 
         String promptPipelineName = logStepRequest.getPromptPipeline();
         String promptName = logStepRequest.getPromptName();
-        String promptVersion = logStepRequest.getPromptVersionId();
+        String promptVersion = logStepRequest.getPromptVersion();
         String systemPrompt = logStepRequest.getSystemPrompt();
         PromptRef promptRef = null;
         if (promptPipelineName != null && promptVersion != null && systemPrompt != null) {

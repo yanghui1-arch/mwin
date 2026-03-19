@@ -10,6 +10,6 @@ import java.util.UUID;
 
 @Repository
 public interface StepRefRepository extends JpaRepository<StepRef, UUID> {
-    @Query("SELECT s.id FROM StepRef s WHERE s.promptVersionId = :promptVersionId")
-    List<UUID> findIdsByPromptVersionId(UUID promptVersionId);
+    @Query("SELECT s.id FROM StepRef s WHERE s.promptVersion = :promptVersion")
+    List<UUID> findIdsByPromptVersion(String promptVersion);
 }

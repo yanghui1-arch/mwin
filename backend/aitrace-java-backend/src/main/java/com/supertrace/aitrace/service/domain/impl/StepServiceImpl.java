@@ -73,7 +73,7 @@ public class StepServiceImpl implements StepService {
             StepRef stepRef = StepRef.builder()
                 .id(newStep.getId())
                 .promptId(promptRef.promptPipelineId())
-                .promptVersionId(promptRef.promptVersionId())
+                .promptVersion(promptRef.promptVersion())
                 .build();
             stepRefRepository.save(stepRef);
         }
@@ -81,8 +81,8 @@ public class StepServiceImpl implements StepService {
         // 4. publish event after enrich — picked up by EvalJobServiceImpl after commit
         if (shouldEval) {
             UUID traceId = UUID.fromString(logStepRequest.getTraceId());
-            UUID promptVersionId = (promptRef != null) ? promptRef.promptVersionId() : null;
-            eventPublisher.publishEvent(new StepLoggedEvent(newStep.getId(), traceId, projectId, promptVersionId));
+            String promptVersion = (promptRef != null) ? promptRef.promptVersion() : null;
+            eventPublisher.publishEvent(new StepLoggedEvent(newStep.getId(), traceId, projectId, promptVersion));
         }
 
         // 5. return step id

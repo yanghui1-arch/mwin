@@ -91,18 +91,20 @@ public class PromptServiceImpl implements PromptService {
             ));
 
         String finalPromptName = promptName == null || promptName.isEmpty() ? "Default-" + version : promptName;
-        UUID promptVersionId = promptRepository.findByPromptPipelineIdAndVersion(pipeline.getId(), version)
-            .map(Prompt::getId)
-            .orElseGet(() -> promptRepository.save(
-                Prompt.builder()
-                    .promptPipelineId(pipeline.getId())
-                    .version(version)
-                    .content(content)
-                    .name(finalPromptName)
-                    .build()
-            ).getId());
+        String promptVersion = promptRepository.findByPromptPipelineIdAndVersion(pipeline.getId(), version)
+            .map(Prompt::getVersion)
+            .orElseGet(
+                () -> promptRepository.save(
+                    Prompt.builder()
+                        .promptPipelineId(pipeline.getId())
+                        .version(version)
+                        .content(content)
+                        .name(finalPromptName)
+                        .build()
+                ).getVersion()
+            );
 
-        return new PromptRef(pipeline.getId(), promptVersionId);
+        return new PromptRef(pipeline.getId(), promptVersion);
     }
 
     @Override
@@ -169,10 +171,10 @@ public class PromptServiceImpl implements PromptService {
     @Override
     public PromptMetrics buildMetric(@NotNull Prompt prompt) {
 
-        UUID promptId = prompt.getId();
+        String version = prompt.getVersion();
 
         // step_ref: version → step IDs
-        List<UUID> stepIds = this.stepRefRepository.findIdsByPromptVersionId(promptId);
+        List<UUID> stepIds = this.stepRefRepository.findIdsByPromptVersion(version);
         Set<UUID> allStepIds = new HashSet<>(stepIds);
         if (allStepIds.isEmpty()) return PromptMetrics.empty();
 

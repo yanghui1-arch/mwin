@@ -4,7 +4,7 @@ import java.util.UUID;
 
 public interface EvalJobService {
 
-    void enqueueStepJob(UUID stepId, UUID traceId, Long projectId, UUID promptVersionId);
+    void enqueueStepJob(UUID stepId, UUID traceId, Long projectId, String promptVersion);
 
     void enqueueTraceJob(UUID traceId, Long projectId);
 }

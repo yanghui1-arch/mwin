@@ -40,7 +40,7 @@ public class EvalJobServiceImpl implements EvalJobService {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void onStepLogged(StepLoggedEvent event) {
-        enqueueStepJob(event.stepId(), event.traceId(), event.projectId(), event.promptVersionId());
+        enqueueStepJob(event.stepId(), event.traceId(), event.projectId(), event.promptVersion());
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -50,13 +50,13 @@ public class EvalJobServiceImpl implements EvalJobService {
     }
 
     @Override
-    public void enqueueStepJob(UUID stepId, UUID traceId, Long projectId, UUID promptVersionId) {
+    public void enqueueStepJob(UUID stepId, UUID traceId, Long projectId, String promptVersion) {
         EvalJob job = EvalJob.builder()
                 .jobType("step")
                 .stepId(stepId)
                 .traceId(traceId)
                 .projectId(projectId)
-                .promptVersionId(promptVersionId)
+                .promptVersion(promptVersion)
                 .build();
         EvalJob saved = evalJobRepository.saveAndFlush(job);
         sendNotify(saved.getId());

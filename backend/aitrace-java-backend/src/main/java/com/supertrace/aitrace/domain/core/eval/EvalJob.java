@@ -37,8 +37,8 @@ public class EvalJob {
     private Long projectId;
 
     /** May be null for trace jobs or un-versioned steps */
-    @Column(name = "prompt_version_id")
-    private UUID promptVersionId;
+    @Column(name = "prompt_version")
+    private String promptVersion;
 
     /** pending → processing → done | failed */
     @Column(name = "status", nullable = false, length = 12)

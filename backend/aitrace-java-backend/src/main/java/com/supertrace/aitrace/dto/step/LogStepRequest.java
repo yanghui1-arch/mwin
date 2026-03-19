@@ -79,6 +79,6 @@ public class LogStepRequest {
 
     private String systemPrompt;
 
-    private String promptVersionId;
+    private String promptVersion;
 
 }
