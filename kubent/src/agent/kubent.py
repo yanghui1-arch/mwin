@@ -10,7 +10,7 @@ from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMe
 from mwin import track, LLMProvider
 from .react import ReActAgent
 from .events import AgentEventType, SSEEvent
-from .tools import SearchGoogle, KubentThink, QueryStep, ConsultRobin, Bash
+from .tools import SearchGoogle, QueryStep, ConsultRobin, Bash
 from .runtime import current_project_name, current_user_id
 from ..config import config
 from ..utils.llm_context import build_save_dir, solve_exceed_context, NewMessage
@@ -30,6 +30,7 @@ if _BASE_URL:
     _OPENAI_CLIENT_KWARGS["base_url"] = _BASE_URL
 if _API_KEY:
     _OPENAI_CLIENT_KWARGS["api_key"] = _API_KEY
+
 
 system_bg: str = """Your name is "Kubent". Kubent is a useful assistant to keep improve agent performance better.
 Generally, Kubent will recieve one or multiple abstract agent process flow graphs which will be closure in <Agent> XML tags. 
@@ -68,19 +69,34 @@ class Kubent(ReActAgent):
     tools: List[ChatCompletionFunctionToolParam] = Field(..., default_factory=list)
     engine: OpenAI = OpenAI(**_OPENAI_CLIENT_KWARGS)
     attempt: int = 15
+    extra_body: Dict[str, Any] | None = None
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @model_validator(mode="after")
     def load_tools(self):
         self.tools = [
-            SearchGoogle().json_schema, 
-            KubentThink().json_schema,
+            SearchGoogle().json_schema,
             QueryStep().json_schema,
             ConsultRobin().json_schema,
             Bash().json_schema,
         ]
         return self
+    
+    @model_validator(mode="after")
+    def set_extra_body(self):
+        if "anthropic" in self.model:
+            self.extra_body = {
+                "reasoning": {
+                    "enabled": True,
+                    "max_tokens": 4000,
+                }
+            }
+        
+        if "qwen" in self.model.lower():
+            self.extra_body = {
+                "enable_thinking": True
+            }
 
     @track
     def act(
@@ -150,6 +166,7 @@ class Kubent(ReActAgent):
                 messages=[{"role": "system", "content": kubent_system_prompt}] + chat_hist + [{"role": "user", "content": user_content}] + obs,
                 tools=self.tools,
                 parallel_tool_calls=True,
+                extra_body=self.extra_body,
             )
             return completion
         except BadRequestError as bqe:
@@ -192,6 +209,7 @@ class Kubent(ReActAgent):
                     messages=[{"role": "system", "content": kubent_system_prompt}] + new_message.pairs + [{"role": "user", "content": user_content}],
                     tools=self.tools,
                     parallel_tool_calls=True,
+                    extra_body=self.extra_body,
                 )
                 
                 return completion
