@@ -1,2 +1,5 @@
 base_url=
 api_key=
+
+qwen_base_url=
+qwen_api_key=
