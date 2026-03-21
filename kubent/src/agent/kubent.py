@@ -10,7 +10,7 @@ from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMe
 from mwin import track, LLMProvider
 from .react import ReActAgent
 from .events import AgentEventType, SSEEvent
-from .tools import SearchGoogle, QueryStep, ConsultRobin, Bash
+from .tools import WebSearch, QueryStep, ConsultRobin, Bash
 from .runtime import current_project_name, current_user_id
 from ..config import config
 from ..utils.llm_context import build_save_dir, solve_exceed_context, NewMessage
@@ -76,7 +76,7 @@ class Kubent(ReActAgent):
     @model_validator(mode="after")
     def load_tools(self):
         self.tools = [
-            SearchGoogle().json_schema,
+            WebSearch().json_schema,
             QueryStep().json_schema,
             ConsultRobin().json_schema,
             Bash().json_schema,
@@ -97,6 +97,8 @@ class Kubent(ReActAgent):
             self.extra_body = {
                 "enable_thinking": True
             }
+        
+        return self
 
     @track
     def act(

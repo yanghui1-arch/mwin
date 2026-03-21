@@ -25,6 +25,9 @@ model = "anthropic/claude-haiku-4.5"
 [kubent.think]
 model = "x-ai/grok-4.1-fast"
 
+[tool.websearch]
+model = "qwen3.5-397b-a17b"
+
 [query_step]
 model = "qwen/qwen3-14b"
 
