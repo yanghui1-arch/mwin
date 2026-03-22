@@ -1,5 +1,11 @@
 # Version log
 Every version updates, fixes and removings could be checked here.
+## 0.2.2
+### Fix
+- Fix prompt wrapper original template is not none. - @yanghui1-arch [# c7552f7](https://github.com/yanghui1-arch/mwin/commit/c7552f7d577bec240a112ad4aa38ad6d00c81537)
+
+- Rename prompt_version_id to prompt_version in the sync client. - @yanghui1-arch [# 4bfa718](https://github.com/yanghui1-arch/mwin/commit/4bfa718138d04aaecc4ca5bd1c382e743c769694)
+
 ## 0.2.1
 ### Feature
 - Offer a function to track system prompt effect. - @yanghui1-arch [# 0a406df](https://github.com/yanghui1-arch/mwin/commit/0a406dfa5d3558941c8b6439f24133bcbef33648) [#070d693](https://github.com/yanghui1-arch/mwin/commit/070d693f5fdb01fb66d103e4636a7a90976c758f)
