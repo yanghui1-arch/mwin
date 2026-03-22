@@ -12,6 +12,69 @@ alter table api_key
     owner to postgres;
 
 
+create table eval_job
+(
+    id             uuid        not null
+        primary key,
+    created_at     timestamp(6),
+    error_msg      text,
+    job_type       varchar(10) not null
+        constraint eval_job_job_type_check
+            check ((job_type)::text = ANY ((ARRAY ['step'::character varying, 'trace'::character varying])::text[])),
+    project_id     bigint      not null,
+    retry_count    integer     not null,
+    status         varchar(12) not null,
+    step_id        uuid,
+    trace_id       uuid,
+    updated_at     timestamp(6),
+    prompt_version varchar(255)
+);
+
+alter table eval_job
+    owner to postgres;
+
+create index idx_eval_job_status
+    on eval_job (status);
+
+
+create table eval_metric
+(
+    id              uuid         not null
+        primary key,
+    created_at      timestamp(6),
+    description     text,
+    judge_prompt    text,
+    name            varchar(100) not null,
+    project_id      bigint       not null,
+    score_range_max numeric(7, 2),
+    score_range_min numeric(7, 2),
+    constraint uk7lgws79r4orse5gdy4psi2hbs
+        unique (project_id, name)
+);
+
+alter table eval_metric
+    owner to postgres;
+
+
+create table eval_score
+(
+    id             uuid          not null
+        primary key,
+    created_at     timestamp(6),
+    eval_metric_id uuid          not null,
+    evaluated_by   uuid,
+    evaluator_type varchar(20)   not null,
+    reasoning      text,
+    score          numeric(7, 2) not null,
+    step_id        uuid,
+    trace_id       uuid,
+    prompt_version varchar(30)
+);
+
+alter table eval_score
+    owner to postgres;
+
+
 create table kubent_chat
 (
     id              uuid      default gen_random_uuid() not null
@@ -101,6 +164,63 @@ comment on column project.strategy is 'Project''s strategy which can be updated 
 alter table project
     owner to postgres;
 
+
+create table prompt
+(
+    id                 uuid                                            not null
+        primary key,
+    content            text                                            not null,
+    created_at         timestamp(6),
+    created_by         uuid,
+    model_config       jsonb,
+    prompt_pipeline_id uuid                                            not null,
+    version            varchar(50)                                     not null,
+    changelog          text,
+    description        text,
+    name               varchar(200),
+    status             varchar(20) default 'active'::character varying not null,
+    constraint ukdqclc817avtxdie5smw35jjxb
+        unique (prompt_pipeline_id, version)
+);
+
+alter table prompt
+    owner to postgres;
+
+
+create table prompt_pipeline
+(
+    id          uuid                                            not null
+        primary key,
+    created_at  timestamp(6),
+    description text,
+    name        varchar(255)                                    not null,
+    project_id  bigint                                          not null,
+    status      varchar(20) default 'active'::character varying not null,
+    constraint uk490bokkaaa693j76jkwk6va1p
+        unique (project_id, name)
+);
+
+alter table prompt_pipeline
+    owner to postgres;
+
+
+create table prompt_status
+(
+    id              uuid         not null
+        primary key,
+    deployed_at     timestamp(6),
+    deployed_by     uuid,
+    prompt_id       uuid         not null,
+    prompt_group_id uuid         not null,
+    status          varchar(100) not null,
+    constraint ukf2g6u5tyof7vpyt2g2ka4ki6g
+        unique (prompt_group_id, status)
+);
+
+alter table prompt_status
+    owner to postgres;
+
+
 create table step
 (
     id             uuid         default gen_random_uuid()                      not null
@@ -144,6 +264,19 @@ comment on column step_meta.cost is 'Step token usage cost';
 
 alter table step_meta
     owner to postgres;
+
+
+create table step_ref
+(
+    id             uuid not null
+        primary key,
+    prompt_id      uuid,
+    prompt_version varchar(255)
+);
+
+alter table step_ref
+    owner to postgres;
+
 
 create table trace
 (
