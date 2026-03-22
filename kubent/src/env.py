@@ -135,7 +135,7 @@ class Env(BaseModel):
                             self.obs.append(
                                 {
                                     "role": "tool",
-                                    "content": f"[Think #{self.num_think}] {result_str}",
+                                    "content": result_str,
                                     "tool_call_id": tool_call_id
                                 }
                             )
@@ -145,7 +145,7 @@ class Env(BaseModel):
                             self.obs.append(
                                 {
                                     "role": "tool",
-                                    "content": f"[Observation #{self.num_tool_callings}] {result_str}", 
+                                    "content": result_str, 
                                     "tool_call_id": tool_call_id
                                 }
                             )
@@ -156,7 +156,7 @@ class Env(BaseModel):
                             self.obs.append(
                                 {
                                     "role": "tool",
-                                    "content": f"[Think #{self.num_think} Exception] Failed to think question because {arguments} is not string type.",
+                                    "content": f"Failed to think question because {arguments} is not valid json-string.",
                                     "tool_call_id": tool_call_id
                                 }
                             )
@@ -166,7 +166,7 @@ class Env(BaseModel):
                             self.obs.append(
                                 {
                                     "role": "tool", 
-                                    "content": f"[Observation #{self.num_tool_callings}] Failed to execute tool {self.num_tool_callings} in step {self.steps}, which tool name is {tool_name}, because argument is not a valid json. Invalid arguments: {arguments}",
+                                    "content": f"Failed to execute tool `{tool_name}` because argument is not valid json-string. Invalid arguments: {arguments}",
                                     "tool_call_id": tool_call_id
                                 }
                             )
@@ -181,7 +181,7 @@ class Env(BaseModel):
                     self.obs.append(
                         {
                             "role": "tool",
-                            "content": f"[Observation #{self.num_tool_callings}] Call invaild tool: {tool_name} which can not found in agent action space.",
+                            "content": f"Call invaild tool: {tool_name} which can not found in agent action space.",
                             "tool_call_id": tool_call_id
                         }
                     )
