@@ -73,5 +73,15 @@
         }
       ]
     }
+  },
+  "kimi": {
+    "kimi-k2.5": {
+      "tiers": [
+        {
+          "input_price_per_million": 0.57,
+          "output_price_per_million": 3.00
+        }
+      ]
+    }
   }
 }

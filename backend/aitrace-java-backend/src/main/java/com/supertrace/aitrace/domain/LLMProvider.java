@@ -9,6 +9,7 @@ import java.util.Optional;
 public enum LLMProvider {
     OPEN_ROUTER("open_router"),
     DASH_SCOPE("dash_scope"),
+    KIMI("kimi"),
     OPENAI("openai"),
     DEEP_SEEK("deep_seek"),
     ANTHROPIC("anthropic"),
