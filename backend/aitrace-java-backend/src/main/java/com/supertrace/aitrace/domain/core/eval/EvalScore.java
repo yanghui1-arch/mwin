@@ -30,7 +30,7 @@ public class EvalScore {
     private UUID traceId;
 
     @Column(name = "prompt_version")
-    private UUID promptVersion;
+    private String promptVersion;
 
     @NotNull
     @Column(name = "eval_metric_id", nullable = false)
