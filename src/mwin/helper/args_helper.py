@@ -1,10 +1,10 @@
 from uuid import UUID
-from typing import Any, List, Dict
+from typing import Any, List, Dict, Literal
 
 from pydantic import BaseModel
 from openai.types.completion_usage import CompletionUsage
 from . import id_helper
-from ..models import Step, Trace, StepType
+from ..models import Step, Trace
 from .. import context
 
 class StartArguments(BaseModel):
@@ -27,7 +27,7 @@ def create_new_step(
     input: Any | None = None,
     output: Dict[str, Any] | None = None,
     name: str | None = None,
-    type: StepType = StepType.GENERAL,
+    type: Literal["general", "llm", "retrieve", "tool"] = "general",
     tags: List[str] | None = None,
     model: str | None = None,
     usage: int | None = None,
@@ -45,7 +45,7 @@ def create_new_step(
         output(Dict[str, Any] | None): output of module. Default to `None`. None means it's logging input.
         name(str | None): the step name. Caller can set the name to define what the step role is. Default to ``None`. If it's None,
                                         AITrace will set step name based on step type.
-        type(StepType): step type. Default to `StepType.GENERAL`.
+        type(Literal["general", "llm", "retrieve", "tool"]): step type. Default to `general`.
         tags(List[str] | None): step tags. Default to `None`. If it's None, it will be set an empty list.
         model(str | None): model name. Probably using a llm model in the step. Default to `None`.
         usage(int | None): llm token usage. Default to `None`.

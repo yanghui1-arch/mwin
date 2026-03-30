@@ -3,10 +3,9 @@ import asyncio
 import pytest
 
 from mwin import context, track
-from mwin.models import StepType
 
 
-@track(tags=["unit"], step_type=StepType.GENERAL, model="demo-model")
+@track(tags=["unit"], step_type="general", model="demo-model")
 def add(x, y=2):
     """Add numbers."""
     return x + y
@@ -31,7 +30,7 @@ def test_track_sync(fake_client):
     assert step["input"] == {"func_inputs": {"x": 1, "y": 2}}
     assert step["output"]["func_output"] == 3
     assert step["tags"] == ["unit"]
-    assert step["step_type"] == StepType.GENERAL
+    assert step["step_type"] == "general"
     assert step["model"] == "demo-model"
     assert step["description"] == "Add numbers."
 
@@ -44,7 +43,7 @@ def test_track_inner_func_input_with_kwargs(fake_client):
     The inner function inputs has args or kwargs.
     """
 
-    @track(tags=["unit"], step_type=StepType.GENERAL, model="demo-model")
+    @track(tags=["unit"], step_type="general", model="demo-model")
     def sub(x, y=2):
         """Sub numbers."""
         return x - y
@@ -62,7 +61,7 @@ def test_track_inner_func_input_with_kwargs(fake_client):
     assert step["input"] == {"func_inputs": {"x": 1, "y": 2}}
     assert step["output"]["func_output"] == -1
     assert step["tags"] == ["unit"]
-    assert step["step_type"] == StepType.GENERAL
+    assert step["step_type"] == "general"
     assert step["model"] == "demo-model"
     assert step["description"] == "Sub numbers."
 

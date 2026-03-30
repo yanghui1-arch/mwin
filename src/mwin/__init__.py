@@ -1,5 +1,5 @@
 from .track import track
-from .models import LLMProvider, StepType, Step, Trace, Conversation
+from .models import LLMProvider, Step, Trace, Conversation
 from .context import start_trace, start_trace_async
 from .prompt.wrapper import template_prompt
 
@@ -9,7 +9,6 @@ __all__ = [
     "start_trace_async",
     "template_prompt",
     "LLMProvider",
-    "StepType",
     "Step",
     "Trace",
     "Conversation",

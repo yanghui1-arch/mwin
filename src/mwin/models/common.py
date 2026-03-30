@@ -5,6 +5,7 @@ class LLMProvider(Enum):
     Lots of existing inference engine such as vllm, sglang and so on. Different engine has their own input format and return type.
     
     OPENAI: use openai api key
+    KIMI = "kimi"
     OPEN_ROUTER: use openrouter api key
     GOOGLE: use google api key
     ANTHROPIC: use anthropic api key
@@ -15,6 +16,7 @@ class LLMProvider(Enum):
     """
     
     OPENAI = 'openai'
+    KIMI = "kimi"
     OPEN_ROUTER = "open_router"
     GOOGLE = 'google'
     ANTHROPIC = 'anthropic'

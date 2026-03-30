@@ -1,23 +1,16 @@
 from uuid import UUID
-from enum import Enum
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Literal
 from pydantic import BaseModel, Field, field_serializer
 from openai.types.completion_usage import CompletionUsage
 from ..helper import serialize_helper
-
-class StepType(Enum):
-    GENERAL = 'general'
-    LLM = 'llm'
-    RETRIEVE = 'retrieve'
-    TOOL = 'tool'
 
 class Step(BaseModel):
     name: str
     id: str | UUID
     trace_id: str | UUID
     parent_step_id: str | UUID | None = None
-    type: StepType = StepType.GENERAL
+    type: Literal["general", "llm", "retrieve", "tool"] = "general"
     tags: List[str] = Field(default_factory=list)
     input: Dict[str, Any] | None = None
     output: Dict[str, Any] | None = None

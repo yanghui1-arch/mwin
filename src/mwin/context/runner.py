@@ -22,13 +22,13 @@ It works well at beginning of project but not recommend it for developer. it's v
 Please use following demo to develop with mwin. It's more safe, easier and more controllable.
 
 ```python
-from mwin import track, StepType
+from mwin import track
 from mwin.runner import start_trace
 @track()
 def call_openai() -> Dict:
     ...
 
-@track(StepType.TOOL)
+@track(step_type="tool")
 def execute_bash(*args, **kwargs)
     ...
 

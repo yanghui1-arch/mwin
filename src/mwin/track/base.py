@@ -1,6 +1,6 @@
 import inspect
 from contextvars import Token
-from typing import Callable, Any, Tuple, Dict, List
+from typing import Callable, Any, Tuple, Dict, List, Literal
 from abc import ABC, abstractmethod
 from datetime import datetime
 import functools
@@ -8,7 +8,7 @@ import functools
 from .options import TrackerOptions
 from .. import context
 from ..context.func_context import current_function_name_context
-from ..models.key_models import StepType, Step, Trace
+from ..models.key_models import Step, Trace
 from ..models.common import LLMProvider
 from ..helper import args_helper, inspect_helper, exception_helper
 from ..client import sync_client
@@ -34,7 +34,7 @@ class BaseTracker(ABC):
         func_name: str | Callable | None = None,
         project_name: str | None = None,
         tags: List[str] | None = None,
-        step_type: StepType = StepType.GENERAL,
+        step_type: Literal["general", "llm", "retrieve", "tool"] = "general",
         model: str | None = None,
         llm_provider: LLMProvider = LLMProvider.OPENAI,
         llm_ignore_fields: List[str] | None = None,
@@ -48,7 +48,7 @@ class BaseTracker(ABC):
             func_name(str | Callable | None): caller can set it they want to name with 'str' type. If caller doesn't set, it will be `Callable`.
             project_name(str | None): project name of this function. Default to `None`. It is set only when you deploys two or more programs which are using mwin to track.
             tags(List[str] | None): tags of tracking steps. Default to `None`.
-            step_type(StepType): step type. Default to `StepType.GENERAL`.
+            step_type(Literal["general", "llm", "retrieve", "tool"]): step type. Default to `general`.
             model(str | None): using model name. Default to `None`. If you are using llama you can set the field to `llama`.
             llm_provider(LLMProvider): llm inference provider. Default to `OPENAI`.
             llm_ignore_fields(List[str] | None): a list of llm ignore fields name. Default to `None`.
@@ -282,12 +282,7 @@ class BaseTracker(ABC):
         if tracker_options.llm_provider is not None:
             patch_token = set_llm_patch_config(step=new_step, tracker_options=tracker_options, func_name=func.__name__)
 
-        if tracker_options.llm_provider == LLMProvider.OPENAI:
-            from ..patches.openai import completions, async_completions
-            completions.patch_openai_chat_completions()
-            async_completions.patch_async_openai_chat_completions()
-
-        if tracker_options.llm_provider == LLMProvider.OPEN_ROUTER:
+        if tracker_options.llm_provider in (LLMProvider.OPENAI, LLMProvider.OPEN_ROUTER, LLMProvider.KIMI):
             from ..patches.openai import completions, async_completions
             completions.patch_openai_chat_completions()
             async_completions.patch_async_openai_chat_completions()

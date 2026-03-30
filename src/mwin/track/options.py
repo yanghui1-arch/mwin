@@ -1,7 +1,5 @@
-from enum import Enum
 from typing import List, Literal
 from dataclasses import dataclass
-from ..models.key_models import StepType
 from ..models.common import LLMProvider
 
 
@@ -13,7 +11,7 @@ class TrackerOptions:
     Args:
         tags(List[str] | None): tags of step or trace. Default to `None`.
         func_name(str | None): function name. It can be set manually or automatically. Default to `None`.
-        step_type(StepType | None): step type. Default to `None`.
+        step_type(Literal["general", "llm", "retrieve", "tool"] | None): step type. Default to `None`.
         model(str | None): using model name. Default to `None`.
         trace_name(str | None): trace name. Default to `None`.
         llm_provider(LLMProvider): track a certain llm. Default to `LLMProvider.OPENAI`
@@ -27,7 +25,7 @@ class TrackerOptions:
 
     tags: List[str] | None = None
     func_name: str | None = None
-    step_type: StepType | None = None
+    step_type: Literal["general", "llm", "retrieve", "tool"] | None = None
     model: str | None = None
     trace_name: str | None = None
     llm_provider: LLMProvider = LLMProvider.OPENAI
