@@ -75,20 +75,22 @@ export function IOFieldViewer({ data, className }: IOFieldViewerProps) {
         className="flex gap-1 p-1.5 bg-muted/40 border-b overflow-x-auto"
         style={{ scrollbarWidth: "none" }}
       >
-        {entries.map(([key]) => (
-          <button
-            key={key}
-            onClick={() => setSelectedKey(key)}
-            className={cn(
-              "shrink-0 px-2.5 py-1 rounded text-xs font-mono font-medium transition-all",
-              selectedKey === key
-                ? "bg-background text-foreground shadow-sm border border-border"
-                : "text-muted-foreground hover:text-foreground hover:bg-background/60"
-            )}
-          >
-            {key}
-          </button>
-        ))}
+        <div className="inline-flex overflow-x-auto min-w-0 gap-1 p-1.5">
+          {entries.map(([key]) => (
+            <button
+              key={key}
+              onClick={() => setSelectedKey(key)}
+              className={cn(
+                "shrink-0 px-2.5 py-1 rounded text-xs font-mono font-medium transition-all",
+                selectedKey === key
+                  ? "bg-background text-foreground shadow-sm border border-border"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/60"
+              )}
+            >
+              {key}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Content area — plain text; Markdown auto-detected for strings */}
