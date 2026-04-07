@@ -255,16 +255,15 @@ class BaseTracker(ABC):
 
         current_trace = context.get_storage_current_trace_data()
         if not current_trace:
-            create_current_trace = args_helper.create_new_trace(
+            current_trace = args_helper.create_new_trace(
                 input=start_arguments.input,
                 name=tracker_options.trace_name,
                 tags=tracker_options.tags,
             )
-            context.set_storage_trace(current_trace=create_current_trace)
         elif current_trace.input is None:
             # Capture the first function's input. The input is `{}`` means input of the fist step is nothing.
             current_trace.input = start_arguments.input
-
+        context.set_storage_trace(current_trace=current_trace)
 
         new_step: Step = args_helper.create_new_step(
             input=start_arguments.input,
