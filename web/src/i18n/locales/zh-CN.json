@@ -173,10 +173,15 @@
         "totalTokens": "总 Token",
         "promptTokens": "Prompt Token",
         "completionTokens": "Completion Token",
+        "cacheHit": "缓存命中",
+        "cachedPromptTokens": "{{count}} / {{total}} Prompt Token",
         "prompt": "提示词",
+        "uncachedPrompt": "Prompt（未命中缓存）",
+        "cachedPrompt": "Prompt（缓存命中）",
         "completion": "模型回答",
         "noUsage": "该步骤没有可用的使用情况。",
-        "promptDetail": "Prompt: {{count}} ({{pct}}%)",
+        "uncachedPromptDetail": "Prompt（未命中缓存）: {{count}} ({{pct}}%)",
+        "cachedPromptDetail": "Prompt（缓存命中）: {{count}} ({{pct}}%)",
         "completionDetail": "Completion: {{count}} ({{pct}}%)"
     },
     "stepTable": {
@@ -296,3 +301,4 @@
         }
     }
 }
+

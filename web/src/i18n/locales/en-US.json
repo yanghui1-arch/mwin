@@ -171,10 +171,15 @@
         "totalTokens": "Total tokens",
         "promptTokens": "Prompt tokens",
         "completionTokens": "Completion tokens",
+        "cacheHit": "Cache hit",
+        "cachedPromptTokens": "{{count}} / {{total}} prompt tokens",
         "prompt": "Prompt",
+        "uncachedPrompt": "Prompt (uncached)",
+        "cachedPrompt": "Prompt (cached)",
         "completion": "Completion",
         "noUsage": "No usage available for this step.",
-        "promptDetail": "Prompt: {{count}} ({{pct}}%)",
+        "uncachedPromptDetail": "Prompt (uncached): {{count}} ({{pct}}%)",
+        "cachedPromptDetail": "Prompt (cached): {{count}} ({{pct}}%)",
         "completionDetail": "Completion: {{count}} ({{pct}}%)"
     },
     "stepTable": {
@@ -297,3 +302,4 @@
         }
     }
 }
+

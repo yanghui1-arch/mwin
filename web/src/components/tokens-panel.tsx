@@ -34,7 +34,7 @@ export function TokensPanel({
   title,
   ...props
 }: TokensPanelProps) {
-  const { t, i18n } = useTranslation()
+  const { t, i18n } = useTranslation();
   const isZh = i18n.language.startsWith("zh");
   const displayCost = isZh ? (cost ?? 0) * 7 : (cost ?? 0);
   const displayCurrency = isZh ? "CNY" : currency;
@@ -42,15 +42,22 @@ export function TokensPanel({
   const prompt = React.useMemo(() => toInt(usage?.prompt_tokens), [usage]);
   const completion = React.useMemo(
     () => toInt(usage?.completion_tokens) || Math.max(total - prompt, 0),
-    [usage, total, prompt]
+    [usage, total, prompt],
   );
+  const rawCachedPrompt = React.useMemo(() => toInt(usage?.prompt_tokens_details?.cached_tokens), [usage]);
+
+  const cachedPrompt = Math.min(rawCachedPrompt, prompt);
+  const uncachedPrompt = Math.max(prompt - cachedPrompt, 0);
 
   const safeTotal = Math.max(total, prompt + completion);
-  const promptPct = safeTotal ? Math.round((prompt / safeTotal) * 100) : 0;
+  const uncachedPromptPct = safeTotal ? Math.round((uncachedPrompt / safeTotal) * 100) : 0;
+  const cachedPromptPct = safeTotal ? Math.round((cachedPrompt / safeTotal) * 100) : 0;
   const completionPct = safeTotal
     ? Math.round((completion / safeTotal) * 100)
     : 0;
+  const cacheHitPct = prompt ? Math.round((cachedPrompt / prompt) * 100) : 0;
 
+  const hasCacheTracking = usage?.prompt_tokens_details?.cached_tokens !== undefined;
   const hasUsage = Boolean(safeTotal || prompt || completion);
   const formattedCost = new Intl.NumberFormat(isZh ? "zh-CN" : "en-US", {
     style: "currency",
@@ -74,8 +81,7 @@ export function TokensPanel({
 
       {hasUsage ? (
         <div className="flex flex-col gap-3">
-          <div className="grid grid-cols-4 grid-flow-col gap-2">
-            {/* Cost tile */}
+          <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
             <div className="ring-1 ring-border/60 overflow-hidden rounded-lg">
               <div className="px-3 py-2">
                 <div className="text-[11px] tracking-wide text-muted-foreground">
@@ -116,27 +122,44 @@ export function TokensPanel({
                 </div>
               </div>
             </div>
+            <div className="ring-1 ring-border/60 rounded-md">
+              <div className="px-3 py-1.5">
+                <div className="text-[11px] tracking-wide text-muted-foreground">
+                  {t("tokensPanel.cacheHit")}
+                </div>
+                <div className="text-lg font-semibold tabular-nums">
+                  {hasCacheTracking ? `${cacheHitPct}%` : "--"}
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Usage split OUTSIDE cards */}
           <Tooltip>
             <TooltipTrigger asChild>
               <div
-                className="bg-muted/60 relative h-2 w-full overflow-hidden rounded-sm ring-1 ring-border/50"
+                className="bg-muted/60 relative flex h-2 w-full overflow-hidden rounded-sm ring-1 ring-border/50"
                 aria-label="Token usage stacked bar"
               >
                 <div
                   className={cn(
                     "h-full bg-primary/70",
-                    promptPct === 0 && "hidden"
+                    uncachedPromptPct === 0 && "hidden",
                   )}
-                  style={{ width: `${promptPct}%` }}
-                  aria-label="Prompt tokens"
+                  style={{ width: `${uncachedPromptPct}%` }}
+                  aria-label="Prompt uncached tokens"
+                />
+                <div
+                  className={cn(
+                    "h-full bg-sky-500/70",
+                    cachedPromptPct === 0 && "hidden",
+                  )}
+                  style={{ width: `${cachedPromptPct}%` }}
+                  aria-label="Prompt cached tokens"
                 />
                 <div
                   className={cn(
                     "h-full bg-emerald-500/70",
-                    completionPct === 0 && "hidden"
+                    completionPct === 0 && "hidden",
                   )}
                   style={{ width: `${completionPct}%` }}
                   aria-label="Completion tokens"
@@ -144,11 +167,17 @@ export function TokensPanel({
               </div>
             </TooltipTrigger>
             <TooltipContent>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-2">
                 <div className="flex items-center gap-2">
                   <span className="inline-block size-2 rounded-sm bg-primary/70" />
                   <span className="text-xs">
-                    {t("tokensPanel.promptDetail", { count: prompt, pct: promptPct })}
+                    {t("tokensPanel.uncachedPromptDetail", { count: uncachedPrompt, pct: uncachedPromptPct })}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="inline-block size-2 rounded-sm bg-sky-500/70" />
+                  <span className="text-xs">
+                    {t("tokensPanel.cachedPromptDetail", { count: cachedPrompt, pct: cachedPromptPct })}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -163,7 +192,11 @@ export function TokensPanel({
           <div className="-mt-1 flex items-center gap-3 text-[11px] text-muted-foreground">
             <div className="flex items-center gap-2">
               <span className="inline-block size-2 rounded-sm bg-primary/70" />
-              <span>{t("tokensPanel.prompt")}</span>
+              <span>{t("tokensPanel.uncachedPrompt")}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="inline-block size-2 rounded-sm bg-sky-500/70" />
+              <span>{t("tokensPanel.cachedPrompt")}</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="inline-block size-2 rounded-sm bg-emerald-500/70" />
@@ -181,3 +214,4 @@ export function TokensPanel({
 }
 
 export default TokensPanel;
+
