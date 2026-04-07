@@ -184,6 +184,23 @@ def test_sequential_track_calls_share_trace(fake_client):
     assert fake_client.steps[2]["trace_id"] == trace_id
 
 
+def test_trace_input_keeps_first_function_input(fake_client):
+    """Trace input should be frozen from the first tracked function call."""
+    @track(tags=["unit"])
+    def step(value):
+        return value
+    payload = {"value": "first"}
+    step(["hello", "second"])
+
+    payload["value"] = "second"
+    step(["hello", "second", "third"])
+
+    assert len(fake_client.traces) == 2
+    print(fake_client.traces)
+    assert fake_client.traces[0]["input"] == {"value": ["hello", "second"]}
+    assert fake_client.traces[1]["input"] == {"value": ["hello", "second"]}
+
+
 def test_threadpool_executor_isolates_traces_with_copy_context(fake_client):
     """ThreadPoolExecutor reuses threads. Using copy_context().run()
     when submitting ensures each task gets an isolated context,
