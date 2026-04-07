@@ -8,8 +8,9 @@ class _MwinPromptStr(str):
     The mwin patches read _original_template to log the template, not the
     rendered result.
 
-    Formatting methods (format, format_map, %) return a new _MwinPromptStr
-    that preserves _original_template so the chain is never broken.
+    Formatting methods (format, format_map, %) and concatenation (+) return
+    a new _MwinPromptStr that preserves _original_template so the chain is
+    never broken.
     """
 
     _original_template: str
@@ -18,14 +19,14 @@ class _MwinPromptStr(str):
     _prompt_name: str | None
 
     def __new__(
-        cls, 
-        value: str, 
-        version: str, 
-        pipeline: str, 
-        prompt_name: str | None = None, 
+        cls,
+        value: str,
+        version: str,
+        pipeline: str,
+        prompt_name: str | None = None,
         original_template: str = None
     ) -> "_MwinPromptStr":
-        
+
         instance = super().__new__(cls, value)
         # If original_template is not supplied, this instance IS the template
         instance._original_template = original_template if original_template is not None else str(value)
@@ -66,7 +67,39 @@ class _MwinPromptStr(str):
             pipeline=self._pipeline,
             prompt_name=self._prompt_name,
         )
-    
+
+    def __add__(self, other: Any) -> "_MwinPromptStr":
+        """Concatenation should keep _MwinPromptStr instead of degrading to str."""
+        if not isinstance(other, str):
+            return NotImplemented
+        concatenated = str.__add__(self, other)
+        appended_template = (
+            other._original_template if isinstance(other, _MwinPromptStr) else str(other)
+        )
+        return _MwinPromptStr(
+            concatenated,
+            original_template=self._original_template + appended_template,
+            version=self._version,
+            pipeline=self._pipeline,
+            prompt_name=self._prompt_name,
+        )
+
+    def __radd__(self, other: Any) -> "_MwinPromptStr":
+        """Right-side concatenation should also keep _MwinPromptStr metadata."""
+        if not isinstance(other, str):
+            return NotImplemented
+        concatenated = str.__add__(other, self)
+        prepended_template = (
+            other._original_template if isinstance(other, _MwinPromptStr) else str(other)
+        )
+        return _MwinPromptStr(
+            concatenated,
+            original_template=prepended_template + self._original_template,
+            version=self._version,
+            pipeline=self._pipeline,
+            prompt_name=self._prompt_name,
+        )
+
     @property
     def version(self):
         return self._version
