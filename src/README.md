@@ -56,14 +56,14 @@ It's the most recommended method to use mwin to track the trace in a project. mw
 
 ### Demo
 ```python
-from mwin import track, StepType, start_trace
+from mwin import track, start_trace
 from openai import OpenAI
 
 openai_apikey = "<llm_api_key>"
 openai_base_url = "<llm_base_url>"
 model = "<llm_model>"
 
-@track(step_type=StepType.TOOL)
+@track(step_type="tool")
 def execute_bash(command: str):
     # assume execute bash and get a stdout
     return "<bash_stdout>"

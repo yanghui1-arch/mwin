@@ -1,5 +1,17 @@
 # Version log
 Every version updates, fixes and removings could be checked here.
+
+## 0.2.3
+### Breaking change
+- Remove StepType and add kimi provider. - @yanghui1-arch [# 8be8115](https://github.com/yanghui1-arch/mwin/commit/8be811578284a9e00c96b6036196e2d438cbc303)
+
+### Fix
+- Fix mwin logger instead of using root logger. - @yanghui1-arch [# 3011077](https://github.com/yanghui1-arch/mwin/commit/30110771a0822ad2e4b0417cd7af360e385336d6)
+
+- Fix unable to track the prompt performance after concatenating str and _MwinPromptStr. - @yanghui1-arch [# cb665cf](https://github.com/yanghui1-arch/mwin/commit/cb665cf723d5c2391a08ee32691f1dedb869ddb3)
+
+- Fix no current trace in sometimes. - @yanghui1-arch [# da32b12](https://github.com/yanghui1-arch/mwin/commit/da32b12680a92ea893ed1acf0870cd6075ea4ec3)
+
 ## 0.2.2
 ### Fix
 - Fix prompt wrapper original template is not none. - @yanghui1-arch [# c7552f7](https://github.com/yanghui1-arch/mwin/commit/c7552f7d577bec240a112ad4aa38ad6d00c81537)
