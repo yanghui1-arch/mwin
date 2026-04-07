@@ -50,6 +50,7 @@ export function TokensPanel({
   const uncachedPrompt = Math.max(prompt - cachedPrompt, 0);
 
   const safeTotal = Math.max(total, prompt + completion);
+  const contextLength = total > 0 ? total : safeTotal;
   const uncachedPromptPct = safeTotal ? Math.round((uncachedPrompt / safeTotal) * 100) : 0;
   const cachedPromptPct = safeTotal ? Math.round((cachedPrompt / safeTotal) * 100) : 0;
   const completionPct = safeTotal
@@ -95,10 +96,10 @@ export function TokensPanel({
             <div className="ring-1 ring-border/60 overflow-hidden rounded-lg cursor-default">
               <div className="px-3 py-2">
                 <div className="text-[11px] tracking-wide text-muted-foreground">
-                  {t("tokensPanel.totalTokens")}
+                  {t("tokensPanel.contextLength")}
                 </div>
                 <div className="text-xl font-semibold tabular-nums">
-                  {safeTotal.toLocaleString()}
+                  {contextLength.toLocaleString()}
                 </div>
               </div>
             </div>
@@ -214,4 +215,3 @@ export function TokensPanel({
 }
 
 export default TokensPanel;
-

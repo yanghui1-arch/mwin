@@ -169,6 +169,7 @@
         "title": "Token Usage",
         "cost": "Cost",
         "totalTokens": "Total tokens",
+        "contextLength": "Context length",
         "promptTokens": "Prompt tokens",
         "completionTokens": "Completion tokens",
         "cacheHit": "Cache hit",
