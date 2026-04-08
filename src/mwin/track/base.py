@@ -13,6 +13,7 @@ from ..models.common import LLMProvider
 from ..helper import args_helper, inspect_helper, exception_helper
 from ..client import sync_client
 from ..patches.llm_patch_config import set_llm_patch_config, reset_llm_patch_config
+from ..helper import prompt_helper
 
 
 class BaseTracker(ABC):
@@ -39,6 +40,7 @@ class BaseTracker(ABC):
         llm_provider: LLMProvider = LLMProvider.OPENAI,
         llm_ignore_fields: List[str] | None = None,
         description: str | None = None,
+        system_prompt: str | None = None,
     ) -> Callable:
         """track step decorator
         Track step in calling modules. If use decorator to track step, the step and the trace id will be always a whole new ones.
@@ -53,6 +55,7 @@ class BaseTracker(ABC):
             llm_provider(LLMProvider): llm inference provider. Default to `OPENAI`.
             llm_ignore_fields(List[str] | None): a list of llm ignore fields name. Default to `None`.
             description(str | None): step description. Default to `None`.
+            system_prompt(str | None): prompt identifier in `pipeline/name@version` format.
 
         Returns:
             Callable: decorator
@@ -65,8 +68,12 @@ class BaseTracker(ABC):
             llm_provider=llm_provider,
             llm_ignore_fields=llm_ignore_fields,
             description=description,
+            system_prompt=system_prompt,
             project_name=project_name,
         )
+
+        # remind first
+        prompt_helper.parse_system_prompt_identifier(system_prompt)
 
         if callable(func_name):
             func = func_name
@@ -394,7 +401,6 @@ class BaseTracker(ABC):
             llm_provider=tracker_options.llm_provider,
             pipeline=None,
             prompt_name=None,
-            system_prompt=None,
             prompt_version=None,
         )
 

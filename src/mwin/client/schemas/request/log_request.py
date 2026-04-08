@@ -62,9 +62,6 @@ class LogStepRequest(BaseModel):
     prompt_version: str | None = None
     """Prompt version"""
 
-    system_prompt: str | None = None
-    """Raw system prompt string captured via template_prompt() inside the step"""
-
     @field_serializer('input', 'output')
     def serialize_any_field(self, value: Any):
         return serialize_helper.safe_serialize(value)
@@ -94,3 +91,4 @@ class LogTraceRequest(BaseModel):
     @field_serializer("start_time", "last_update_timestamp")
     def serialize_datetime(self, value: datetime):
         return value.strftime("%Y-%m-%d %H:%M:%S.%f")
+    

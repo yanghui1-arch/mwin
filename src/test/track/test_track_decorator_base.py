@@ -221,3 +221,7 @@ def test_threadpool_executor_isolates_traces_with_copy_context(fake_client):
 
     assert len(fake_client.steps) == 2
     assert fake_client.steps[0]["trace_id"] != fake_client.steps[1]["trace_id"]
+
+def test_track_invalid_system_prompt_identifier_raises_value_error():
+    with pytest.raises(ValueError, match="pipeline/name@version"):
+        track(system_prompt="invalid-prompt-id")

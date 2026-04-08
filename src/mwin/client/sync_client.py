@@ -58,7 +58,6 @@ class SyncClient:
         llm_provider: LLMProvider,
         pipeline: str | None,
         prompt_name: str | None,
-        system_prompt: str | None,
         prompt_version: str | None,
     ) -> LogStepResponse:
         """Create a step and log it in server."""
@@ -68,12 +67,6 @@ class SyncClient:
             parent_step_id = None
 
         llm_provider = llm_provider.value
-        # prompt_version not set -> don't pass system_prompt.
-        # TODO: Give a warn
-        if prompt_version is None:
-            pipeline = None
-            system_prompt = None
-            prompt_name = None
 
         log_step_req = LogStepRequest(
             project_name=self._project_name,
@@ -94,7 +87,6 @@ class SyncClient:
             llm_provider=llm_provider,
             prompt_pipeline=pipeline,
             prompt_name=prompt_name,
-            system_prompt=system_prompt,
             prompt_version=prompt_version,
         )
 
