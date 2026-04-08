@@ -8,20 +8,22 @@ import {
   type Edge,
   MarkerType,
   Panel,
+  type ReactFlowInstance,
 } from "@xyflow/react";
 import { TraceProcessNode } from "./trace-process-node";
 import dagre from "dagre";
-import { useState, useMemo, Fragment } from "react";
+import { useState, useMemo, Fragment, useCallback, useEffect } from "react";
 import { Button } from "../ui/button";
 import { Label } from "../ui/label";
 import { LLMJsonCard } from "../llm-json-card";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../ui/sheet";
 import { FunctionIOCard } from "../fn-io-card";
 import { TraceIONode } from "./trace-process-io-node";
-import { NodeSearch } from "../xyflow-ui/node-search";
 import type { Track } from "@/api/trace";
 import { useTranslation } from "react-i18next";
-import { ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Workflow } from "lucide-react";
+import { ScrollArea } from "../ui/scroll-area";
+import { cn } from "@/lib/utils";
 
 interface TraceDialogProcessPanelProps {
   input?: Record<string, unknown> | undefined;
@@ -40,6 +42,56 @@ const NODE_HEIGHT = 76;
 
 const MAIN_EDGE_COLOR = "rgb(var(--process-flow-main-rgb))";
 
+type ScopeItem = { trackId: string; trackName: string };
+
+type TreeRow = {
+  track: Track;
+  depth: number;
+  hasChildren: boolean;
+  collapsed: boolean;
+};
+
+const TRACK_TYPE_META: Record<
+  Track["type"],
+  { label: string; dotClassName: string; badgeClassName: string }
+> = {
+  llm_response: {
+    label: "LLM",
+    dotClassName: "bg-blue-500",
+    badgeClassName: "bg-blue-500/10 text-blue-700",
+  },
+  tool: {
+    label: "Tool",
+    dotClassName: "bg-amber-500",
+    badgeClassName: "bg-amber-500/10 text-amber-700",
+  },
+  retrieve: {
+    label: "Retrieve",
+    dotClassName: "bg-emerald-500",
+    badgeClassName: "bg-emerald-500/10 text-emerald-700",
+  },
+  customized: {
+    label: "General",
+    dotClassName: "bg-violet-500",
+    badgeClassName: "bg-violet-500/10 text-violet-700",
+  },
+};
+
+function sortByStartTime(a: Track, b: Track): number {
+  return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
+}
+
+function formatTrackTime(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "--:--:--";
+  return date.toLocaleTimeString([], {
+    hour12: false,
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
+
 function buildFlowGraph(
   levelTracks: Track[],
   inputData: Record<string, unknown> | undefined,
@@ -47,7 +99,7 @@ function buildFlowGraph(
   errorInfo: string | undefined,
   childrenMap: Map<string, Track[]>,
   trackById: Map<string, Track>,
-  scopeName?: string
+  scopeName?: string,
 ) {
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setGraph({
@@ -105,7 +157,7 @@ function buildFlowGraph(
     color: MAIN_EDGE_COLOR,
   };
 
-  // input → first track
+  // input -> first track
   if (hasInput && levelTracks.length > 0) {
     const targetId = `process-${levelTracks[0].id}`;
     dagreGraph.setEdge("input", targetId);
@@ -119,7 +171,7 @@ function buildFlowGraph(
     });
   }
 
-  // track[i] → track[i+1]
+  // track[i] -> track[i+1]
   for (let i = 0; i < levelTracks.length - 1; i++) {
     const sourceId = `process-${levelTracks[i].id}`;
     const targetId = `process-${levelTracks[i + 1].id}`;
@@ -134,7 +186,7 @@ function buildFlowGraph(
     });
   }
 
-  // last track → output
+  // last track -> output
   if (hasOutput && levelTracks.length > 0) {
     const sourceId = `process-${levelTracks[levelTracks.length - 1].id}`;
     dagreGraph.setEdge(sourceId, "output");
@@ -148,7 +200,7 @@ function buildFlowGraph(
     });
   }
 
-  // input → output when there are no tracks
+  // input -> output when there are no tracks
   if (hasInput && hasOutput && levelTracks.length === 0) {
     dagreGraph.setEdge("input", "output");
     edges.push({
@@ -260,9 +312,16 @@ export function TraceDialogProcessPanel({
   const { t } = useTranslation();
 
   // Drill-down navigation state
-  const [scopeStack, setScopeStack] = useState<
-    Array<{ trackId: string; trackName: string }>
-  >([]);
+  const [scopeStack, setScopeStack] = useState<ScopeItem[]>([]);
+  const [collapsedTrackIds, setCollapsedTrackIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const [activeTrackId, setActiveTrackId] = useState<string | null>(null);
+  const [focusNodeId, setFocusNodeId] = useState<string | null>(null);
+  const [flowInstance, setFlowInstance] = useState<
+    ReactFlowInstance<Node, Edge> | null
+  >(null);
+
   const currentScope =
     scopeStack.length > 0 ? scopeStack[scopeStack.length - 1] : null;
 
@@ -284,15 +343,25 @@ export function TraceDialogProcessPanel({
     return map;
   }, [tracks]);
 
+  const sortedChildrenMap = useMemo(() => {
+    const map = new Map<string, Track[]>();
+    for (const [parentId, children] of childrenMap.entries()) {
+      map.set(parentId, [...children].sort(sortByStartTime));
+    }
+    return map;
+  }, [childrenMap]);
+
+  const rootTracks = useMemo(
+    () => tracks.filter((t) => !t.parent_step_id).sort(sortByStartTime),
+    [tracks],
+  );
+
   // Current level tracks sorted by start_time
   const levelTracks = useMemo(() => {
     const filtered = !currentScope
       ? tracks.filter((t) => !t.parent_step_id)
       : tracks.filter((t) => t.parent_step_id === currentScope.trackId);
-    return filtered.sort(
-      (a, b) =>
-        new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
-    );
+    return filtered.sort(sortByStartTime);
   }, [tracks, currentScope]);
 
   // IO data for current level
@@ -329,9 +398,17 @@ export function TraceDialogProcessPanel({
         levelErrorInfo,
         childrenMap,
         trackById,
-        currentScope?.trackName
+        currentScope?.trackName,
       ),
-    [levelTracks, levelInput, levelOutput, levelErrorInfo, childrenMap, trackById, currentScope?.trackName]
+    [
+      levelTracks,
+      levelInput,
+      levelOutput,
+      levelErrorInfo,
+      childrenMap,
+      trackById,
+      currentScope?.trackName,
+    ],
   );
 
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
@@ -339,8 +416,130 @@ export function TraceDialogProcessPanel({
     "llm" | "fn"
   >("llm");
 
+  const selectedNodeId = activeTrackId
+    ? `process-${activeTrackId}`
+    : selectedNode?.id ?? null;
+
+  const graphNodes = useMemo(
+    () =>
+      initialNodes.map((node) => ({
+        ...node,
+        selected: node.id === selectedNodeId,
+      })),
+    [initialNodes, selectedNodeId],
+  );
+
+  useEffect(() => {
+    if (collapsedTrackIds.size === 0) return;
+    setCollapsedTrackIds((prev) => {
+      const next = new Set([...prev].filter((id) => trackById.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [trackById, collapsedTrackIds.size]);
+
+  const buildScopeStackForTrack = useCallback(
+    (trackId: string): ScopeItem[] => {
+      const nextScope: ScopeItem[] = [];
+      const visited = new Set<string>();
+      let current = trackById.get(trackId);
+
+      while (current?.parent_step_id) {
+        const parentId = current.parent_step_id;
+        if (visited.has(parentId)) break;
+        visited.add(parentId);
+        const parent = trackById.get(parentId);
+        if (!parent) break;
+        nextScope.push({ trackId: parent.id, trackName: parent.name });
+        current = parent;
+      }
+
+      return nextScope.reverse();
+    },
+    [trackById],
+  );
+
+  const handleToggleTreeRow = useCallback((trackId: string) => {
+    setCollapsedTrackIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(trackId)) {
+        next.delete(trackId);
+      } else {
+        next.add(trackId);
+      }
+      return next;
+    });
+  }, []);
+
+  const treeRows = useMemo<TreeRow[]>(() => {
+    const rows: TreeRow[] = [];
+
+    const appendRows = (track: Track, depth: number) => {
+      const children = sortedChildrenMap.get(track.id) ?? [];
+      const hasChildren = children.length > 0;
+      const collapsed = collapsedTrackIds.has(track.id);
+
+      rows.push({
+        track,
+        depth,
+        hasChildren,
+        collapsed,
+      });
+
+      if (!hasChildren || collapsed) return;
+      for (const childTrack of children) {
+        appendRows(childTrack, depth + 1);
+      }
+    };
+
+    for (const rootTrack of rootTracks) {
+      appendRows(rootTrack, 0);
+    }
+
+    return rows;
+  }, [rootTracks, sortedChildrenMap, collapsedTrackIds]);
+
+  const handleTreeTrackClick = useCallback(
+    (trackId: string) => {
+      setCollapsedTrackIds((prev) => {
+        const next = new Set(prev);
+        const visited = new Set<string>();
+        let current = trackById.get(trackId);
+
+        while (current?.parent_step_id) {
+          const parentId = current.parent_step_id;
+          if (visited.has(parentId)) break;
+          visited.add(parentId);
+          next.delete(parentId);
+          current = trackById.get(parentId);
+        }
+
+        return next;
+      });
+
+      setScopeStack(buildScopeStackForTrack(trackId));
+      setActiveTrackId(trackId);
+      setFocusNodeId(`process-${trackId}`);
+      setSelectedNode(null);
+      setNodeDetailDisplayType("llm");
+    },
+    [trackById, buildScopeStackForTrack],
+  );
+
+  const handleRootClick = useCallback(() => {
+    setScopeStack([]);
+    setActiveTrackId(null);
+    setFocusNodeId(null);
+    setSelectedNode(null);
+    setNodeDetailDisplayType("llm");
+    requestAnimationFrame(() => {
+      flowInstance?.fitView({ padding: 0.2, duration: 320 });
+    });
+  }, [flowInstance]);
+
   const handleEnterExecution = (trackId: string, trackName: string) => {
     setScopeStack((prev) => [...prev, { trackId, trackName }]);
+    setActiveTrackId(trackId);
+    setFocusNodeId(null);
     setSelectedNode(null);
   };
 
@@ -350,6 +549,12 @@ export function TraceDialogProcessPanel({
     } else {
       setScopeStack((prev) => prev.slice(0, index + 1));
     }
+
+    setSelectedNode(null);
+    setNodeDetailDisplayType("llm");
+    const nextActiveScope = index >= 0 ? scopeStack[index] : null;
+    setActiveTrackId(nextActiveScope?.trackId ?? null);
+    setFocusNodeId(null);
   };
 
   // Check if selected process node has children
@@ -359,65 +564,200 @@ export function TraceDialogProcessPanel({
     selectedNode.id !== "output" &&
     (childrenMap.get(selectedNode.id.replace("process-", ""))?.length ?? 0) > 0;
 
+  useEffect(() => {
+    if (!focusNodeId || !flowInstance) return;
+
+    const animationFrame = requestAnimationFrame(() => {
+      const targetNode = flowInstance
+        .getNodes()
+        .find((node) => node.id === focusNodeId);
+
+      if (!targetNode) {
+        return;
+      }
+
+      flowInstance.fitView({
+        nodes: [targetNode],
+        duration: 420,
+        padding: 0.65,
+        maxZoom: 1.75,
+      });
+      setFocusNodeId(null);
+    });
+
+    return () => cancelAnimationFrame(animationFrame);
+  }, [focusNodeId, flowInstance, graphNodes]);
+
   return (
     <div className="w-full h-[80vh]">
-      <ReactFlow
-        key={currentScope?.trackId ?? "root"}
-        proOptions={{ hideAttribution: true }}
-        defaultNodes={initialNodes}
-        defaultEdges={initialEdges}
-        nodeTypes={nodeTypes}
-        onNodeClick={(_, node) => setSelectedNode(node)}
-        fitView
-        fitViewOptions={{ padding: 0.2 }}
-        minZoom={0.1}
-        maxZoom={2}
-      >
-        <Background variant={BackgroundVariant.Dots} gap={16} size={1} />
-        <Controls showInteractive={false} />
-        <MiniMap
-          nodeStrokeWidth={3}
-          pannable
-          zoomable
-          className="bg-background! border-border!"
-        />
-        <Panel
-          className="flex gap-1 rounded-md bg-primary-foreground p-1 text-foreground"
-          position="top-left"
-        >
-          <NodeSearch className="w-xl" />
-        </Panel>
-        {scopeStack.length > 0 && (
-          <Panel
-            className="flex items-center gap-1 rounded-md bg-primary-foreground px-3 py-1.5 text-foreground text-sm"
-            position="top-center"
+      <div className="grid h-full w-full grid-cols-[320px_minmax(0,1fr)] gap-3">
+        <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border/80 bg-gradient-to-b from-card to-secondary/30 shadow-sm">
+          <div className="space-y-1 border-b border-border/80 px-3 py-3">
+            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              <Workflow className="h-3.5 w-3.5" />
+              {t("traceDialog.structureTree")}
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              {t("traceDialog.graphHint")}
+            </p>
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={handleRootClick}
+                className={cn(
+                  "flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm transition-colors",
+                  !currentScope && !activeTrackId
+                    ? "bg-[rgba(var(--process-flow-main-rgb),0.12)] text-foreground"
+                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                )}
+              >
+                <span className="font-medium">{t("traceDialog.root")}</span>
+                <span className="text-[10px] font-mono uppercase tracking-wide">
+                  {t("traceDialog.trackCount", { count: tracks.length })}
+                </span>
+              </button>
+            </div>
+          </div>
+          <ScrollArea className="min-h-0 flex-1">
+            <div className="space-y-1 p-2">
+              {treeRows.length === 0 && (
+                <div className="rounded-md px-3 py-2 text-sm text-muted-foreground">
+                  {t("traceDialog.noTracks")}
+                </div>
+              )}
+              {treeRows.map((row) => {
+                const isActive = activeTrackId === row.track.id;
+                const isInScope = scopeStack.some(
+                  (scope) => scope.trackId === row.track.id,
+                );
+                const typeMeta =
+                  TRACK_TYPE_META[row.track.type] ?? TRACK_TYPE_META.customized;
+
+                return (
+                  <button
+                    key={row.track.id}
+                    type="button"
+                    onClick={() => handleTreeTrackClick(row.track.id)}
+                    className={cn(
+                      "group relative flex w-full items-center gap-2 rounded-lg border border-transparent py-1.5 pr-2 text-left transition-colors",
+                      isActive
+                        ? "border-[rgba(var(--process-flow-main-rgb),0.35)] bg-[rgba(var(--process-flow-main-rgb),0.13)]"
+                        : "hover:border-border/80 hover:bg-muted/60",
+                      isInScope && !isActive && "bg-muted/45",
+                    )}
+                    style={{ paddingLeft: `${10 + row.depth * 16}px` }}
+                  >
+                    <span
+                      className="flex h-5 w-4 items-center justify-center text-muted-foreground"
+                      onClick={(event) => {
+                        if (!row.hasChildren) return;
+                        event.stopPropagation();
+                        handleToggleTreeRow(row.track.id);
+                      }}
+                    >
+                      {row.hasChildren ? (
+                        row.collapsed ? (
+                          <ChevronRight className="h-3.5 w-3.5" />
+                        ) : (
+                          <ChevronDown className="h-3.5 w-3.5" />
+                        )
+                      ) : (
+                        <span className="h-1.5 w-1.5 rounded-full bg-border" />
+                      )}
+                    </span>
+                    <span
+                      className={cn(
+                        "h-2 w-2 shrink-0 rounded-full",
+                        typeMeta.dotClassName,
+                      )}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-[13px] font-medium text-foreground">
+                        {row.track.name}
+                      </div>
+                      <div className="text-[10px] font-mono text-muted-foreground">
+                        {formatTrackTime(row.track.start_time)}
+                      </div>
+                    </div>
+                    <span
+                      className={cn(
+                        "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
+                        typeMeta.badgeClassName,
+                      )}
+                    >
+                      {typeMeta.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </ScrollArea>
+        </div>
+
+        <div className="h-full min-w-0 overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm">
+          <ReactFlow
+            key={currentScope?.trackId ?? "root"}
+            proOptions={{ hideAttribution: true }}
+            defaultNodes={graphNodes}
+            defaultEdges={initialEdges}
+            nodeTypes={nodeTypes}
+            onNodeClick={(_, node) => {
+              setSelectedNode(node);
+              setNodeDetailDisplayType("llm");
+              if (node.id.startsWith("process-")) {
+                setActiveTrackId(node.id.replace("process-", ""));
+              } else {
+                setActiveTrackId(null);
+              }
+            }}
+            onInit={setFlowInstance}
+            fitView
+            fitViewOptions={{ padding: 0.2 }}
+            minZoom={0.1}
+            maxZoom={2}
           >
-            <button
-              type="button"
-              className="hover:underline text-muted-foreground"
-              onClick={() => handleBreadcrumbClick(-1)}
-            >
-              {t("traceDialog.root")}
-            </button>
-            {scopeStack.map((scope, i) => (
-              <Fragment key={scope.trackId}>
-                <ChevronRight className="h-3 w-3 text-muted-foreground" />
+            <Background variant={BackgroundVariant.Dots} gap={16} size={1} />
+            <Controls showInteractive={false} />
+            <MiniMap
+              nodeStrokeWidth={3}
+              pannable
+              zoomable
+              className="bg-background! border-border!"
+            />
+            {scopeStack.length > 0 && (
+              <Panel
+                className="flex items-center gap-1 rounded-md bg-primary-foreground px-3 py-1.5 text-sm text-foreground shadow-sm"
+                position="top-center"
+              >
                 <button
                   type="button"
-                  className={`hover:underline ${
-                    i === scopeStack.length - 1
-                      ? "font-semibold"
-                      : "text-muted-foreground"
-                  }`}
-                  onClick={() => handleBreadcrumbClick(i)}
+                  className="text-muted-foreground hover:underline"
+                  onClick={() => handleBreadcrumbClick(-1)}
                 >
-                  {scope.trackName}
+                  {t("traceDialog.root")}
                 </button>
-              </Fragment>
-            ))}
-          </Panel>
-        )}
-      </ReactFlow>
+                {scopeStack.map((scope, i) => (
+                  <Fragment key={scope.trackId}>
+                    <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                    <button
+                      type="button"
+                      className={cn(
+                        "hover:underline",
+                        i === scopeStack.length - 1
+                          ? "font-semibold"
+                          : "text-muted-foreground",
+                      )}
+                      onClick={() => handleBreadcrumbClick(i)}
+                    >
+                      {scope.trackName}
+                    </button>
+                  </Fragment>
+                ))}
+              </Panel>
+            )}
+          </ReactFlow>
+        </div>
+      </div>
       <Sheet open={!!selectedNode} onOpenChange={() => setSelectedNode(null)}>
         {selectedNode &&
           (selectedNode.id === "input" || selectedNode.id === "output") && (
@@ -468,7 +808,7 @@ export function TraceDialogProcessPanel({
                   onClick={() =>
                     handleEnterExecution(
                       selectedNode.id.replace("process-", ""),
-                      selectedNode.data.title as string
+                      selectedNode.data.title as string,
                     )
                   }
                 >
@@ -564,3 +904,6 @@ export function TraceDialogProcessPanel({
     </div>
   );
 }
+
+
+

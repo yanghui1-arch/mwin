@@ -219,7 +219,11 @@
         "noLLMTracked": "No llm function is tracked in `{{title}}`.",
         "noFunctionTracked": "No function is tracked in `{{title}}`.",
         "enterExecution": "Enter Execution",
-        "root": "Root"
+        "root": "Root",
+        "structureTree": "Structure Tree",
+        "graphHint": "Select a track on the left to focus it in the graph.",
+        "trackCount": "{{count}} tracks",
+        "noTracks": "No tracked steps."
     },
     "chat": {
         "placeholder": "Ask Kubent about your project",

@@ -221,7 +221,11 @@
         "noLLMTracked": "在 `{{title}}` 中没有追踪到 LLM 调用。",
         "noFunctionTracked": "在 `{{title}}` 中没有追踪到Function。",
         "enterExecution": "进入执行详情",
-        "root": "根节点"
+        "root": "根节点",
+        "structureTree": "结构树",
+        "graphHint": "在左侧选择追踪节点并在右侧图中聚焦。",
+        "trackCount": "{{count}} 个追踪步骤",
+        "noTracks": "暂无追踪步骤。"
     },
     "chat": {
         "placeholder": "向 Kubent 询问关于您的项目",
