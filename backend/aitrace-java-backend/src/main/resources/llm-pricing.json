@@ -79,6 +79,7 @@
       "tiers": [
         {
           "input_price_per_million": 0.57,
+          "cached_input_price_per_million": 0.1,
           "output_price_per_million": 3.00
         }
       ]
