@@ -78,21 +78,20 @@ public interface PromptService {
 
     /**
      * Finds the prompt identified by {@code (projectId, promptPipelineName, version)},
-     * creating the pipeline and/or the prompt with version if they do not yet exist.
+     * creating the pipeline and the prompt with version if they do not yet exist.
      *
      * <p>This method is designed for use during step logging, where the caller knows the
-     * prompt content and version at runtime but cannot guarantee prior registration.
+     * prompt name and version at runtime but cannot guarantee prior registration.
      * The operation is transactional: both the pipeline lookup/creation and the prompt
      * lookup/creation are performed atomically.
      *
      * @param projectId           the project the prompt pipeline belongs to
      * @param promptPipelineName  the name of the prompt pipeline; created if absent
      * @param version             the version string of the prompt; created if absent
-     * @param content             the prompt content, used only when a new prompt is created
      * @return a {@code PromptRef} holding both the prompt pipeline ID and the prompt version ID
      */
     @Transactional
-    PromptRef findOrCreatePrompt(Long projectId, @NotNull String promptPipelineName, String promptName, @NotNull String version, @NotNull String content);
+    PromptRef findOrCreatePrompt(Long projectId, @NotNull String promptPipelineName, String promptName, @NotNull String version);
 
     /**
      * Returns a single prompt by its UUID.

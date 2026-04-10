@@ -81,7 +81,7 @@ public class PromptServiceImpl implements PromptService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public PromptRef findOrCreatePrompt(Long projectId, @NotNull String promptPipelineName, String promptName, @NotNull String version, @NotNull String content) {
+    public PromptRef findOrCreatePrompt(Long projectId, @NotNull String promptPipelineName, String promptName, @NotNull String version) {
         PromptPipeline pipeline = promptPipelineRepository.findByProjectIdAndName(projectId, promptPipelineName)
             .orElseGet(() -> promptPipelineRepository.save(
                 PromptPipeline.builder()
@@ -98,7 +98,6 @@ public class PromptServiceImpl implements PromptService {
                     Prompt.builder()
                         .promptPipelineId(pipeline.getId())
                         .version(version)
-                        .content(content)
                         .name(finalPromptName)
                         .build()
                 ).getVersion()
