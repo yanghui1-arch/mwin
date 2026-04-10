@@ -3,7 +3,7 @@ import { type Step } from "@/pages/projects/track/step-columns";
 import { DataTable } from "./data-table";
 import { RowPanelContent } from "./data-table/data-table-row-panel";
 import { Clock } from "lucide-react";
-import TokensPanel from "./tokens-panel";
+import TokensPanel, { type LLMTokenUsage } from "./tokens-panel";
 import { LLMJsonCard } from "./llm-json-card";
 import { FunctionIOCard } from "./fn-io-card";
 import { DataTableToolbar } from "./data-table/data-table-toolbar/common-data-table-toolbar";
@@ -12,6 +12,7 @@ import { Badge } from "./ui/badge";
 import { useState } from "react";
 import { Button } from "./ui/button";
 import { useTranslation } from "react-i18next";
+import type { CompletionUsage } from "openai/resources/completions.mjs";
 
 interface StepTableProps {
   table: Table<Step>;
@@ -23,6 +24,36 @@ enum Display {
   LLMInput,
   LLMOutput,
 }
+
+// convert CompletionUsgae to LLMTokenUsage
+const toLLMTokenUsage = (usage: CompletionUsage | undefined, cost: number | undefined): LLMTokenUsage => {
+  if (!usage) {
+    return {
+      input_tokens: 0,
+      output_tokens: 0,
+      cached_input_tokens: 0,
+      audio_tokens: 0,
+      reasoning_tokens: 0,
+      context_len: 0,
+      cost: cost ?? 0,
+    }
+  }
+  const inputTokens = usage.prompt_tokens;
+  const cachedInputTokens = usage.prompt_tokens_details?.cached_tokens ?? 0;
+  const outputTokens = usage.completion_tokens;
+  const reasoningTokens = usage.completion_tokens_details?.reasoning_tokens;
+  const audioTokens = usage.prompt_tokens_details?.audio_tokens ?? 0 + (usage.completion_tokens_details?.audio_tokens ?? 0);
+
+  return {
+    input_tokens: inputTokens,
+    output_tokens: outputTokens,
+    cached_input_tokens: cachedInputTokens,
+    audio_tokens: audioTokens,
+    reasoning_tokens: reasoningTokens,
+    context_len: inputTokens + outputTokens,
+    cost: cost ?? 0,
+  };
+};
 
 export function StepTable({ table }: StepTableProps) {
   const [displayPanel, setDisplayPanel] = useState<Display>(
@@ -77,9 +108,10 @@ export function StepTable({ table }: StepTableProps) {
                 </div>
 
                 <TokensPanel
+                  key={rowData.model}
                   model={rowData.model}
-                  usage={rowData.usage}
-                  cost={rowData.cost}
+                  usage={toLLMTokenUsage(rowData.usage, rowData.cost)}
+                  cost={rowData.cost ?? 0}
                 />
 
                 <div className="flex gap-2">

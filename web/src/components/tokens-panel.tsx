@@ -7,23 +7,55 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { CompletionUsage } from "openai/resources/completions.mjs";
 import { useTranslation } from "react-i18next";
+
+
+export interface LLMTokenUsage {
+  /**
+   * total input tokens
+   */
+  input_tokens: number;
+
+  /**
+   * total output tokens
+   */
+  output_tokens: number;
+
+  /**
+   * total cached input tokens
+   */
+  cached_input_tokens: number;
+
+  /**
+   * total audio tokens input+output
+   */
+  audio_tokens: number;
+
+  /**
+   * total reasoning tokens
+   */
+  reasoning_tokens?: number;
+
+  /**
+   * llm's context length 
+   */
+  context_len: number;
+
+  /**
+   * total cost
+   */
+  cost: number;
+}
 
 export interface TokensPanelProps extends React.ComponentProps<"div"> {
   model?: string;
-  usage?: CompletionUsage;
-  cost?: number;
+  usage: LLMTokenUsage;
+  cost: number;
   currency?: string;
   title?: string;
   description?: string;
 }
 
-function toInt(value: number | null | undefined): number {
-  return Number.isFinite(value as number) && (value as number) >= 0
-    ? Math.floor(value as number)
-    : 0;
-}
 
 export function TokensPanel({
   className,
@@ -36,30 +68,23 @@ export function TokensPanel({
 }: TokensPanelProps) {
   const { t, i18n } = useTranslation();
   const isZh = i18n.language.startsWith("zh");
-  const displayCost = isZh ? (cost ?? 0) * 7 : (cost ?? 0);
+
+  const totalInputTokens = usage.input_tokens;
+  const totalCompletionTokens = usage.output_tokens;
+  const totalCachedInputTokens = usage.cached_input_tokens;
+  const totalUncachedPrompt = totalInputTokens - totalCachedInputTokens;
+  const total = totalInputTokens + totalCompletionTokens;
+  const contextLength = usage.context_len;
+
+  const displayCost = isZh ? cost * 7 : cost;
   const displayCurrency = isZh ? "CNY" : currency;
-  const total = React.useMemo(() => toInt(usage?.total_tokens), [usage]);
-  const prompt = React.useMemo(() => toInt(usage?.prompt_tokens), [usage]);
-  const completion = React.useMemo(
-    () => toInt(usage?.completion_tokens) || Math.max(total - prompt, 0),
-    [usage, total, prompt],
-  );
-  const rawCachedPrompt = React.useMemo(() => toInt(usage?.prompt_tokens_details?.cached_tokens), [usage]);
 
-  const cachedPrompt = Math.min(rawCachedPrompt, prompt);
-  const uncachedPrompt = Math.max(prompt - cachedPrompt, 0);
+  const uncachedInputTokensPct = total ? Math.round((totalUncachedPrompt / total) * 100) : 0;
+  const cacheInputTokensPct = total ? Math.round((totalCachedInputTokens / total) * 100) : 0;
+  const completionPct = total ? Math.round((totalCompletionTokens / total) * 100) : 0;
+  const cacheHitPct = totalInputTokens ? Math.round((totalCachedInputTokens / totalInputTokens) * 100) : 0;
 
-  const safeTotal = Math.max(total, prompt + completion);
-  const contextLength = total > 0 ? total : safeTotal;
-  const uncachedPromptPct = safeTotal ? Math.round((uncachedPrompt / safeTotal) * 100) : 0;
-  const cachedPromptPct = safeTotal ? Math.round((cachedPrompt / safeTotal) * 100) : 0;
-  const completionPct = safeTotal
-    ? Math.round((completion / safeTotal) * 100)
-    : 0;
-  const cacheHitPct = prompt ? Math.round((cachedPrompt / prompt) * 100) : 0;
-
-  const hasCacheTracking = usage?.prompt_tokens_details?.cached_tokens !== undefined;
-  const hasUsage = Boolean(safeTotal || prompt || completion);
+  const hasUsage = Boolean(total || contextLength);
   const formattedCost = new Intl.NumberFormat(isZh ? "zh-CN" : "en-US", {
     style: "currency",
     currency: displayCurrency,
@@ -109,7 +134,7 @@ export function TokensPanel({
                   {t("tokensPanel.promptTokens")}
                 </div>
                 <div className="text-lg font-semibold tabular-nums">
-                  {prompt.toLocaleString()}
+                  {totalInputTokens.toLocaleString()}
                 </div>
               </div>
             </div>
@@ -119,7 +144,7 @@ export function TokensPanel({
                   {t("tokensPanel.completionTokens")}
                 </div>
                 <div className="text-lg font-semibold tabular-nums">
-                  {completion.toLocaleString()}
+                  {totalCompletionTokens.toLocaleString()}
                 </div>
               </div>
             </div>
@@ -129,7 +154,7 @@ export function TokensPanel({
                   {t("tokensPanel.cacheHit")}
                 </div>
                 <div className="text-lg font-semibold tabular-nums">
-                  {hasCacheTracking ? `${cacheHitPct}%` : "--"}
+                  {`${cacheHitPct}%`}
                 </div>
               </div>
             </div>
@@ -144,17 +169,17 @@ export function TokensPanel({
                 <div
                   className={cn(
                     "h-full bg-primary/70",
-                    uncachedPromptPct === 0 && "hidden",
+                    uncachedInputTokensPct === 0 && "hidden",
                   )}
-                  style={{ width: `${uncachedPromptPct}%` }}
+                  style={{ width: `${uncachedInputTokensPct}%` }}
                   aria-label="Prompt uncached tokens"
                 />
                 <div
                   className={cn(
                     "h-full bg-sky-500/70",
-                    cachedPromptPct === 0 && "hidden",
+                    cacheInputTokensPct === 0 && "hidden",
                   )}
-                  style={{ width: `${cachedPromptPct}%` }}
+                  style={{ width: `${cacheInputTokensPct}%` }}
                   aria-label="Prompt cached tokens"
                 />
                 <div
@@ -172,19 +197,19 @@ export function TokensPanel({
                 <div className="flex items-center gap-2">
                   <span className="inline-block size-2 rounded-sm bg-primary/70" />
                   <span className="text-xs">
-                    {t("tokensPanel.uncachedPromptDetail", { count: uncachedPrompt, pct: uncachedPromptPct })}
+                    {t("tokensPanel.uncachedPromptDetail", { count: totalUncachedPrompt, pct: uncachedInputTokensPct })}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="inline-block size-2 rounded-sm bg-sky-500/70" />
                   <span className="text-xs">
-                    {t("tokensPanel.cachedPromptDetail", { count: cachedPrompt, pct: cachedPromptPct })}
+                    {t("tokensPanel.cachedPromptDetail", { count: totalCachedInputTokens, pct: cacheInputTokensPct })}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="inline-block size-2 rounded-sm bg-emerald-500/70" />
                   <span className="text-xs">
-                    {t("tokensPanel.completionDetail", { count: completion, pct: completionPct })}
+                    {t("tokensPanel.completionDetail", { count: totalCompletionTokens, pct: completionPct })}
                   </span>
                 </div>
               </div>

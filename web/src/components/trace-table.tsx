@@ -3,7 +3,7 @@ import { DataTable } from "./data-table";
 import { RowPanelContent } from "./data-table/data-table-row-panel";
 import type { Table } from "@tanstack/react-table";
 import { Clock } from "lucide-react";
-import TokensPanel from "./tokens-panel";
+import TokensPanel, { type LLMTokenUsage } from "./tokens-panel";
 import type { CompletionUsage } from "openai/resources/completions.mjs";
 import { TraceDialogMain } from "./trace-dialog/trace-dialog-main";
 import { DataTableToolbar } from "./data-table/data-table-toolbar/common-data-table-toolbar";
@@ -12,6 +12,26 @@ import { traceApi, type Track } from "@/api/trace";
 interface TraceTableProps {
   table: Table<Trace>;
 }
+
+
+// convert CompletionUsgae to LLMTokenUsage
+const toLLMTokenUsage = (usage: CompletionUsage, cost: number): LLMTokenUsage => {
+  const inputTokens = usage.prompt_tokens;
+  const cachedInputTokens = usage.prompt_tokens_details?.cached_tokens ?? 0;
+  const outputTokens = usage.completion_tokens;
+  const reasoningTokens = usage.completion_tokens_details?.reasoning_tokens;
+  const audioTokens = usage.prompt_tokens_details?.audio_tokens ?? 0 + (usage.completion_tokens_details?.audio_tokens ?? 0);
+
+  return {
+    input_tokens: inputTokens,
+    output_tokens: outputTokens,
+    cached_input_tokens: cachedInputTokens,
+    audio_tokens: audioTokens,
+    reasoning_tokens: reasoningTokens,
+    context_len: inputTokens + outputTokens,
+    cost: cost,
+  };
+};
 
 export function TraceTable({ table }: TraceTableProps) {
   const getTracks = async (traceId: string): Promise<Track[]> => {
@@ -37,72 +57,29 @@ export function TraceTable({ table }: TraceTableProps) {
             const tracks = await getTracks(rowData.id);
             const groupedUsage = tracks.reduce(
               (acc, track) => {
-                const model: string | undefined = track.model;
-                const usage: CompletionUsage | undefined = track.usage;
+                const model = track.model;
+                const usage = track.usage;
                 if (!usage || !model) return acc;
 
+                const current = toLLMTokenUsage(usage, track.cost ?? 0);
                 const prev = acc.get(model);
-                if (prev) {
-                  /* create a copy */
-                  const newUsage = { ...prev };
-                  newUsage.cost = (newUsage.cost ?? 0) + (track.cost ?? 0);
 
-                  /* merge token usage */
-                  const addUsage = (preToken?: number, curToken?: number): number | undefined => {
-                    const hasPreToken = preToken !== undefined;
-                    const hasCurToken = curToken !== undefined;
-                    if (!hasPreToken && !hasCurToken) return undefined;
-                    return (preToken ?? 0) + (curToken ?? 0);
-                  };
-                  const mergeCompletionTokensDetails = (
-                    preCompletionTokensDetails?: CompletionUsage.CompletionTokensDetails,
-                    curCompletionTokensDetails?: CompletionUsage.CompletionTokensDetails,
-                  ): CompletionUsage.CompletionTokensDetails | undefined => {
-                    if (!preCompletionTokensDetails && !curCompletionTokensDetails) return undefined;
-                    return {
-                      accepted_prediction_tokens: addUsage(
-                        preCompletionTokensDetails?.accepted_prediction_tokens,
-                        curCompletionTokensDetails?.accepted_prediction_tokens,
-                      ),
-                      audio_tokens: addUsage(preCompletionTokensDetails?.audio_tokens, curCompletionTokensDetails?.audio_tokens),
-                      reasoning_tokens: addUsage(preCompletionTokensDetails?.reasoning_tokens, curCompletionTokensDetails?.reasoning_tokens),
-                      rejected_prediction_tokens: addUsage(
-                        preCompletionTokensDetails?.rejected_prediction_tokens,
-                        curCompletionTokensDetails?.rejected_prediction_tokens,
-                      ),
-                    };
-                  };
-                  const mergePromptTokensDetails = (
-                    prePromptTokensDetails?: CompletionUsage.PromptTokensDetails,
-                    curPromptTokensDetails?: CompletionUsage.PromptTokensDetails,
-                  ): CompletionUsage.PromptTokensDetails | undefined => {
-                    if (!prePromptTokensDetails && !curPromptTokensDetails) return undefined;
-                    return {
-                      audio_tokens: addUsage(prePromptTokensDetails?.audio_tokens, curPromptTokensDetails?.audio_tokens),
-                      cached_tokens: addUsage(prePromptTokensDetails?.cached_tokens, curPromptTokensDetails?.cached_tokens),
-                    };
-                  };
-
-                  newUsage.completion_tokens += usage.completion_tokens;
-                  newUsage.prompt_tokens += usage.prompt_tokens;
-                  newUsage.total_tokens += usage.total_tokens;
-                  newUsage.completion_tokens_details = mergeCompletionTokensDetails(
-                    newUsage.completion_tokens_details,
-                    usage.completion_tokens_details,
-                  );
-                  newUsage.prompt_tokens_details = mergePromptTokensDetails(
-                    newUsage.prompt_tokens_details,
-                    usage.prompt_tokens_details,
-                  );
-
-                  acc.set(model, newUsage);
-                } else {
-                  acc.set(model, { ...usage, cost: track.cost ?? 0 });
+                if (!prev) {
+                  acc.set(model, current);
+                  return acc;
                 }
+
+                current.input_tokens += prev.input_tokens;
+                current.output_tokens += prev.output_tokens;
+                current.cached_input_tokens += prev.cached_input_tokens;
+                current.audio_tokens += prev.audio_tokens;
+                current.reasoning_tokens = (prev.reasoning_tokens ?? 0) + (current.reasoning_tokens ?? 0);
+                current.cost += prev.cost;
+                acc.set(model, current)
 
                 return acc;
               },
-              new Map<string, CompletionUsage & { cost: number }>(),
+              new Map<string, LLMTokenUsage>(),
             );
 
             return (
@@ -116,12 +93,12 @@ export function TraceTable({ table }: TraceTableProps) {
                     return delta < 1000 ? `${delta}ms` : `${(delta / 1000).toFixed(2)}s`;
                   })()}
                 </div>
-                {Array.from(groupedUsage.entries()).map(([model, completionUsage]) => (
+                {Array.from(groupedUsage.entries()).map(([model, usage]) => (
                   <TokensPanel
                     key={model}
                     model={model}
-                    usage={completionUsage}
-                    cost={completionUsage.cost}
+                    usage={usage}
+                    cost={usage.cost}
                   />
                 ))}
                 <TraceDialogMain data={rowData} tracks={tracks} />
