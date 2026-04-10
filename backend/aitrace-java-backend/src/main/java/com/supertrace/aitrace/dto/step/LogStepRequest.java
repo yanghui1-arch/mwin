@@ -34,8 +34,8 @@ public class LogStepRequest {
     private String parentStepId;
 
     @NotNull
-    @Pattern(regexp = "customized|llm_response|retrieve|tool",
-            message = "step type must be one of `customized`, `llm_response`, `retrieve` and tool.")
+    @Pattern(regexp = "general|llm|retrieve|tool",
+            message = "step type must be one of `general`, `llm`, `retrieve` and tool.")
     private String stepType;
 
     @NotNull
