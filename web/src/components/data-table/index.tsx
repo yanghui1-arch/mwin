@@ -165,15 +165,19 @@ export function DataTable<TData extends { name: string }>({
       </div>
       <DataTablePagination table={table} />
       <Dialog open={!!clickRow} onOpenChange={() => setClickRow(null)}>
-        <DialogContent className="w-[50%] sm:max-w-none max-w-[90vw] md:max-w-240 max-h-[calc(100vh-2rem)] overflow-auto ">
+        <DialogContent className="w-[50%] sm:max-w-none max-w-[90vw] md:max-w-240 max-h-[calc(100vh-2rem)] overflow-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold">
               {clickRow?.name as string}
             </DialogTitle>
           </DialogHeader>
-          {clickRow && renderPanel?.(clickRow)}
+          <div className="w-full min-w-0">
+            {clickRow && renderPanel?.(clickRow)}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
   );
 }
+
+
