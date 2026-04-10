@@ -103,6 +103,6 @@ class UsageCostCalcUtilsTest {
         LLMUsage.PromptTokensDetails pd = new LLMUsage.PromptTokensDetails(600, null);
         LLMUsage usage = new LLMUsage(1000, 500, 1500, pd, null);
         BigDecimal cost = UsageCostCalcUtils.calcUsageCost(LLMProvider.KIMI, "kimi-k2.5", usage);
-        assertEquals(0, new BigDecimal("0.00207").compareTo(cost.stripTrailingZeros()));
+        assertEquals(0, new BigDecimal("0.001788").compareTo(cost.stripTrailingZeros()));
     }
 }
