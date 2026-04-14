@@ -69,6 +69,12 @@ def patch_async_openai_chat_completions():
                 prompt_version=prompt_version
             )
 
+        # get model from openai inputs
+        model = async_openai_inputs.get('model', step.model)
+        tags = step.tags
+        if model is not None:
+            tags += [model]
+
         # log
         client: SyncClient = get_cached_sync_client(project_name=tracker_options.project_name)
         client.log_step(
@@ -77,11 +83,11 @@ def patch_async_openai_chat_completions():
             trace_id=step.trace_id,
             parent_step_id=step.parent_step_id,
             step_type=step.type,
-            tags=step.tags,
+            tags=tags,
             input={"llm_inputs": async_openai_inputs},
             output={"llm_outputs": patch_std_output(resp)},
             error_info=step.error_info,
-            model=step.model,
+            model=model,
             usage=resp.usage,
             start_time=step.start_time,
             end_time=datetime.now(),
@@ -114,6 +120,10 @@ class ProxyAsyncStream(AsyncStream):
         self.step = step
         self.inputs = inputs
         self.tracker_options = tracker_options
+        self.model = inputs.get('model', step.model)
+        self.tags = step.tags
+        if self.model is not None:
+            self.tags += [self.model]
         self.pipeline = pipeline
         self.prompt_name = prompt_name
         self.prompt_version = prompt_version
@@ -144,11 +154,11 @@ class ProxyAsyncStream(AsyncStream):
                 trace_id=self.step.trace_id,
                 parent_step_id=self.step.parent_step_id,
                 step_type=self.step.type,
-                tags=self.step.tags,
+                tags=self.tags,
                 input={"llm_inputs": self.inputs},
                 output={"llm_outputs": patch_stream_response.model_dump(exclude_none=True)},
                 error_info=self.step.error_info,
-                model=self.step.model,
+                model=self.model,
                 usage=llm_usage,
                 start_time=self.step.start_time,
                 end_time=datetime.now(),
@@ -184,11 +194,11 @@ class ProxyAsyncStream(AsyncStream):
                     trace_id=self.step.trace_id,
                     parent_step_id=self.step.parent_step_id,
                     step_type=self.step.type,
-                    tags=self.step.tags,
+                    tags=self.tags,
                     input={"llm_inputs": self.inputs},
                     output={"llm_outputs": patch_stream_response.model_dump(exclude_none=True)},
                     error_info=self.step.error_info,
-                    model=self.step.model,
+                    model=self.model,
                     usage=llm_usage,
                     start_time=self.step.start_time,
                     end_time=datetime.now(),
