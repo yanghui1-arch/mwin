@@ -1,3 +1,5 @@
+import asyncio
+
 from openai import resources, Stream
 from openai.types.completion_usage import CompletionUsage
 from openai.types.chat import ChatCompletion, chat_completion
@@ -168,3 +170,43 @@ def test_kimi_not_logged_outside_tracked_call(fake_client, monkeypatch):
         resources.chat.completions.AsyncCompletions.create = original_async_create
 
     assert len(fake_client.steps) == step_count
+
+
+def test_track_kimi_async_chat_completions_logs_step_model_with_kwargs(fake_client, monkeypatch):
+    import mwin.patches.openai.async_completions as openai_async_completions
+
+    async def fake_async_create(self, *, model, messages, stream=False, **kwargs):
+        return _build_chat_completion(content="ok", model=model)
+
+    monkeypatch.setattr(openai_async_completions, "raw_async_openai_create", fake_async_create)
+
+    original_create = resources.chat.completions.Completions.create
+    original_async_create = resources.chat.completions.AsyncCompletions.create
+    try:
+        @track(tags=["unit"], llm_provider=LLMProvider.KIMI, system_prompt="kimi/default@1.0")
+        async def call_kimi_async():
+            kwargs = {
+                "model": "moonshot-v1-8k",
+                "messages": [{"role": "user", "content": "hi kimi"}],
+                "tools": [{"type": "function", "function": {"name": "ping", "parameters": {"type": "object", "properties": {}}}}],
+            }
+            return await resources.chat.completions.AsyncCompletions.create(
+                object(),
+                **kwargs,
+            )
+
+        asyncio.run(call_kimi_async())
+    finally:
+        resources.chat.completions.Completions.create = original_create
+        resources.chat.completions.AsyncCompletions.create = original_async_create
+
+    llm_steps = [
+        step for step in fake_client.steps
+        if "llm_inputs" in (step.get("input") or {})
+    ]
+    assert len(llm_steps) == 1
+
+    llm_inputs = llm_steps[0]["input"]["llm_inputs"]
+    assert llm_inputs["model"] == "moonshot-v1-8k"
+    assert llm_steps[0]["model"] == "moonshot-v1-8k"
+    assert "moonshot-v1-8k" in llm_steps[0]["tags"]
