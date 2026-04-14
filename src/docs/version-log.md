@@ -1,6 +1,13 @@
 # Version log
 Every version updates, fixes and removings could be checked here.
 
+## 0.2.4
+### Beaking change
+- Change system prompt track logic in a more clear and easier way. - @yanghui1-arch [# 00ad104](https://github.com/yanghui1-arch/mwin/commit/00ad104c86101d93adf62adaa3e031a3f125c663)
+
+### Fix
+- Fix missing model and tags during tracking llm with AsyncOpenAI. - @yanghui1-arch [# 03651f9](https://github.com/yanghui1-arch/mwin/commit/03651f92fa1968d3d5a575a450ca94c4500c84cd)
+
 ## 0.2.3
 ### Breaking change
 - Remove StepType and add kimi provider. - @yanghui1-arch [# 8be8115](https://github.com/yanghui1-arch/mwin/commit/8be811578284a9e00c96b6036196e2d438cbc303)
