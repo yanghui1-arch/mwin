@@ -1,6 +1,10 @@
+import os
+
 import pytest
 
 from mwin import context
+
+os.environ.setdefault("MWIN_ENABLE_TRACK_IN_TEST", 1)
 
 
 class FakeClient:

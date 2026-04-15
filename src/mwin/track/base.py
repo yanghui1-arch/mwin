@@ -1,4 +1,6 @@
 import inspect
+import os
+import sys
 from contextvars import Token
 from typing import Callable, Any, Tuple, Dict, List, Literal
 from abc import ABC, abstractmethod
@@ -14,6 +16,7 @@ from ..helper import args_helper, inspect_helper, exception_helper
 from ..client import sync_client
 from ..patches.llm_patch_config import set_llm_patch_config, reset_llm_patch_config
 from ..helper import prompt_helper
+
 
 
 class BaseTracker(ABC):
@@ -60,6 +63,12 @@ class BaseTracker(ABC):
         Returns:
             Callable: decorator
         """
+
+        def _passthrough(func: Callable) -> Callable:
+            return func
+
+        if os.environ.get("MWIN_ENABLE_TRACK_IN_TEST") != 1 and "pytest" in sys.modules:
+            return func_name if callable(func_name) else _passthrough
 
         tracker_options = TrackerOptions(
             tags=tags,
