@@ -5,12 +5,19 @@ from textwrap import dedent
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from dotenv import load_dotenv
 from openai import OpenAI, Stream, BadRequestError
-from openai.types.chat import ChatCompletionMessageParam, ChatCompletion, ChatCompletionFunctionToolParam, ChatCompletionChunk
-from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall, Function
+from openai.types.chat import (
+    ChatCompletionMessageParam, 
+    ChatCompletion,
+    ChatCompletionMessage,
+    ChatCompletionMessageFunctionToolCall,
+    ChatCompletionFunctionToolParam,
+    ChatCompletionChunk
+)
+from openai.types.chat.chat_completion_message_function_tool_call import Function
 from mwin import track, LLMProvider
 from .react import ReActAgent
 from .events import AgentEventType, SSEEvent
-from .tools import WebSearch, QueryStep, ConsultRobin, Bash
+from .tools import WebSearch, QueryStep, Bash
 from .runtime import current_project_name, current_user_id
 from ..config import config
 from ..utils.llm_context import build_save_dir, solve_exceed_context, NewMessage
@@ -23,8 +30,8 @@ class Result(BaseModel):
     """ChatCompletionParams list. It contains user's question, kubent's tool calling & kubent's thoughts and kubent's answer but not contains previous chat history."""
 
 load_dotenv()
-_BASE_URL = os.getenv("BASE_URL") or os.getenv("base_url")
-_API_KEY = os.getenv("API_KEY") or os.getenv("api_key")
+_BASE_URL = os.getenv("kimi_base_url")
+_API_KEY = os.getenv("kimi_api_key")
 _OPENAI_CLIENT_KWARGS: dict[str, str] = {}
 if _BASE_URL:
     _OPENAI_CLIENT_KWARGS["base_url"] = _BASE_URL
@@ -32,24 +39,32 @@ if _API_KEY:
     _OPENAI_CLIENT_KWARGS["api_key"] = _API_KEY
 
 
-system_bg: str = """Your name is "Kubent". Kubent is a useful assistant to keep improve agent performance better.
-Generally, Kubent will recieve one or multiple abstract agent process flow graphs which will be closure in <Agent> XML tags. 
-These graphs reflects how agent system works. It's possible that more than two graphs works as the same. Kubent can think them as a pattern or a fixed route.
-Kubent's task is to response user's question based on agent system workflow.
+system_bg: str = """Your name is "Kubent".
+Kubent is a useful assistant to keep improve performance of agent system.
+Your role is more like a product manager to upgrade the user's agent system.
+Kubent's task is to solve user's question. The type of most question is attributed to following.
+- Improve agent memory which is a component in most agent system
+- Upgrade accuracy of response from agent
+- Refine workflow chains of agent system
+
+You are not authentication to access user's codebase. BUT you can get real data of user's agent system in production.
+The data is recorded as traces. Kubent can freely access these real data in production.
 
 As we all know, every agent system works for a certain purpose.
-For example one people designs a phone agent that can give strange a phone and recommend its product. Another designs an office-word agent that can handle word documents.
-Due to the complexity of various agent purposes, their process flow graph is different. In the same time, make their performance better will be different.
-Kubent need to pose a concrete and specifically optimized for the task solution to make agent system performance upgrade about ~1% \\at least than before.
-There are many tools you can use them. Sometimes Kubent will think considerate details, how to start next step and so on.
+For example one people designs a phone agent that can give stranger a phone and recommend its product.
+Another designs an office-word agent that can handle word documents.
+Due to the complexity of various agent purposes, their process flow graph is different.
+Therefore improving their performance will be different.
+Standard operation before answering is always searching online to browse how professions do it currently.
 
-# The most important things to improve a system involved one agent or multi-agents
-
-Kubent knows every agent system is complex and their most urgent needs are different. For example telemarketing agent needs a very low latency on first token 
-and need more approchable voice, stock trading agent needs accurate data sources and powerful information integration ability. These needs are all depends which agent
-system has been developing. Kubent should uncover deeper insights and what others have overlooked from superficial requirements.
-Below are some very basic directions. When facing different systems, you need to expand on these foundations to develop more and deeper directions.
-
+# The most important metric to improve a system involved one agent or multi-agents
+Kubent knows every agent system is complex and their most urgent needs are different.
+For example telemarketing agent needs a very low latency on first token and need more approchable voice, 
+stock trading agent needs accurate data sources and powerful information integration ability.
+These needs are all depends on which agent system is developed now.
+Kubent should uncover deeper insights and what others have overlooked from superficial requirements.
+Below are some very basic directions.
+When facing different systems, you need to expand on these foundations to develop more and deeper directions.
 - Figure out main metric to evaluate the system.
 - Upgrade the performance of one agent.
 - Upgrade the performance of multi-agent cooperation.
@@ -57,7 +72,7 @@ Below are some very basic directions. When facing different systems, you need to
 - Evaluate and select one best model for every agent which can satisfy user's need and have a good balance on cost-performance.
 
 # Kubent plan
-It's a plan mode for Kubent. You can make a plan to guide your future work. 
+It's a plan mode for Kubent. You can make a plan to guide your future work.
 However before you create a detailed, credible, and executable plan, you must first gather all the information you might need.
 Then you have sufficient information to refer to when making the plan.
 
@@ -86,21 +101,19 @@ Plan mode is recommended in every stage of your work.
 
 # Kubent Best Solution
 
-Kubent will provide user with a specific enterprise-level solution. This solution at least follow requirements:
-- Describe Kubent's solution as precisely and explicitly as possible.
-- Provide structured data of the modified agent system flowchart.
+- Improve only one important point in the solution. Don't point out many areas for optimization but they are not in-depth or professional.
+- Describe Kubent's solution as precisely and explicitly as possible. Don't speak in general terms. Please refine it to the utmost detail.
+- Provide a mermaid chart to visualize the modified agent system flowchart.
 - Briefly summarize the differences between before and after.
 - Explain to the user what problems the proposed solution can address.
-Refered to workflow, please use **mermaid** language to describe it.
 
 # Conditions of ending Conversation
-
 1. Offer a specific enterprise-level solution.
 2. Request user provide more details that you can't access by tools or your brain knowledge.
 3. Think a great response to reply user.
 4. Daily chat.
 
-Encourage you to use more tools to get more information in the real world.
+You can use more tools to get more information in the real world.
 """
 
 
@@ -119,7 +132,6 @@ class Kubent(ReActAgent):
         self.tools = [
             WebSearch().json_schema,
             QueryStep().json_schema,
-            ConsultRobin().json_schema,
             Bash().json_schema,
         ]
         return self
@@ -163,7 +175,6 @@ class Kubent(ReActAgent):
         question: str | None,
         obs: List[ChatCompletionMessageParam],
         chat_hist: List[ChatCompletionMessageParam] | None,
-        agent_workflows: List[str] | None,
     ) -> ChatCompletion:
         """Kubent execute one step
 
@@ -198,10 +209,6 @@ class Kubent(ReActAgent):
                 {"\n".join([ file.name for file in matched_files[:3] ])}
                 """
             )
-
-        if agent_workflows is not None and len(agent_workflows) > 0:
-            workflows_desc = [f"<AgentExecutionGraph>\n{workflow}\n</AgentExecutionGraph>" for workflow in agent_workflows]
-            kubent_system_prompt += f"<Agent>\n{"\n".join(workflows_desc)}\n</Agent>"
 
         try:
             completion:ChatCompletion = self.engine.chat.completions.create(
@@ -264,12 +271,9 @@ class Kubent(ReActAgent):
     @track(llm_provider=LLMProvider.OPEN_ROUTER)
     def stream_step(
         self,
-        question: str | None,
-        obs: List[ChatCompletionMessageParam],
-        chat_hist: List[ChatCompletionMessageParam] | None,
-        agent_workflows: List[str] | None,
+        current_turn_ctx: list[ChatCompletionMessageParam],
         on_progress: Callable[[SSEEvent], None],
-    ) -> tuple[str | None, list[ChatCompletionMessageToolCall] | None]:
+    ) -> ChatCompletionMessage:
         """Like step() but streams token deltas via on_progress as the LLM generates them.
 
         Args:
@@ -277,13 +281,15 @@ class Kubent(ReActAgent):
                          Pass ``lambda _: None`` if you don't need streaming updates.
 
         Returns:
-            Reconstructed message compatible with env.step().
+            Reconstructed assistant message compatible with env.step().
         """
+
         kubent_system_prompt = system_bg
-        if chat_hist is None:
-            chat_hist = []
-        user_content = question
-        conversation_dir = build_save_dir(agent_name=self.name, user_uuid=str(current_user_id.get()), project_name=current_project_name.get())
+
+        conversation_dir = build_save_dir(
+            agent_name=self.name, user_uuid=str(current_user_id.get()),
+            project_name=current_project_name.get()
+        )
         if conversation_dir.exists() and conversation_dir.is_dir():
             pattern = f"conversation_*.md"
             matched_files = list(conversation_dir.glob(pattern))
@@ -298,81 +304,61 @@ class Kubent(ReActAgent):
                 """
             )
 
-        if agent_workflows is not None and len(agent_workflows) > 0:
-            workflows_desc = [f"<AgentExecutionGraph>\n{workflow}\n</AgentExecutionGraph>" for workflow in agent_workflows]
-            kubent_system_prompt += f"<Agent>\n{"\n".join(workflows_desc)}\n</Agent>"
 
         try:
             stream:Stream[ChatCompletionChunk] = self.engine.chat.completions.create(
                 model=self.model,
-                messages=[{"role": "system", "content": kubent_system_prompt}] + chat_hist + [{"role": "user", "content": user_content}] + obs,
+                messages=current_turn_ctx,
                 tools=self.tools,
                 parallel_tool_calls=True,
                 stream=True,
             )
             return self._collect_stream(stream, on_progress)
         except BadRequestError as bqe:
-            if "maximum context" in bqe.args[0]:
-                new_message: NewMessage = solve_exceed_context(
-                    chat_hist=chat_hist,
-                    user_content=user_content,
-                    obs=obs,
-                    user_uuid=current_user_id.get(),
-                    project_name=current_project_name.get(),
-                )
-                if new_message.summary_obs:
-                    kubent_system_prompt += dedent(f"""
-                    # Summary of What You've Done in the current turn.
-                    {new_message.summary_obs}
-                    """)
-                kubent_system_prompt += dedent(f"""
-                # Summary of What You've Done So Far
-                {new_message.summary_conversation}
-                """)
-                stream = self.engine.chat.completions.create(
-                    model=self.model,
-                    messages=[{"role": "system", "content": kubent_system_prompt}] + new_message.pairs + [{"role": "user", "content": user_content}],
-                    tools=self.tools,
-                    parallel_tool_calls=True,
-                    stream=True,
-                )
-                return self._collect_stream(stream, on_progress)
             raise bqe
 
     def _collect_stream(
         self,
         stream: Stream[ChatCompletionChunk],
         on_progress: Callable[[SSEEvent], None],
-    ) -> tuple[str | None, list[ChatCompletionMessageToolCall] | None]:
+    ) -> ChatCompletionMessage:
         """Consume a streaming LLM response.
 
         Classifies the step on the first meaningful chunk:
-        - tool_calls chunk → intermediate step: emits PROGRESS(delta=...)
-        - content chunk    → final answer step: emits PROGRESS(answer_delta=...)
-        Returns (content, tool_calls) to pass directly to env.step().
+        - tool_calls chunk        → intermediate step: emits PROGRESS(delta=...)
+        - reasoning_content chunk → intermediate step: emits PROGRESS(delta=...)
+        - content chunk           → final answer step: emits PROGRESS(answer_delta=...)
+        Returns a reconstructed assistant message param (content + tool_calls + optional reasoning_content).
         """
+
         content_parts: List[str] = []
+        reasoning_parts: List[str] = []
         tool_calls_acc: dict[int, dict] = {}
-        is_answer_step: bool | None = None  # None = not yet classified
+        event_type = AgentEventType.PROGRESS
+        finish_reason = None
 
         for chunk in stream:
             if not chunk.choices:
                 continue
-            delta = chunk.choices[0].delta
+            choice = chunk.choices[0]
+            delta = choice.delta
+            finish_reason: str | None = choice.finish_reason
+            if finish_reason is not None and finish_reason == "stop":
+                event_type = AgentEventType.DONE
 
-            # Classify on the first meaningful chunk
-            if is_answer_step is None:
-                if delta.tool_calls:
-                    is_answer_step = False
-                elif delta.content:
-                    is_answer_step = True
+            reasoning_delta: str | None = getattr(delta, "reasoning_content", None)
+            content_delta: str | None = delta.content
 
-            if delta.content:
-                content_parts.append(delta.content)
-                if is_answer_step:
-                    on_progress(SSEEvent(type=AgentEventType.PROGRESS, answer_delta=delta.content))
-                else:
-                    on_progress(SSEEvent(type=AgentEventType.PROGRESS, delta=delta.content))
+            if reasoning_delta:
+                reasoning_parts.append(reasoning_delta)
+                on_progress(SSEEvent(type=event_type, delta=reasoning_delta))
+
+            if content_delta:
+                content_parts.append(content_delta)
+                if event_type == AgentEventType.PROGRESS:
+                    on_progress(SSEEvent(type=event_type, delta=content_delta))
+                elif event_type == AgentEventType.DONE:
+                    on_progress(SSEEvent(type=event_type, answer_delta=content_delta))
 
             if delta.tool_calls:
                 for tc in delta.tool_calls:
@@ -387,14 +373,27 @@ class Kubent(ReActAgent):
                         if tc.function.arguments:
                             tool_calls_acc[idx]["arguments"] += tc.function.arguments
 
-        tool_calls = None
+        tool_calls: list[ChatCompletionMessageFunctionToolCall] | None = None
+        
         if tool_calls_acc:
             tool_calls = [
-                ChatCompletionMessageToolCall(
+                ChatCompletionMessageFunctionToolCall(
                     id=tc["id"],
                     type="function",
-                    function=Function(name=tc["name"], arguments=tc["arguments"]),
+                    function=Function(name=tc["name"], arguments=tc["arguments"])
                 )
-                for tc in tool_calls_acc.values()
+                for _, tc in sorted(tool_calls_acc.items())
             ]
-        return "".join(content_parts) or None, tool_calls
+
+        content = "".join(content_parts) or None
+        reasoning_content = "".join(reasoning_parts) or None
+        assistant_message = ChatCompletionMessage(
+            role="assistant",
+            content=content,
+            tool_calls=tool_calls,
+        )
+        if reasoning_content:
+            assistant_message.__setattr__("reasoning_content", reasoning_content)
+
+        return assistant_message
+

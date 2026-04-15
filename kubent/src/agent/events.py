@@ -12,7 +12,7 @@ class AgentEventType(StrEnum):
 class SSEEvent(BaseModel):
     type: AgentEventType
     delta: str | None = None
-    """Think-bubble token, streamed during intermediate tool-call steps."""
+    """Think-bubble token, streamed during intermediate tool-call steps or start thinking."""
 
     answer_delta: str | None = None
     """Final-answer token, streamed during the last step."""

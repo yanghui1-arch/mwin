@@ -156,7 +156,6 @@ async def optimize_agent_system_stream(
 
     message: str = req.message
     chat_hist: List[ChatCompletionMessageParam] | None = None
-    exec_graphs: List[str] = []
     project_name: str = ""
 
     if not req.session_id:
@@ -183,8 +182,6 @@ async def optimize_agent_system_stream(
                 redis_client.rpush(f"optimize-trace-{str(user_id)}", *[str(t_id) for t_id in traces_id])
                 redis_client.expire(f"optimize-trace-{str(user_id)}", 600)
 
-        steps_in_traces: List[List[Step]] = [await step.select_steps_by_trace_id(db=db, trace_id=trace_id) for trace_id in traces_id]
-        exec_graphs = [str(mermaid.steps_to_mermaid(steps=steps)) for steps in steps_in_traces]
         selected_project: Project | None = await project.query_project_by_id(db=db, project_id=req.project_id)
 
         if not selected_project:
@@ -207,21 +204,14 @@ async def optimize_agent_system_stream(
     def run_agent():
         try:
             with execution_scope(session_id=session_id, user_id=user_id, project_name=project_name, agent_name="kubent"), start_trace():
-                env = Env(env_name=f"optimize_{str(user_id)}")
                 kubent_agent = Kubent()
-                for tool in kubent_agent.tools:
-                    env.update_space_action(tool=tool)
 
                 result = run_with_callback(
                     on_progress=on_progress,
                     cancel=cancel,
-                    env=env,
                     kubent=kubent_agent,
                     question=message,
-                    chat_hist=chat_hist,
-                    agent_workflows=exec_graphs,
                 )
-
                 add_chat(session_id=session_id, user_id=user_id, messages=result.chats, agent_name="kubent")
                 on_progress(SSEEvent(type=AgentEventType.DONE, answer=result.answer))
         except Exception as e:

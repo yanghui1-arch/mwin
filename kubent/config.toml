@@ -20,7 +20,7 @@ model = "qwen2.5-72b-instruct"
 model = "x-ai/grok-4.1-fast"
 
 [kubent]
-model = "anthropic/claude-haiku-4.5"
+model = "kimi-k2.5"
 
 [kubent.think]
 model = "x-ai/grok-4.1-fast"

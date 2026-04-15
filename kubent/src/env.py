@@ -1,7 +1,7 @@
 import json
 from typing import Callable, TypedDict, Literal, List, Dict
 from pydantic import BaseModel, Field
-from openai.types.chat import ChatCompletionFunctionToolParam, ChatCompletionMessage, ChatCompletionMessageToolCallUnion, ChatCompletionMessageParam
+from openai.types.chat import ChatCompletionFunctionToolParam, ChatCompletionAssistantMessageParam, ChatCompletionMessageToolCallUnion, ChatCompletionMessageParam
 from mwin import track
 from .agent.tools import TOOL_KITS, Tool
 
@@ -82,7 +82,7 @@ class Env(BaseModel):
     @track()
     def step(
         self,
-        content: str | None,
+        message: ChatCompletionAssistantMessageParam,
         tool_calls: List[ChatCompletionMessageToolCallUnion] | None
     ) -> tuple[List[ChatCompletionMessageParam], float, bool, EnvStepInfo]:
         """Environment will be affected by an agent's decision.
@@ -99,6 +99,7 @@ class Env(BaseModel):
 
         reward = 0
         terminate = False
+        content = message.get("content")
 
         if content is not None and tool_calls is None:
             terminate = True
@@ -108,13 +109,7 @@ class Env(BaseModel):
             return self.obs, reward, terminate, self._get_info()
 
         if tool_calls is not None:
-            self.obs.append(
-                {"role": "assistant", "content": content, "tool_calls": [
-                        {"id": tool_call.id, "type": tool_call.type, "function": tool_call.function.model_dump()}
-                        for tool_call in tool_calls
-                    ]
-                }
-            )
+            self.obs.append(message)
             
             # Initialize tool usage history.
             self.tool_usage_history = []
