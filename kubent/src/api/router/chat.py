@@ -27,11 +27,8 @@ from src.api.schemas import ChatRequest, ChatResponse, ChatSessionResponse, Chat
 from src.api.jwt import verify_at_token
 from src.service import chat
 from src.utils import mermaid
-from src.kubent_celery.celery_app import celery_app
-from src.kubent_celery.tasks import kubent_run, KubentRequestArgs, KubentResponse, TaskProgress
 from src.agent.runner import run_with_callback, add_chat, AgentEventType, SSEEvent
 from src.agent.kubent import Kubent
-from src.env import Env
 from src.agent.runtime import execution_scope
 from src.api.guard import AgentCapacityGuard
 
