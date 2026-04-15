@@ -15,7 +15,7 @@ async def clean_up_sandboxes():
             await asyncio.sleep(60)  # Run every minute
 
             manager = get_sandbox_manager()
-            cleaned = manager.cleanup_idle_sandboxes(idle_timeout=600)  # 10 minutes
+            cleaned = manager.cleanup_idle_sandboxes(idle_timeout=86400)  # 1 day
 
             if cleaned > 0:
                 print(f"[Cleanup] Cleaned up {cleaned} idle sandboxes")
@@ -42,7 +42,7 @@ async def lifespan(app: FastAPI):
     clean_up_sandboxes_task = asyncio.create_task(clean_up_sandboxes())
     app.state.cleanup_task = clean_up_sandboxes_task
     print("[Startup] Sandbox manager initialized with automatic cleanup")
-    print("[Startup] Cleanup runs every 60 seconds (idle timeout: 600 seconds)")
+    print("[Startup] Cleanup runs every 60 seconds (idle timeout: 1 day)")
 
     # Dedicated thread pool for agent runs — isolated from the default executor.
     # Sized to MAX_CONCURRENT_AGENTS so threads and capacity gate are always consistent.

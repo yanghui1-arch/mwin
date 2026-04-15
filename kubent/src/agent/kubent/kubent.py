@@ -1,5 +1,4 @@
 from typing import List, Dict, Any, Callable
-from uuid import UUID
 import os
 import logging
 from textwrap import dedent
@@ -7,8 +6,7 @@ from pydantic import BaseModel, PrivateAttr, ConfigDict, Field, model_validator
 from dotenv import load_dotenv
 from openai import OpenAI, Stream, BadRequestError
 from openai.types.chat import (
-    ChatCompletionMessageParam, 
-    ChatCompletion,
+    ChatCompletionMessageParam,
     ChatCompletionMessage,
     ChatCompletionMessageFunctionToolCall,
     ChatCompletionFunctionToolParam,
@@ -17,9 +15,8 @@ from openai.types.chat import (
 from openai.types.chat.chat_completion_message_function_tool_call import Function
 from mwin import track, LLMProvider
 from .system_prompt import build_kubent_system_prompt
-from ..react import ReActAgent
 from ..events import AgentEventType, SSEEvent
-from ..tools import WebSearch, QueryStep, Bash
+from ..tools import WebSearch
 from ..runtime import current_project_name, current_user_id
 from ...config import config
 from ...utils.llm_context import build_save_dir
@@ -43,7 +40,7 @@ if _API_KEY:
     _OPENAI_CLIENT_KWARGS["api_key"] = _API_KEY
 
 
-class Kubent(ReActAgent):
+class Kubent:
     name: str = "kubent"
     model: str = config.get("kubent.model", "anthropic/claude-haiku-4.5")
     tools: List[ChatCompletionFunctionToolParam] = Field(..., default_factory=list)
@@ -107,42 +104,6 @@ class Kubent(ReActAgent):
     @property
     def system_prompt(self):
         return self._system_prompt
-
-    @track
-    def act(
-        self, 
-        question: str | None,
-        obs: List[ChatCompletionMessageParam],
-        chat_hist: List[ChatCompletionMessageParam] | None,
-        agent_workflows: List[str] | None,
-        session_id: UUID,
-        user_id: UUID,
-        project_name: str,
-    ):
-        ...
-
-    def run():
-        ...
-    
-    @track
-    def step(
-        self,
-        question: str | None,
-        obs: List[ChatCompletionMessageParam],
-        chat_hist: List[ChatCompletionMessageParam] | None,
-    ) -> ChatCompletion:
-        """Kubent execute one step
-
-        Args:
-            question(str | None): question
-            obs(List[ChatCompletionMessageParam]): Kubent observations in the context.
-            chat_hist(List[ChatCompletionMessageParam] | None): kubent chat history.
-            agent_workflows(List[str] | None): traces agent workflows.
-
-        Returns:
-            llm chat completion
-        """
-        ...
 
     @track(llm_provider=LLMProvider.OPEN_ROUTER, project_name="Kubent")
     def stream_step(
