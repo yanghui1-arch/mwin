@@ -2,7 +2,6 @@ from uuid import UUID
 from typing import Literal
 from datetime import datetime
 from pydantic import BaseModel
-from ...kubent_celery.tasks import TaskProgress
 
 class ChatRequest(BaseModel):
     session_id: str | None
@@ -35,5 +34,5 @@ class ChatTaskResponse(BaseModel):
     exception_traceback: str | None
     """error traceback"""
 
-    progress_info: TaskProgress | None
+    progress_info: str | None
     """Started task information in the progress"""

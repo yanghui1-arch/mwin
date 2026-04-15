@@ -9,7 +9,7 @@ Covers:
       * Max-attempt exhaustion returns the "exceed" fallback message.
       * on_token callback fires for each streamed delta.
       * tool_names are reported in the PROGRESS event following env.step().
-      * chat_hist and agent_workflows are forwarded to stream_step.
+      * chat_hist is forwarded to stream_step.
       * on_progress is called at least once per step.
   - add_chat:
       * Calls create_new_chat_sync once per message.
@@ -23,6 +23,7 @@ from typing import List
 from unittest.mock import MagicMock, call
 
 import pytest
+from openai.types.chat import ChatCompletionMessage
 
 from src.agent.runner import AgentEventType, SSEEvent, run_with_callback
 
@@ -70,7 +71,7 @@ def _unsolved_env(tool_names: List[str] | None = None) -> MagicMock:
 def _simple_kubent(answer: str = "solved answer", attempt: int = 5) -> MagicMock:
     kubent = MagicMock()
     kubent.attempt = attempt
-    kubent.stream_step.return_value = (answer, None)
+    kubent.stream_step.return_value = ChatCompletionMessage(role="assistant", content=answer, tool_calls=None)
     return kubent
 
 
@@ -221,7 +222,7 @@ class TestRunWithCallback:
     def test_max_attempts_stops_loop(self):
         env = _unsolved_env()
         kubent = _simple_kubent(attempt=3)
-        kubent.stream_step.return_value = (None, None)
+        kubent.stream_step.return_value = ChatCompletionMessage(role="assistant", content=None, tool_calls=None)
 
         result = run_with_callback(
             on_progress=lambda e: None,
@@ -236,7 +237,7 @@ class TestRunWithCallback:
     def test_exceed_chats_include_user_and_assistant(self):
         env = _unsolved_env()
         kubent = _simple_kubent(attempt=2)
-        kubent.stream_step.return_value = (None, None)
+        kubent.stream_step.return_value = ChatCompletionMessage(role="assistant", content=None, tool_calls=None)
 
         result = run_with_callback(
             on_progress=lambda e: None,
@@ -260,7 +261,7 @@ class TestRunWithCallback:
             if on_progress:
                 on_progress(SSEEvent(type=AgentEventType.PROGRESS, delta="tok1"))
                 on_progress(SSEEvent(type=AgentEventType.PROGRESS, delta="tok2"))
-            return ("tok1tok2", None)
+            return ChatCompletionMessage(role="assistant", content="tok1tok2", tool_calls=None)
 
         kubent.stream_step.side_effect = fake_stream_step
         env.step.return_value = (
@@ -336,21 +337,6 @@ class TestRunWithCallback:
         call_kwargs = kubent.stream_step.call_args[1]
         assert call_kwargs.get("chat_hist") == chat_hist
 
-    def test_agent_workflows_forwarded_to_stream_step(self):
-        env = _solved_env()
-        kubent = _simple_kubent()
-        workflows = ["flowchart TD\n  n0[step]"]
-        run_with_callback(
-            on_progress=lambda e: None,
-            cancel=threading.Event(),
-            env=env,
-            kubent=kubent,
-            question="q",
-            agent_workflows=workflows,
-        )
-        call_kwargs = kubent.stream_step.call_args[1]
-        assert call_kwargs.get("agent_workflows") == workflows
-
     def test_question_forwarded_to_stream_step(self):
         env = _solved_env()
         kubent = _simple_kubent()
@@ -413,7 +399,7 @@ class TestRunWithCallback:
              "num_tool_callings": 0, "answer": None, "tool_use": None},
         )
         kubent = _simple_kubent(attempt=1)
-        kubent.stream_step.return_value = (None, None)
+        kubent.stream_step.return_value = ChatCompletionMessage(role="assistant", content=None, tool_calls=None)
         result = run_with_callback(
             on_progress=lambda e: None,
             cancel=threading.Event(),
@@ -514,3 +500,4 @@ class TestAddChat:
             add_chat(_uuid.uuid4(), _uuid.uuid4(), messages, agent_name="kubent")
             kwargs = mock_kc.create_new_chat_sync.call_args[1]
             assert kwargs["role"] == "assistant"
+

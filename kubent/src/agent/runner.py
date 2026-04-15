@@ -5,9 +5,9 @@ from uuid import UUID
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletionMessage
 
 from .tools import TOOL_KITS
-from .kubent import Kubent, Result, system_bg as kubent_system
+from .kubent import Kubent
+from .kubent.kubent import Result
 from .events import AgentEventType, SSEEvent
-from ..env import Env, EnvStepInfo
 from ..repository.db.conn import SessionLocal
 from ..repository import kubent_chat
 
@@ -25,6 +25,7 @@ def run_with_callback(
     """
     cnt = 0
     terminate = False
+    kubent_system = kubent.system_prompt
     current_turn_ctx: list[ChatCompletionMessageParam] = [
         {"role": "system", "content": kubent_system},
         {"role": "user", "content": question}
