@@ -124,6 +124,17 @@ export const promptApi = {
     return http.post<APIResponse<string>>("/v0/prompt/create_prompt_pipeline", body)
   },
 
+  createPrompt(body: {
+    prompt_pipeline_id: string
+    version: string
+    content: string
+    name: string
+    description?: string
+    changelog?: string
+  }) {
+    return http.post<APIResponse<string>>("/v0/prompt/version", body)
+  },
+
   updatePipelineStatus(pipelineId: string, status: string) {
     return http.patch<APIResponse<void>>(`/v0/prompt/pipeline/${pipelineId}/status`, { status })
   },
@@ -132,3 +143,4 @@ export const promptApi = {
     return http.post<APIResponse<void>>(`/v0/prompt/${promptId}/status`, { status })
   },
 }
+

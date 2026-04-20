@@ -16,6 +16,7 @@ export default function KubentPage() {
     messages,
     isStreaming,
     callingToolInformation,
+    thinkingInformation,
     handleSend,
   } = useKubentChat();
 
@@ -42,6 +43,7 @@ export default function KubentPage() {
             messages={messages}
             isStreaming={isStreaming}
             callingToolInformation={callingToolInformation}
+            thinkingInformation={thinkingInformation}
             selectedProjectName={selectedProject?.name}
             disabled={!selectedProject || isStreaming}
             onSend={handleSend}

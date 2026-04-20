@@ -35,6 +35,36 @@ type KubentChat = {
   start_timestamp: string;
 }
 
+function parseSSEEvent(rawEvent: string): SSEEvent | null {
+  const lines = rawEvent.split(/\r?\n/);
+  const dataLines: string[] = [];
+
+  for (const rawLine of lines) {
+    const line = rawLine.trimEnd();
+
+    if (!line || line.startsWith(":")) {
+      continue;
+    }
+
+    if (line.startsWith("data:")) {
+      dataLines.push(line.slice("data:".length).trimStart());
+    }
+  }
+
+  if (dataLines.length === 0) {
+    return null;
+  }
+
+  const json = dataLines.join("\n");
+
+  try {
+    return JSON.parse(json) as SSEEvent;
+  } catch (error) {
+    console.error("Failed to parse SSE event:", json, error);
+    return null;
+  }
+}
+
 export const kubentChatApi = {
   /* Get chat session */
   session(){
@@ -71,7 +101,7 @@ export const kubentChatApi = {
     const response = await kubentApi.post<Response<ChatTaskStatus>>(
       "/chat/query_optimize_result",
       null,
-      { 
+      {
         params: {task_id},
         signal,
       }
@@ -122,21 +152,33 @@ export const kubentChatApi = {
     if (!res.ok || !res.body) {
       throw new Error(`SSE request failed: ${res.status}`);
     }
+
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
     let buf = "";
+
     while (true) {
       const { done, value } = await reader.read();
-      if (done) break;
-      buf += decoder.decode(value, { stream: true });
-      const parts = buf.split("\n\n");
-      buf = parts.pop() ?? "";
-      for (const part of parts) {
-        const line = part.trim();
-        if (!line.startsWith("data:")) continue;
-        const json = line.slice("data:".length).trim();
-        yield JSON.parse(json) as SSEEvent;
+      if (done) {
+        buf += decoder.decode();
+        break;
       }
+
+      buf += decoder.decode(value, { stream: true });
+      const parts = buf.split(/\r?\n\r?\n/);
+      buf = parts.pop() ?? "";
+
+      for (const part of parts) {
+        const parsedEvent = parseSSEEvent(part);
+        if (parsedEvent) {
+          yield parsedEvent;
+        }
+      }
+    }
+
+    const trailingEvent = parseSSEEvent(buf.trim());
+    if (trailingEvent) {
+      yield trailingEvent;
     }
   },
 }

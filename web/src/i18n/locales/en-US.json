@@ -241,6 +241,21 @@
         "title": "Prompt Management",
         "description": "Visualize and optimize your agent system's prompt combinations",
         "selectProject": "Select a project",
+        "createPrompt": {
+            "button": "Create Prompt",
+            "title": "Create Prompt",
+            "name": "Name",
+            "namePlaceholder": "Prompt name",
+            "version": "Version",
+            "versionPlaceholder": "v1",
+            "pipeline": "Pipeline",
+            "pipelinePlaceholder": "Select pipeline",
+            "content": "Prompt Content",
+            "contentPlaceholder": "Enter prompt content",
+            "create": "Create",
+            "cancel": "Cancel",
+            "createFailed": "Failed to create prompt"
+        },
         "stats": {
             "totalPipelines": "Total Pipelines",
             "totalPrompts": "Total Prompts",
@@ -277,7 +292,17 @@
             "copyContent": "Copy",
             "copied": "Copied!",
             "perThousandCalls": "per 1k calls",
-            "totalCalls": "total calls"
+            "totalCalls": "total calls",
+            "identifierLabel": "SDK Identifier",
+            "identifierFormatHint": "Use this value in the SDK: @track(system_prompt=\"pipeline/name@version\")",
+            "copyIdentifier": "Copy ID",
+            "copyTrackSnippet": "Copy @track",
+            "trackSnippet": "Decorator snippet",
+            "identifierInvalid": "Identifier unavailable",
+            "identifierMissingPart": "Pipeline, prompt name, or version is empty.",
+            "identifierInvalidPipelineChars": "Pipeline name cannot contain '/' or '@'.",
+            "identifierInvalidPromptChars": "Prompt name cannot contain '@'.",
+            "identifierInvalidVersionChars": "Version cannot contain '@'."
         },
         "chart": {
             "title": "Success Rate Trends",

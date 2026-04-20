@@ -15,6 +15,9 @@ export function useKubentChat() {
   const [callingToolInformation, setCallingToolInformation] = useState<
     string | undefined
   >(undefined);
+  const [thinkingInformation, setThinkingInformation] = useState<
+    string | undefined
+  >(undefined);
   const abortRef = useRef<AbortController | null>(null);
 
   const selectProject = (projectName: string) => {
@@ -70,6 +73,7 @@ export function useKubentChat() {
     setMessages([]);
     setIsStreaming(false);
     setCallingToolInformation(undefined);
+    setThinkingInformation(undefined);
   };
 
   const handleSend = async (inputValue: string) => {
@@ -84,6 +88,7 @@ export function useKubentChat() {
     setMessages((prev) => [...prev, userMessage]);
     setIsStreaming(true);
     setCallingToolInformation(undefined);
+    setThinkingInformation(undefined);
 
     let session: Session | undefined = selectedSession;
     let isNewSession = false;
@@ -120,8 +125,33 @@ export function useKubentChat() {
     abortRef.current = controller;
 
     try {
-      let accumulated = "";
+      let thinkingAccumulated = "";
       let answerAccumulated = "";
+      let assistantStartTimestamp: string | undefined;
+
+      const upsertAssistantMessage = (content: string) => {
+        setMessages((prev) => {
+          const updated = [...prev];
+          const lastIndex = updated.length - 1;
+
+          if (lastIndex >= 0 && updated[lastIndex].role === "assistant") {
+            updated[lastIndex] = { ...updated[lastIndex], content };
+            return updated;
+          }
+
+          if (!assistantStartTimestamp) {
+            assistantStartTimestamp = new Date().toLocaleString("sv-SE");
+          }
+
+          updated.push({
+            role: "assistant",
+            content,
+            startTimestamp: assistantStartTimestamp,
+          });
+          return updated;
+        });
+      };
+
       for await (const event of kubentChatApi.optimizeStream(
         session.id,
         inputValue.trim(),
@@ -129,29 +159,27 @@ export function useKubentChat() {
         controller.signal,
       )) {
         if (event.type === "PROGRESS") {
-          if (event.answer_delta) {
-            const isFirst = !answerAccumulated;
-            answerAccumulated += event.answer_delta;
-            if (isFirst) {
-              setCallingToolInformation(undefined);
-              setMessages((prev) => [
-                ...prev,
-                { role: "assistant", content: answerAccumulated, startTimestamp: new Date().toLocaleString("sv-SE") },
-              ]);
-            } else {
-              setMessages((prev) => {
-                const updated = [...prev];
-                updated[updated.length - 1] = { ...updated[updated.length - 1], content: answerAccumulated };
-                return updated;
-              });
-            }
-          } else if (event.delta) {
-            accumulated += event.delta;
-            setCallingToolInformation(accumulated);
-          }
           if (event.tool_names && event.tool_names.length > 0) {
-            accumulated = "";
+            setCallingToolInformation(`Using tools: ${event.tool_names.join(", ")}`);
+          }
+
+          if (event.delta) {
+            thinkingAccumulated += event.delta;
+            setThinkingInformation(thinkingAccumulated);
+          }
+
+          if (event.answer_delta) {
+            answerAccumulated += event.answer_delta;
             setCallingToolInformation(undefined);
+            setThinkingInformation(undefined);
+            upsertAssistantMessage(answerAccumulated);
+          }
+
+          if (event.answer) {
+            answerAccumulated = event.answer;
+            setCallingToolInformation(undefined);
+            setThinkingInformation(undefined);
+            upsertAssistantMessage(answerAccumulated);
           }
         } else if (event.type === "DONE") {
           break;
@@ -167,6 +195,7 @@ export function useKubentChat() {
     } finally {
       setIsStreaming(false);
       setCallingToolInformation(undefined);
+      setThinkingInformation(undefined);
     }
   };
 
@@ -237,6 +266,7 @@ export function useKubentChat() {
     messages,
     isStreaming,
     callingToolInformation,
+    thinkingInformation,
     handleSend,
   };
 }

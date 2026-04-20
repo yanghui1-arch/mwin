@@ -4,6 +4,12 @@ import { Card } from "@/components/ui/card";
 import { Markdown } from "../markdown";
 import { useTranslation } from "react-i18next";
 
+type AssistantChatBubbleProps = {
+  content: string;
+  className?: string;
+  typing?: boolean;
+};
+
 type ChatBubbleProps = {
   content: string;
   className?: string;
@@ -13,13 +19,57 @@ type ToolChatBubbleProps = {
   content: string;
 };
 
-const TOOL_TYPING_SPEED_MS = 18;
+type ThinkingBubbleProps = {
+  content?: string;
+};
 
-export function AssistantChatBubble({ content, className }: ChatBubbleProps) {
+const TOOL_TYPING_SPEED_MS = 18;
+const ASSISTANT_TYPING_SPEED_MS = 12;
+
+export function AssistantChatBubble({
+  content,
+  className,
+  typing = false,
+}: AssistantChatBubbleProps) {
+  const [visibleCount, setVisibleCount] = useState(typing ? 0 : content.length);
+
+  useEffect(() => {
+    if (!typing) {
+      setVisibleCount(content.length);
+      return;
+    }
+
+    setVisibleCount((prev) => {
+      if (content.length < prev) {
+        return content.length;
+      }
+      return prev;
+    });
+  }, [content, typing]);
+
+  useEffect(() => {
+    if (!typing || visibleCount >= content.length) {
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      const remaining = content.length - visibleCount;
+      const step = Math.max(1, Math.ceil(remaining / 12));
+      setVisibleCount((prev) => Math.min(prev + step, content.length));
+    }, ASSISTANT_TYPING_SPEED_MS);
+
+    return () => clearTimeout(timeout);
+  }, [content, typing, visibleCount]);
+
+  const displayedContent = useMemo(
+    () => (typing ? content.slice(0, visibleCount) : content),
+    [content, typing, visibleCount]
+  );
+
   return (
     <div className={cn("flex w-full justify-center", className)}>
       <div className="w-full max-w-5xl text-sm leading-relaxed text-justify">
-        <Markdown content={content} />
+        <Markdown content={displayedContent} />
       </div>
     </div>
   );
@@ -29,7 +79,15 @@ export function ToolChatBubble({ content }: ToolChatBubbleProps) {
   const [visibleCount, setVisibleCount] = useState(0);
 
   useEffect(() => {
-    setVisibleCount(0);
+    setVisibleCount((prev) => {
+      if (!content) {
+        return 0;
+      }
+      if (content.length < prev) {
+        return content.length;
+      }
+      return prev;
+    });
   }, [content]);
 
   useEffect(() => {
@@ -62,7 +120,7 @@ export function ToolChatBubble({ content }: ToolChatBubbleProps) {
   );
 }
 
-export function ThinkingBubble() {
+export function ThinkingBubble({ content }: ThinkingBubbleProps) {
   const { t } = useTranslation();
   const [elapsed, setElapsed] = useState(0);
   const startTimeRef = useRef(Date.now());
@@ -95,6 +153,11 @@ export function ThinkingBubble() {
               {elapsed.toFixed(1)}s
             </span>
           </div>
+          {content && (
+            <div className="text-muted-foreground/80 mt-2">
+              <Markdown content={content} />
+            </div>
+          )}
         </div>
       </div>
     </div>

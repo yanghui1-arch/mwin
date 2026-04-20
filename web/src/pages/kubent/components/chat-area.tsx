@@ -15,6 +15,7 @@ interface ChatAreaProps {
   messages: ChatMessage[];
   isStreaming: boolean;
   callingToolInformation: string | undefined;
+  thinkingInformation: string | undefined;
   selectedProjectName: string | undefined;
   disabled: boolean;
   onSend: (inputValue: string) => Promise<void>;
@@ -26,6 +27,7 @@ export function ChatArea({
   messages,
   isStreaming,
   callingToolInformation,
+  thinkingInformation,
   selectedProjectName,
   disabled,
   onSend,
@@ -35,18 +37,25 @@ export function ChatArea({
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   const hasMessages = messages.length > 0;
+  const hasAssistantMessage =
+    messages[messages.length - 1]?.role === "assistant" &&
+    Boolean(messages[messages.length - 1]?.content);
+  const showToolBubble = isStreaming && Boolean(callingToolInformation);
+  const showThinkingBubble = isStreaming && Boolean(thinkingInformation);
+  const showFallbackThinking =
+    isStreaming && !showToolBubble && !showThinkingBubble && !hasAssistantMessage;
 
   const handleSuggestedPrompt = async (prompt: string) => {
     setIsTransitioning(true);
     // Wait for animation to complete before sending
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 500));
     await onSend(prompt);
   };
 
   const handleSend = async (inputValue: string) => {
     setIsTransitioning(true);
     // Wait for animation to complete before sending
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 500));
     await onSend(inputValue);
   };
 
@@ -78,7 +87,7 @@ export function ChatArea({
     const viewport = getViewport();
     if (!viewport) return;
     viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
-  }, [messages, isStreaming, callingToolInformation, isAtBottom, getViewport]);
+  }, [messages, isStreaming, callingToolInformation, thinkingInformation, isAtBottom, getViewport]);
 
   // Reset transition state when messages appear
   useEffect(() => {
@@ -120,17 +129,29 @@ export function ChatArea({
             <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 py-2 pr-4 h-full">
               {hasMessages && (
                 <div className="flex flex-col gap-4 animate-in fade-in duration-500">
-                  {messages.map((message, index) =>
-                    message.role === "assistant" ? (
-                      <AssistantChatBubble key={index} content={message.content} />
+                  {messages.map((message, index) => {
+                    const isStreamingAssistantMessage =
+                      isStreaming &&
+                      message.role === "assistant" &&
+                      index === messages.length - 1;
+
+                    return message.role === "assistant" ? (
+                      <AssistantChatBubble
+                        key={index}
+                        content={message.content}
+                        typing={isStreamingAssistantMessage}
+                      />
                     ) : (
                       <UserChatBubble key={index} content={message.content} />
-                    )
+                    );
+                  })}
+                  {showToolBubble && (
+                    <ToolChatBubble content={callingToolInformation ?? ""} />
                   )}
-                  {isStreaming && !callingToolInformation && !(messages[messages.length - 1]?.role === "assistant" && messages[messages.length - 1]?.content) && <ThinkingBubble />}
-                  {isStreaming && callingToolInformation && (
-                    <ToolChatBubble content={callingToolInformation} />
+                  {showThinkingBubble && (
+                    <ThinkingBubble content={thinkingInformation} />
                   )}
+                  {showFallbackThinking && <ThinkingBubble />}
                 </div>
               )}
             </div>
@@ -138,7 +159,7 @@ export function ChatArea({
 
           <div
             className={`mx-auto w-full max-w-4xl transition-all duration-500 ease-in-out ${
-              isTransitioning ? 'animate-in slide-in-from-top-10' : ''
+              isTransitioning ? "animate-in slide-in-from-top-10" : ""
             }`}
           >
             <ChatInput
@@ -156,3 +177,4 @@ export function ChatArea({
     </div>
   );
 }
+

@@ -242,6 +242,22 @@
     "prompts": {
         "title": "提示词管理",
         "description": "可视化并优化你的 Agent 系统提示词组合",
+        "selectProject": "选择项目",
+        "createPrompt": {
+            "button": "创建 Prompt",
+            "title": "创建 Prompt",
+            "name": "名称",
+            "namePlaceholder": "输入 Prompt 名称",
+            "version": "版本",
+            "versionPlaceholder": "例如 v1",
+            "pipeline": "Pipeline",
+            "pipelinePlaceholder": "选择已有 Pipeline",
+            "content": "Prompt 内容",
+            "contentPlaceholder": "输入 Prompt 内容",
+            "create": "创建",
+            "cancel": "取消",
+            "createFailed": "创建 Prompt 失败"
+        },
         "stats": {
             "totalPipelines": "Pipeline 总数",
             "totalPrompts": "提示词总数",
@@ -278,7 +294,17 @@
             "copyContent": "复制",
             "copied": "已复制！",
             "perThousandCalls": "每千次调用",
-            "totalCalls": "总调用次数"
+            "totalCalls": "总调用次数",
+            "identifierLabel": "SDK 标识符",
+            "identifierFormatHint": "在 SDK 中使用该值：@track(system_prompt=\"pipeline/name@version\")",
+            "copyIdentifier": "复制标识符",
+            "copyTrackSnippet": "复制 @track",
+            "trackSnippet": "装饰器片段",
+            "identifierInvalid": "标识符不可用",
+            "identifierMissingPart": "Pipeline、提示词名称或版本为空。",
+            "identifierInvalidPipelineChars": "Pipeline 名称不能包含 '/' 或 '@'。",
+            "identifierInvalidPromptChars": "提示词名称不能包含 '@'。",
+            "identifierInvalidVersionChars": "版本不能包含 '@'。"
         },
         "chart": {
             "title": "成功率趋势",
