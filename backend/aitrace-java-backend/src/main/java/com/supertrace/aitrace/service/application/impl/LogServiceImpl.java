@@ -1,8 +1,10 @@
 package com.supertrace.aitrace.service.application.impl;
 
 import com.supertrace.aitrace.domain.Project;
+import com.supertrace.aitrace.domain.core.prompt.PromptPipeline;
 import com.supertrace.aitrace.domain.core.Trace;
 import com.supertrace.aitrace.domain.core.usage.LLMUsage;
+import com.supertrace.aitrace.dto.prompt.CreatePromptPipelineRequest;
 import com.supertrace.aitrace.dto.step.LogStepRequest;
 import com.supertrace.aitrace.dto.trace.LogTraceRequest;
 import com.supertrace.aitrace.repository.ProjectRepository;
@@ -46,14 +48,21 @@ public class LogServiceImpl implements LogService {
         Long projectId = projectOwnedByUserId.getId();
 
         String promptPipelineName = logStepRequest.getPromptPipeline();
-        String promptName = logStepRequest.getPromptName();
         String promptVersion = logStepRequest.getPromptVersion();
         PromptRef promptRef = null;
+        // Get prompt pipeline id then new promptRef instance for log step
         if (promptPipelineName != null && promptVersion != null) {
-            promptRef = promptService.findOrCreatePrompt(
-                projectId, promptPipelineName,
-                promptName, promptVersion
-            );
+            UUID promptPipelineId = this.promptService.listPromptPipelines(projectId).stream()
+                .filter(pipeline -> promptPipelineName.equals(pipeline.getName()))
+                .map(PromptPipeline::getId)
+                .findFirst()
+                .orElseGet(() -> {
+                    CreatePromptPipelineRequest request = new CreatePromptPipelineRequest();
+                    request.setProjectId(projectId);
+                    request.setName(promptPipelineName);
+                    return this.promptService.createPromptPipeline(request, userId);
+                });
+            promptRef = new PromptRef(promptPipelineId, promptVersion);
         }
 
         UUID stepId = this.stepService.logStep(userId, logStepRequest, projectId, promptRef);

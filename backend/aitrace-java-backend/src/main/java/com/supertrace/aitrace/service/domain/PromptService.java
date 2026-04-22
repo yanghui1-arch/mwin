@@ -2,7 +2,6 @@ package com.supertrace.aitrace.service.domain;
 
 import com.supertrace.aitrace.domain.core.prompt.Prompt;
 import com.supertrace.aitrace.domain.core.prompt.PromptPipeline;
-import com.supertrace.aitrace.domain.core.prompt.PromptRef;
 import com.supertrace.aitrace.domain.core.prompt.PromptStatus;
 import com.supertrace.aitrace.dto.prompt.CreatePromptPipelineRequest;
 import com.supertrace.aitrace.dto.prompt.CreatePromptRequest;
@@ -75,23 +74,6 @@ public interface PromptService {
      * @return the UUID of the newly created prompt
      */
     UUID createPrompt(CreatePromptRequest request, UUID userId);
-
-    /**
-     * Finds the prompt identified by {@code (projectId, promptPipelineName, version)},
-     * creating the pipeline and the prompt with version if they do not yet exist.
-     *
-     * <p>This method is designed for use during step logging, where the caller knows the
-     * prompt name and version at runtime but cannot guarantee prior registration.
-     * The operation is transactional: both the pipeline lookup/creation and the prompt
-     * lookup/creation are performed atomically.
-     *
-     * @param projectId           the project the prompt pipeline belongs to
-     * @param promptPipelineName  the name of the prompt pipeline; created if absent
-     * @param version             the version string of the prompt; created if absent
-     * @return a {@code PromptRef} holding both the prompt pipeline ID and the prompt version ID
-     */
-    @Transactional
-    PromptRef findOrCreatePrompt(Long projectId, @NotNull String promptPipelineName, String promptName, @NotNull String version);
 
     /**
      * Returns a single prompt by its UUID.

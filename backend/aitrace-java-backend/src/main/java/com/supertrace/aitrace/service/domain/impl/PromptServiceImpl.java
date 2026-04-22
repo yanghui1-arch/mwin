@@ -3,7 +3,6 @@ package com.supertrace.aitrace.service.domain.impl;
 import com.supertrace.aitrace.domain.core.prompt.Prompt;
 import com.supertrace.aitrace.domain.core.prompt.PromptPipeline;
 import com.supertrace.aitrace.domain.core.prompt.PromptPipelineStatus;
-import com.supertrace.aitrace.domain.core.prompt.PromptRef;
 import com.supertrace.aitrace.domain.core.prompt.PromptStatus;
 import com.supertrace.aitrace.domain.core.step.Step;
 import com.supertrace.aitrace.domain.core.step.metadata.StepMeta;
@@ -77,33 +76,6 @@ public class PromptServiceImpl implements PromptService {
             .changelog(request.getChangelog())
             .build();
         return promptRepository.save(prompt).getId();
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public PromptRef findOrCreatePrompt(Long projectId, @NotNull String promptPipelineName, String promptName, @NotNull String version) {
-        PromptPipeline pipeline = promptPipelineRepository.findByProjectIdAndName(projectId, promptPipelineName)
-            .orElseGet(() -> promptPipelineRepository.save(
-                PromptPipeline.builder()
-                    .projectId(projectId)
-                    .name(promptPipelineName)
-                    .build()
-            ));
-
-        String finalPromptName = promptName == null || promptName.isEmpty() ? "Default-" + version : promptName;
-        String promptVersion = promptRepository.findByPromptPipelineIdAndVersion(pipeline.getId(), version)
-            .map(Prompt::getVersion)
-            .orElseGet(
-                () -> promptRepository.save(
-                    Prompt.builder()
-                        .promptPipelineId(pipeline.getId())
-                        .version(version)
-                        .name(finalPromptName)
-                        .build()
-                ).getVersion()
-            );
-
-        return new PromptRef(pipeline.getId(), promptVersion);
     }
 
     @Override
