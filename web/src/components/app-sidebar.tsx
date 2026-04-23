@@ -7,7 +7,7 @@ import {
   IconInnerShadowTop,
   IconSearch,
   IconSettings,
-  IconCirclePlusFilled,
+  IconLayoutDashboard,
   IconKey,
 } from "@tabler/icons-react";
 
@@ -41,16 +41,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       {
         title: "Dashboard",
         url: "/dashboard",
-        icon: IconCirclePlusFilled,
+        icon: IconLayoutDashboard,
       },
     ],
     navMain: [
-      // {
-      //   title: "Overview",
-      //   url: "/overview",
-      //   icon: IconCirclePlusFilled,
-      //   label: "Dashboard",
-      // },
+      {
+        title: t("siderbar.overview"),
+        url: "/overview",
+        icon: IconLayoutDashboard,
+        label: t("siderbar.dashboard"),
+      },
       {
         title: t("siderbar.projects"),
         url: "/projects",

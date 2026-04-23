@@ -9,6 +9,8 @@
     },
     "siderbar": {
         "title": "Optimizer",
+        "dashboard": "仪表盘",
+        "overview": "概览",
         "observability": "监控",
         "projects": "项目",
         "optimizer": "优化",
@@ -153,6 +155,33 @@
         "growthRate": "增长率",
         "steadyIncrease": "稳定性能提升",
         "meetsProjections": "达到增长预期"
+    },
+    "overview": {
+        "cards": {
+            "trackedProjects": "已追踪项目数",
+            "trackedProjectsFooterTitle": "当前可用项目",
+            "trackedProjectsFooterDescription": "账户下的全部项目",
+            "lifetimeTokens": "累计 Token",
+            "lifetimeTokensFooterTitle": "自开始追踪以来的总 Token",
+            "lifetimeTokensFooterDescription": "所有已追踪项目汇总",
+            "yesterdayTokens": "昨日 Token",
+            "yesterdayTokensFooterTitle": "与前一天相比",
+            "todayTokens": "今日 Token",
+            "todayTokensFooterTitle": "与昨日相比",
+            "dayOverDay": "按天对比 Token 使用变化"
+        },
+        "chart": {
+            "title": "Token 曲线",
+            "description": "已追踪项目的 Token 消耗趋势",
+            "tokensSeries": "Tokens",
+            "last24Hours": "最近 24 小时",
+            "selectRange": "选择时间范围",
+            "projectFilter": "项目",
+            "allProjects": "全部项目",
+            "selectedProjects": "已选 {{count}} 个项目",
+            "noProjects": "暂无可用项目。",
+            "noData": "所选项目暂无 Token 使用数据。"
+        }
     },
     "projectRowAction": {
         "edit": "编辑",

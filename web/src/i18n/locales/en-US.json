@@ -9,6 +9,8 @@
     },
     "siderbar": {
         "title": "Optimizer",
+        "dashboard": "Dashboard",
+        "overview": "Overview",
         "observability": "Observability",
         "projects": "Projects",
         "optimizer": "Optimizer",
@@ -151,6 +153,33 @@
         "growthRate": "Growth Rate",
         "steadyIncrease": "Steady performance increase",
         "meetsProjections": "Meets growth projections"
+    },
+    "overview": {
+        "cards": {
+            "trackedProjects": "Tracked Projects",
+            "trackedProjectsFooterTitle": "Projects currently available",
+            "trackedProjectsFooterDescription": "All projects under your account",
+            "lifetimeTokens": "Lifetime Tokens",
+            "lifetimeTokensFooterTitle": "Total tokens since tracking started",
+            "lifetimeTokensFooterDescription": "Summed across all tracked projects",
+            "yesterdayTokens": "Yesterday Tokens",
+            "yesterdayTokensFooterTitle": "Compared with the prior day",
+            "todayTokens": "Today Tokens",
+            "todayTokensFooterTitle": "Compared with yesterday",
+            "dayOverDay": "Day-over-day token usage change"
+        },
+        "chart": {
+            "title": "Curve of Tokens",
+            "description": "Token consumption across tracked projects",
+            "tokensSeries": "Tokens",
+            "last24Hours": "Last 24 hours",
+            "selectRange": "Select range",
+            "projectFilter": "Projects",
+            "allProjects": "All projects",
+            "selectedProjects": "{{count}} projects",
+            "noProjects": "No projects available.",
+            "noData": "No token usage data for the selected projects."
+        }
     },
     "projectRowAction": {
         "edit": "Edit",
