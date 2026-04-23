@@ -91,18 +91,28 @@ class UsageCostCalcUtilsTest {
         assertEquals(0, new BigDecimal("3.00").compareTo(cost.stripTrailingZeros()));
     }
 
-    // ── kimi-k2.5 has no cache price → falls back to regular input price ─────
+    // ── kimi-k2.5 usage calculation test ─────
 
     @Test
     void calcUsageCost_kimiK25_withCachedTokens_fallsBackToInputPrice() {
-        // kimi-k2.5 has no cached_input_price_per_million, so cached tokens
-        // are billed at the same $0.57/M rate as regular input tokens.
-        // 600 cached + 400 non-cached input = 1000 total input @ $0.57/M
+        // 600 cached @ 0.10/M + 400 non-cached input @ $0.57/M
         // 500 output @ $3.00/M
-        // expected: 0.57 * 1000/1M + 3.00 * 500/1M = 0.00057 + 0.0015 = 0.00207
+        // expected: 0.1 * 600/1M + 0.57 * 400/1M + 3.00 * 500/1M = 0.001788
         LLMUsage.PromptTokensDetails pd = new LLMUsage.PromptTokensDetails(600, null);
         LLMUsage usage = new LLMUsage(1000, 500, 1500, pd, null);
         BigDecimal cost = UsageCostCalcUtils.calcUsageCost(LLMProvider.KIMI, "kimi-k2.5", usage);
         assertEquals(0, new BigDecimal("0.001788").compareTo(cost.stripTrailingZeros()));
+    }
+
+    // kimi-k2.6 usage calculation
+    @Test
+    void calcUsageCost_kimiK26_withCachedTokens_fallsBackToOutputPrice() {
+        // 600 cached @ 0.16/M + 400 non-cached input @ $0.95/M
+        // 500 output @ $4.00/M
+        // expected: 0.16 * 600/1M + 0.95 * 400/1M + 4.00 * 500/1M = 0.002476
+        LLMUsage.PromptTokensDetails pd = new LLMUsage.PromptTokensDetails(600, null);
+        LLMUsage usage = new LLMUsage(1000, 500, 1500, pd, null);
+        BigDecimal cost = UsageCostCalcUtils.calcUsageCost(LLMProvider.KIMI, "kimi-k2.6", usage);
+        assertEquals(0, new BigDecimal("0.002476").compareTo(cost.stripTrailingZeros()));
     }
 }
