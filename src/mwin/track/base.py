@@ -67,7 +67,7 @@ class BaseTracker(ABC):
         def _passthrough(func: Callable) -> Callable:
             return func
 
-        if os.environ.get("MWIN_ENABLE_TRACK_IN_TEST") != 1 and "pytest" in sys.modules:
+        if os.environ.get("MWIN_ENABLE_TRACK_IN_TEST") != "1" and "pytest" in sys.modules:
             return func_name if callable(func_name) else _passthrough
 
         tracker_options = TrackerOptions(
