@@ -18,6 +18,7 @@ class LLMProvider(Enum):
     OPENAI = 'openai'
     KIMI = "kimi"
     OPEN_ROUTER = "open_router"
+    DEEPSEEK = "deepseek"
     GOOGLE = 'google'
     ANTHROPIC = 'anthropic'
     OLLAMA = 'ollama'

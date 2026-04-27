@@ -11,7 +11,7 @@ public enum LLMProvider {
     DASH_SCOPE("dash_scope"),
     KIMI("kimi"),
     OPENAI("openai"),
-    DEEP_SEEK("deep_seek"),
+    DEEPSEEK("deepseek"),
     ANTHROPIC("anthropic"),
     GOOGLE("google"),
     VLLM("vllm"),

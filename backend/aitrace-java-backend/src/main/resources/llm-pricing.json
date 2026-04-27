@@ -93,5 +93,43 @@
         }
       ]
     }
+  },
+  "deepseek": {
+    "deepseek-v4-flash": {
+      "tiers": [
+        {
+          "input_price_per_million": 0.14285,
+          "cached_input_price_per_million": 0.00285,
+          "output_price_per_million": 0.28571
+        }
+      ]
+    },
+    "deepseek-v4-pro": {
+      "tiers": [
+        {
+          "input_price_per_million": 0.42857,
+          "cached_input_price_per_million": 0.00357,
+          "output_price_per_million": 0.85714
+        }
+      ]
+    },
+    "deepseek-chat": {
+      "tiers": [
+        {
+          "input_price_per_million": 0.14285,
+          "cached_input_price_per_million": 0.00285,
+          "output_price_per_million": 0.28571
+        }
+      ]
+    },
+    "deepseek-reasoner": {
+      "tiers": [
+        {
+          "input_price_per_million": 0.14285,
+          "cached_input_price_per_million": 0.00285,
+          "output_price_per_million": 0.28571
+        }
+      ]
+    }
   }
 }
