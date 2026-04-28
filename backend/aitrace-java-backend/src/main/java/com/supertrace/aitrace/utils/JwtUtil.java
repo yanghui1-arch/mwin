@@ -69,21 +69,21 @@ public class JwtUtil {
      * @return uuid
      */
     public UUID extractUuid(String token) {
-        String userId = Jwts.parserBuilder()
+        String userId = Jwts.parser()
             .setSigningKey(Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret)))
             .build()
-            .parseClaimsJws(token)
-            .getBody()
+            .parseSignedClaims(token)
+            .getPayload()
             .getSubject();
         return UUID.fromString(userId);
     }
 
     private Date extractExpiration(String token) {
-        return Jwts.parserBuilder()
+        return Jwts.parser()
             .setSigningKey(Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret)))
             .build()
-            .parseClaimsJws(token)
-            .getBody()
+            .parseSignedClaims(token)
+            .getPayload()
             .getExpiration();
     }
 
