@@ -66,7 +66,7 @@ class SyncClient:
         if parent_step_id == "None":
             parent_step_id = None
 
-        llm_provider = llm_provider.value
+        llm_provider = LLMProvider.resolve(llm_provider, model).value
 
         log_step_req = LogStepRequest(
             project_name=self._project_name,

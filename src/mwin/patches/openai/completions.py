@@ -20,6 +20,7 @@ from ..llm_patch_config import LLMPatchConfig, get_llm_patch_config
 from ..std import PatchStreamResponse, ToolFunctionCall, Function, patch_std_output
 from ...track.options import TrackerOptions
 from ...models import Step
+from ...models.common import LLMProvider
 from ...helper import inspect_helper
 from ...helper.llm import openai_helper
 from ...context.func_context import current_function_name_context
@@ -83,6 +84,7 @@ def patch_openai_chat_completions():
 
         # No stream calling openai
         model = openai_inputs.get('model', step.model)
+        llm_provider = LLMProvider.resolve(tracker_options.llm_provider, model)
         tags = step.tags
         if model is not None:
             tags += [model]
@@ -103,7 +105,7 @@ def patch_openai_chat_completions():
             start_time=step.start_time,
             end_time=datetime.now(),
             description=tracker_options.description,
-            llm_provider=tracker_options.llm_provider,
+            llm_provider=llm_provider,
             pipeline=pipeline,
             prompt_name=prompt_name,
             prompt_version=prompt_version,
@@ -141,6 +143,7 @@ class ProxyStream(Stream):
         self.prompt_name = prompt_name
         self.prompt_version = prompt_version
         self.model = inputs.get('model', step.model)
+        self.llm_provider = LLMProvider.resolve(tracker_options.llm_provider, self.model)
         self.tags = step.tags
         if self.model is not None:
             self.tags += [self.model]
@@ -179,7 +182,7 @@ class ProxyStream(Stream):
                 start_time=self.step.start_time,
                 end_time=datetime.now(),
                 description=self.tracker_options.description,
-                llm_provider=self.tracker_options.llm_provider,
+                llm_provider=self.llm_provider,
                 pipeline=self.pipeline,
                 prompt_name=self.prompt_name,
                 prompt_version=self.prompt_version,
@@ -221,7 +224,7 @@ class ProxyStream(Stream):
                     start_time=self.step.start_time,
                     end_time=datetime.now(),
                     description=self.tracker_options.description,
-                    llm_provider=self.tracker_options.llm_provider,
+                    llm_provider=self.llm_provider,
                     pipeline=self.pipeline,
                     prompt_name=self.prompt_name,
                     prompt_version=self.prompt_version,
@@ -360,4 +363,3 @@ class ProxyStream(Stream):
         name = function.name
         arguments = function.arguments
         return index, name, arguments
-
