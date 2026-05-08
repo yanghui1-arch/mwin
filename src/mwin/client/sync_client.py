@@ -8,6 +8,7 @@ from openai.types.completion_usage import CompletionUsage
 from .config import build_client_config
 from .schemas.request.log_request import LogStepRequest, LogTraceRequest
 from .schemas.response.log_response import LogStepResponse, LogTraceResponse
+from ..helper.llm import provider_helper
 from ..models import LLMProvider
 
 class SyncClient:
@@ -66,7 +67,7 @@ class SyncClient:
         if parent_step_id == "None":
             parent_step_id = None
 
-        llm_provider = llm_provider.value
+        llm_provider = provider_helper.resolve_llm_provider(llm_provider, model).value
 
         log_step_req = LogStepRequest(
             project_name=self._project_name,

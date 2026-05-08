@@ -360,4 +360,3 @@ class ProxyStream(Stream):
         name = function.name
         arguments = function.arguments
         return index, name, arguments
-

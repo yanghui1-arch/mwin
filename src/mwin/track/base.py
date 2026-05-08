@@ -40,7 +40,7 @@ class BaseTracker(ABC):
         tags: List[str] | None = None,
         step_type: Literal["general", "llm", "retrieve", "tool"] = "general",
         model: str | None = None,
-        llm_provider: LLMProvider = LLMProvider.OPENAI,
+        llm_provider: LLMProvider = LLMProvider.AUTO,
         llm_ignore_fields: List[str] | None = None,
         description: str | None = None,
         system_prompt: str | None = None,
@@ -55,7 +55,7 @@ class BaseTracker(ABC):
             tags(List[str] | None): tags of tracking steps. Default to `None`.
             step_type(Literal["general", "llm", "retrieve", "tool"]): step type. Default to `general`.
             model(str | None): using model name. Default to `None`. If you are using llama you can set the field to `llama`.
-            llm_provider(LLMProvider): llm inference provider. Default to `OPENAI`.
+            llm_provider(LLMProvider): llm inference provider. Default to `AUTO`.
             llm_ignore_fields(List[str] | None): a list of llm ignore fields name. Default to `None`.
             description(str | None): step description. Default to `None`.
             system_prompt(str | None): prompt identifier in `pipeline/name@version` format.
@@ -297,7 +297,14 @@ class BaseTracker(ABC):
         if tracker_options.llm_provider is not None:
             patch_token = set_llm_patch_config(step=new_step, tracker_options=tracker_options, func_name=func.__name__)
 
-        if tracker_options.llm_provider in (LLMProvider.OPENAI, LLMProvider.OPEN_ROUTER, LLMProvider.KIMI, LLMProvider.DEEPSEEK):
+        if tracker_options.llm_provider in (
+            LLMProvider.AUTO,
+            LLMProvider.OPENAI,
+            LLMProvider.OPEN_ROUTER,
+            LLMProvider.KIMI,
+            LLMProvider.DEEPSEEK,
+            LLMProvider.GLM,
+        ):
             from ..patches.openai import completions, async_completions
             completions.patch_openai_chat_completions()
             async_completions.patch_async_openai_chat_completions()

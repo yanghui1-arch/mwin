@@ -14,7 +14,7 @@ class TrackerOptions:
         step_type(Literal["general", "llm", "retrieve", "tool"] | None): step type. Default to `None`.
         model(str | None): using model name. Default to `None`.
         trace_name(str | None): trace name. Default to `None`.
-        llm_provider(LLMProvider): track a certain llm. Default to `LLMProvider.OPENAI`
+        llm_provider(LLMProvider): llm infer provider. Default to `LLMProvider.AUTO`when set it auto detect based on model name
         llm_ignore_fields(List[str] | None): a list of llm ignore fields name. Default to `None`.
         description(str | None): track step description. Default to `None`.
         system_prompt(str | None): prompt identifier in `pipeline/name@version` format.
@@ -29,7 +29,7 @@ class TrackerOptions:
     step_type: Literal["general", "llm", "retrieve", "tool"] | None = None
     model: str | None = None
     trace_name: str | None = None
-    llm_provider: LLMProvider = LLMProvider.OPENAI
+    llm_provider: LLMProvider = LLMProvider.AUTO
     llm_ignore_fields: List[str] | None = None
     description: str | None = None
     system_prompt: str | None = None

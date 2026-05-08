@@ -333,4 +333,3 @@ class ProxyAsyncStream(AsyncStream):
         name = function.name
         arguments = function.arguments
         return index, name, arguments
-
