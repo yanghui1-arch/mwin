@@ -3,6 +3,7 @@ import os
 import pytest
 
 from mwin import context
+from mwin.helper.llm import provider_helper
 
 os.environ.setdefault("MWIN_ENABLE_TRACK_IN_TEST", "1")
 
@@ -13,6 +14,10 @@ class FakeClient:
         self.traces = []
 
     def log_step(self, **kwargs):
+        kwargs["llm_provider"] = provider_helper.resolve_llm_provider(
+            kwargs["llm_provider"],
+            kwargs.get("model"),
+        )
         self.steps.append(kwargs)
 
     def log_trace(self, **kwargs):

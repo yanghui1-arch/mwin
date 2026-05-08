@@ -4,6 +4,7 @@ from openai.types.chat import ChatCompletion, chat_completion
 import pytest
 
 from mwin import track
+from mwin.helper.llm import provider_helper
 from mwin.models import LLMProvider
 
 
@@ -24,7 +25,7 @@ def _build_chat_completion(content: str, model: str) -> ChatCompletion:
     ("model", "expected_provider"),
     [
         ("deepseek-chat", LLMProvider.DEEPSEEK),
-        ("gemini-2.5-flash", LLMProvider.GOOGLE),
+        ("gemini-2.5-flash", LLMProvider.OPENAI),
         ("kimi-k2.6", LLMProvider.KIMI),
         ("moonshot-v1-8k", LLMProvider.KIMI),
         ("glm-5.1", LLMProvider.GLM),
@@ -77,4 +78,4 @@ def test_track_auto_chat_completions_resolves_provider_from_model_name(
     ],
 )
 def test_llm_provider_resolve_auto_keeps_auto_without_model(model, expected_provider):
-    assert LLMProvider.resolve(LLMProvider.AUTO, model) == expected_provider
+    assert provider_helper.resolve_llm_provider(LLMProvider.AUTO, model) == expected_provider

@@ -303,7 +303,6 @@ class BaseTracker(ABC):
             LLMProvider.OPEN_ROUTER,
             LLMProvider.KIMI,
             LLMProvider.DEEPSEEK,
-            LLMProvider.GOOGLE,
             LLMProvider.GLM,
         ):
             from ..patches.openai import completions, async_completions
@@ -415,7 +414,7 @@ class BaseTracker(ABC):
             start_time=current_step.start_time,
             end_time=current_step.end_time,
             description=tracker_options.description,
-            llm_provider=LLMProvider.resolve(tracker_options.llm_provider, current_step.model),
+            llm_provider=tracker_options.llm_provider,
             pipeline=None,
             prompt_name=None,
             prompt_version=None,
