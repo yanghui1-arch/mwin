@@ -115,4 +115,16 @@ class UsageCostCalcUtilsTest {
         BigDecimal cost = UsageCostCalcUtils.calcUsageCost(LLMProvider.KIMI, "kimi-k2.6", usage);
         assertEquals(0, new BigDecimal("0.002476").compareTo(cost.stripTrailingZeros()));
     }
+
+    @Test
+    void calcUsageCost_glm51_withCachedTokens_usesOfficialPricing() {
+        // Official Z.AI pricing for GLM-5.1:
+        // cached input = $0.26/M, regular input = $1.40/M, output = $4.40/M
+        // 600 cached + 400 regular input + 500 output
+        // expected: 0.26 * 600/1M + 1.40 * 400/1M + 4.40 * 500/1M = 0.002916
+        LLMUsage.PromptTokensDetails pd = new LLMUsage.PromptTokensDetails(600, null);
+        LLMUsage usage = new LLMUsage(1000, 500, 1500, pd, null);
+        BigDecimal cost = UsageCostCalcUtils.calcUsageCost(LLMProvider.GLM, "glm-5.1", usage);
+        assertEquals(0, new BigDecimal("0.002916").compareTo(cost.stripTrailingZeros()));
+    }
 }

@@ -66,6 +66,36 @@ class LogStepRequestDeserializationTest {
         assertEquals(150, req.getUsage().getTotalTokens());
     }
 
+    @Test
+    void deserialize_llmProviderGlm_producesLLMUsageInstance() throws Exception {
+        String json = """
+            {
+                "project_name": "p1",
+                "step_name": "s1",
+                "step_id": "00000000-0000-0000-0000-000000000001",
+                "trace_id": "00000000-0000-0000-0000-000000000002",
+                "step_type": "llm_response",
+                "tags": ["t1"],
+                "llm_provider": "glm",
+                "usage": {
+                    "prompt_tokens": 120,
+                    "completion_tokens": 45,
+                    "total_tokens": 165
+                },
+                "start_time": "2024-01-01 10:00:00"
+            }
+            """;
+
+        LogStepRequest req = mapper.readValue(json, LogStepRequest.class);
+
+        assertNotNull(req.getUsage());
+        assertEquals(LLMUsage.class, req.getUsage().getClass());
+        assertEquals(120, req.getUsage().getPromptTokens());
+        assertEquals(45, req.getUsage().getCompletionTokens());
+        assertEquals(165, req.getUsage().getTotalTokens());
+        assertEquals("glm", req.getLlmProvider());
+    }
+
     // ── Discriminator: "open_router" ─────────────────────────────────────────
 
     @Test

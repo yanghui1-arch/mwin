@@ -35,6 +35,7 @@ import java.math.BigDecimal;
     @JsonSubTypes.Type(value = LLMUsage.class, name = "openai"),
     @JsonSubTypes.Type(value = LLMUsage.class, name = "deepseek"),
     @JsonSubTypes.Type(value = LLMUsage.class, name = "kimi"),
+    @JsonSubTypes.Type(value = LLMUsage.class, name = "glm"),
     @JsonSubTypes.Type(value = OpenRouterUsage.class, name = "open_router"),
 })
 @JsonIgnoreProperties(ignoreUnknown = true)

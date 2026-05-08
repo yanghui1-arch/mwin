@@ -59,7 +59,7 @@ public class LogStepRequest {
         visible = true
     )
     @JsonSubTypes({
-        @JsonSubTypes.Type(value = LLMUsage.class, names = {"openai", "kimi", "deepseek"}),
+        @JsonSubTypes.Type(value = LLMUsage.class, names = {"openai", "kimi", "deepseek", "glm"}),
         @JsonSubTypes.Type(value = OpenRouterUsage.class, name = "open_router"),
     })
     private LLMUsage usage;

@@ -131,5 +131,16 @@
         }
       ]
     }
+  },
+  "glm": {
+    "glm-5.1": {
+      "tiers": [
+        {
+          "input_price_per_million": 1.4,
+          "cached_input_price_per_million": 0.26,
+          "output_price_per_million": 4.4
+        }
+      ]
+    }
   }
 }
