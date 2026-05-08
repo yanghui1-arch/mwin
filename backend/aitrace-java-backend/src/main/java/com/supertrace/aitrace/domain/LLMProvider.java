@@ -12,6 +12,7 @@ public enum LLMProvider {
     KIMI("kimi"),
     OPENAI("openai"),
     DEEPSEEK("deepseek"),
+    GLM("glm"),
     ANTHROPIC("anthropic"),
     GOOGLE("google"),
     VLLM("vllm"),

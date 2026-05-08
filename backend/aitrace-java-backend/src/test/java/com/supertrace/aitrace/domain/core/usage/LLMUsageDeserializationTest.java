@@ -44,6 +44,26 @@ class LLMUsageDeserializationTest {
         assertEquals(150, usage.getTotalTokens());
     }
 
+    @Test
+    void deserialize_llmProviderGlm_returnsLLMUsageBase() throws Exception {
+        String json = """
+            {
+                "llm_provider": "glm",
+                "prompt_tokens": 120,
+                "completion_tokens": 45,
+                "total_tokens": 165
+            }
+            """;
+
+        LLMUsage usage = mapper.readValue(json, LLMUsage.class);
+
+        assertNotNull(usage);
+        assertEquals(LLMUsage.class, usage.getClass());
+        assertEquals(120, usage.getPromptTokens());
+        assertEquals(45, usage.getCompletionTokens());
+        assertEquals(165, usage.getTotalTokens());
+    }
+
     // ── "open_router" type discriminator → OpenRouterUsage ──────────────────
 
     @Test
