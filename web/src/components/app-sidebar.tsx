@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/sidebar";
 import { NavMain } from "./nav/nav-main";
 import { useUser } from "./user-provider/use-user";
-import { BotIcon, SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -56,12 +56,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         url: "/projects",
         icon: IconFolder,
         label: t("siderbar.observability"),
-      },
-      {
-        title: t("siderbar.kubent"),
-        url: "/kubent",
-        icon: BotIcon,
-        label: t("siderbar.optimizer"),
       },
       {
         title: t("siderbar.prompts"),

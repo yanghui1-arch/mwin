@@ -43,13 +43,6 @@ export function useBreadcrumb(): BreadcrumbItem[] {
           isCurrentPage: isLast,
         })
         break
-      case "kubent":
-        breadcrumbs.push({
-          label: t("breadcrumb.kubent"),
-          href: isLast ? undefined : path,
-          isCurrentPage: isLast,
-        })
-        break
       case "get_apikey":
         breadcrumbs.push({
           label: t("breadcrumb.apiKey"),
