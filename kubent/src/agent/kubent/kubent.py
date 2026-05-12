@@ -16,7 +16,7 @@ from openai.types.chat.chat_completion_message_function_tool_call import Functio
 from mwin import track, LLMProvider
 from .system_prompt import build_kubent_system_prompt
 from ..events import AgentEventType, SSEEvent
-from ..tools import WebSearch
+from ..tools import WebSearch, ProjectContext, RepositoryContext
 from ..runtime import current_project_name, current_user_id
 from ...config import config
 from ...utils.llm_context import build_save_dir
@@ -31,8 +31,8 @@ class Result(BaseModel):
     """ChatCompletionParams list. It contains user's question, kubent's tool calling & kubent's thoughts and kubent's answer but not contains previous chat history."""
 
 load_dotenv()
-_BASE_URL = os.getenv("kimi_base_url")
-_API_KEY = os.getenv("kimi_api_key")
+_BASE_URL = os.getenv("OPENAI_BASE_URL")
+_API_KEY = os.getenv("OPENAI_API_KEY")
 _OPENAI_CLIENT_KWARGS: dict[str, str] = {}
 if _BASE_URL:
     _OPENAI_CLIENT_KWARGS["base_url"] = _BASE_URL
@@ -42,20 +42,28 @@ if _API_KEY:
 
 class Kubent:
     name: str = "kubent"
-    model: str = config.get("kubent.model", "anthropic/claude-haiku-4.5")
+    model: str = config.get("kubent.model", "gpt-5.5")
     tools: List[ChatCompletionFunctionToolParam] = Field(..., default_factory=list)
     engine: OpenAI = OpenAI(**_OPENAI_CLIENT_KWARGS)
     attempt: int = 15
     extra_body: Dict[str, Any] | None = None
+    system_prompt_override: str | None = None
+    enable_optimize_tools: bool = False
     _system_prompt: str = PrivateAttr(default="")
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @model_validator(mode="after")
     def load_tools(self):
-        self.tools = [
-            WebSearch().json_schema,
-        ]
+        tools = [WebSearch().json_schema]
+        if self.enable_optimize_tools:
+            tools.extend(
+                [
+                    ProjectContext().json_schema,
+                    RepositoryContext().json_schema,
+                ]
+            )
+        self.tools = tools
         return self
     
     @model_validator(mode="after")
@@ -78,6 +86,10 @@ class Kubent:
 
     @model_validator(mode="after")
     def inject_system_prompt(self):
+        if self.system_prompt_override:
+            self._system_prompt = self.system_prompt_override
+            return self
+
         from src.agent.runtime import get_current_project_name, get_current_user_id
         from src.repository.db.conn import SessionLocal
         from src.repository.project import query_project_sync
@@ -142,13 +154,17 @@ class Kubent:
             )
 
         try:
-            stream:Stream[ChatCompletionChunk] = self.engine.chat.completions.create(
-                model=self.model,
-                messages=current_turn_ctx,
-                tools=self.tools,
-                parallel_tool_calls=True,
-                stream=True,
-            )
+            completion_kwargs = {
+                "model": self.model,
+                "messages": current_turn_ctx,
+                "tools": self.tools,
+                "parallel_tool_calls": True,
+                "stream": True,
+            }
+            if self.extra_body is not None:
+                completion_kwargs["extra_body"] = self.extra_body
+
+            stream:Stream[ChatCompletionChunk] = self.engine.chat.completions.create(**completion_kwargs)
             return self._collect_stream(stream, on_progress)
         except BadRequestError as bqe:
             raise bqe

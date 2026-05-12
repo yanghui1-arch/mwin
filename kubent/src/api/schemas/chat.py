@@ -20,4 +20,19 @@ class ChatSessionTitleRequest(BaseModel):
 
 class DeleteChatSessionRequest(BaseModel):
     session_id: str
+
+
+class OptimizeAgentSystemRequest(BaseModel):
+    message: str
+    project_name: str | None = None
+    repo_url: str
+    # repo_ref is a git ref such as a branch name, tag, or commit SHA.
+    repo_ref: str | None = None
+
+
+class OptimizeAgentSystemResponse(BaseModel):
+    plan_type: Literal["feature", "fix", "patch"]
+    title: str
+    summary: str
+    answer: str
     

@@ -1,6 +1,6 @@
 import asyncio
 import threading
-from uuid import UUID
+from uuid import UUID, uuid4
 from typing import List
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
@@ -21,11 +21,20 @@ from src.repository.models import (
 )
 from src.repository.db.conn import get_db, AsyncSession
 from src.repository.redis.conn import get_redis_client
-from src.api.schemas import ChatRequest, ChatSessionResponse, ChatSessionTitleRequest, DeleteChatSessionRequest, ResponseModel
+from src.api.schemas import (
+    ChatRequest,
+    ChatSessionResponse,
+    ChatSessionTitleRequest,
+    DeleteChatSessionRequest,
+    OptimizeAgentSystemRequest,
+    OptimizeAgentSystemResponse,
+    ResponseModel,
+)
 from src.api.jwt import verify_at_token
 from src.service import chat
 from src.agent.runner import run_with_callback, add_chat, AgentEventType, SSEEvent
 from src.agent.kubent import Kubent
+from src.agent.kubent.system_prompt import build_optimize_agent_system_prompt
 from src.agent.runtime import execution_scope
 from src.api.guard import AgentCapacityGuard
 
@@ -71,6 +80,69 @@ async def delete_chat_session(
         return ResponseModel.success(data=None)
     except ValueError:
         return ResponseModel.error(message="Failed to parse session id.")
+
+@chat_router.post(
+    "/optimize",
+    description="Generate a non-streaming optimization plan grounded in business data, traces, repository evidence, and web research.",
+    response_model=ResponseModel[OptimizeAgentSystemResponse],
+)
+def optimize_agent_system(
+    req: OptimizeAgentSystemRequest,
+):
+    try:
+        project_name = req.project_name or "nexus-project"
+        system_prompt = build_optimize_agent_system_prompt(
+            repo_url=req.repo_url,
+            repo_ref=req.repo_ref,
+            project_name=req.project_name,
+        )
+
+        with execution_scope(
+            session_id=uuid4(),
+            user_id=UUID(int=0),
+            project_name=project_name,
+            agent_name="kubent",
+        ), start_trace():
+            kubent_agent = Kubent(
+                system_prompt_override=system_prompt,
+                enable_optimize_tools=True,
+            )
+            result = run_with_callback(
+                on_progress=lambda _event: None,
+                cancel=threading.Event(),
+                kubent=kubent_agent,
+                question=req.message,
+            )
+
+        lines = (result.answer or "").splitlines()
+        plan_type = "patch"
+        title = "Optimize agent system plan"
+        summary = result.answer or ""
+        answer = result.answer or ""
+
+        if len(lines) >= 4:
+            if lines[0].startswith("Plan Type:"):
+                candidate = lines[0].split(":", 1)[1].strip().lower()
+                if candidate in ("feature", "fix", "patch"):
+                    plan_type = candidate
+            if lines[1].startswith("Title:"):
+                title = lines[1].split(":", 1)[1].strip() or title
+            if lines[2].startswith("Summary:"):
+                summary = lines[2].split(":", 1)[1].strip() or summary
+            if lines[3].strip() == "Answer:":
+                answer = "\n".join(lines[4:]).strip() or result.answer
+
+        return ResponseModel.success(
+            data=OptimizeAgentSystemResponse(
+                plan_type=plan_type,
+                title=title,
+                summary=summary,
+                answer=answer,
+            )
+        )
+    except Exception as exce:
+        return ResponseModel.error(message=str(exce))
+
 
 @chat_router.post(
     "/optimize/stream",

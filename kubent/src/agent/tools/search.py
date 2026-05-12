@@ -15,49 +15,34 @@ from ...config import config
 
 
 load_dotenv()
-QWEN_BASE_URL = os.environ.get("qwen_base_url", None)
-QWEN_API_KEY = os.environ.get("qwen_api_key", None)
+_BASE_URL = os.getenv("OPENAI_BASE_URL")
+_API_KEY = os.getenv("OPENAI_API_KEY")
+_OPENAI_CLIENT_KWARGS: dict[str, str] = {}
+if _BASE_URL:
+    _OPENAI_CLIENT_KWARGS["base_url"] = _BASE_URL
+if _API_KEY:
+    _OPENAI_CLIENT_KWARGS["api_key"] = _API_KEY
 
-assert QWEN_BASE_URL is not None, "qwen_base_url is not set in .env"
-assert QWEN_API_KEY  is not None, "qwen_api_key is not set in .env"
-
-model = config.get("tool.websearch", "qwen3-max")
-web_engine = OpenAI(**{
-    "base_url": QWEN_BASE_URL,
-    "api_key": QWEN_API_KEY
-})
+model = config.get("tool.websearch", "gpt-5.5")
+web_engine = OpenAI(**_OPENAI_CLIENT_KWARGS)
 
 
 @track(StepType.TOOL)
-def web_search(keyword):
-    search_strategy = "agent_max"
-    forced_search = True
-
-    stream = web_engine.chat.completions.create(
-        model=model,
-        messages=[
-            {"role": "system", "content": "You are good at web search. You have to return the original content from searched websites and finally give user a summary based on the content."},
-            {"role": "user", "content": f"I want to search {keyword}. Please fetch online and tell me the result."},
-        ],
-        extra_body={
-            "enable_thinking": True,
-            "enable_search": True,
-            "search_options": {
-                "search_strategy": search_strategy,
-                "forced_search": forced_search,
-            }
-        },
-        # not support non-stream.
-        stream=True,
-        stream_options={"include_usage": True}
-    )
-
-    final_res = ""
-    for chunk in stream:
-        if chunk.choices and chunk.choices[0].delta.content:
-            final_res += chunk.choices[0].delta.content
-
-    return final_res
+def web_search(keyword: str):
+    try:
+        response = web_engine.responses.create(
+            model=model,
+            tools=[{"type": "web_search"}],
+            reasoning={"effort": "high"},
+            instructions=(
+                "You are good at web search. Return the relevant facts you found online, "
+                "include concise source references, and summarize the result."
+            ),
+            input=f"Search for {keyword} and summarize the latest useful findings.",
+        )
+        return response.output_text
+    except Exception as exc:
+        return f"Web search failed: {exc}"
 
 
 class WebSearchParams(BaseModel):

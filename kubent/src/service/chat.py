@@ -1,16 +1,20 @@
 import os
+
 from dotenv import load_dotenv
 from openai import OpenAI
+
 from ..config import config
 
+
 load_dotenv()
-_BASE_URL = os.getenv("BASE_URL") or os.getenv("base_url")
-_API_KEY = os.getenv("API_KEY") or os.getenv("api_key")
+_BASE_URL = os.getenv("OPENAI_BASE_URL")
+_API_KEY = os.getenv("OPENAI_API_KEY")
 _OPENAI_CLIENT_KWARGS: dict[str, str] = {}
 if _BASE_URL:
     _OPENAI_CLIENT_KWARGS["base_url"] = _BASE_URL
 if _API_KEY:
     _OPENAI_CLIENT_KWARGS["api_key"] = _API_KEY
+
 
 TITLE_PROMPT = (
     "You are good at summarizing user's question in a simple and clear way. "
@@ -19,8 +23,8 @@ TITLE_PROMPT = (
 
 
 def title(message: str):
-    openai_client: OpenAI = OpenAI(**_OPENAI_CLIENT_KWARGS)
-    model = config.get("service.chat.model", "openai/gpt-oss-120b:free")
+    openai_client = OpenAI(**_OPENAI_CLIENT_KWARGS)
+    model = config.get("service.chat.model", "gpt-5.5")
 
     completion = openai_client.chat.completions.create(
         model=model,
@@ -30,4 +34,3 @@ def title(message: str):
         ],
     )
     return completion.choices[0].message.content
-

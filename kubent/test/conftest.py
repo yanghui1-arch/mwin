@@ -16,6 +16,7 @@ from unittest.mock import MagicMock
 os.environ.setdefault("API_KEY", "test-key")
 os.environ.setdefault("OPENAI_API_KEY", "test-key")
 os.environ.setdefault("BASE_URL", "https://test.example.com/v1")
+os.environ.setdefault("OPENAI_BASE_URL", "https://test.example.com/v1")
 
 
 # ── 2. Stub mwin (tracing / observability library) ─────────────────────────────

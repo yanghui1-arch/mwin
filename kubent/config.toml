@@ -20,19 +20,19 @@ model = "qwen2.5-72b-instruct"
 model = "x-ai/grok-4.1-fast"
 
 [kubent]
-model = "kimi-k2.5"
+model = "gpt-5.5"
 
 [kubent.think]
 model = "x-ai/grok-4.1-fast"
 
 [tool.websearch]
-model = "qwen3.5-397b-a17b"
+model = "gpt-5.5"
 
 [query_step]
 model = "qwen/qwen3-14b"
 
 [service.chat]
-model = "openai/gpt-oss-20b"
+model = "gpt-5.5"
 
 [utils.solve_context_length]
 model = "openai/gpt-oss-20b"

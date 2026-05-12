@@ -1,5 +1,12 @@
 from .response import ResponseModel
-from .chat import ChatRequest, ChatSessionResponse, ChatSessionTitleRequest, DeleteChatSessionRequest
+from .chat import (
+    ChatRequest,
+    ChatSessionResponse,
+    ChatSessionTitleRequest,
+    DeleteChatSessionRequest,
+    OptimizeAgentSystemRequest,
+    OptimizeAgentSystemResponse,
+)
 
 __all__ = [
     "ResponseModel",
@@ -7,4 +14,6 @@ __all__ = [
     "ChatSessionResponse",
     "ChatSessionTitleRequest",
     "DeleteChatSessionRequest",
+    "OptimizeAgentSystemRequest",
+    "OptimizeAgentSystemResponse",
 ]
