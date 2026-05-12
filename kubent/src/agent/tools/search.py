@@ -23,14 +23,13 @@ if _BASE_URL:
 if _API_KEY:
     _OPENAI_CLIENT_KWARGS["api_key"] = _API_KEY
 
-model = config.get("tool.websearch", "gpt-5.5")
+model = config.get("tool.websearch", "gpt-5.4")
 web_engine = OpenAI(**_OPENAI_CLIENT_KWARGS)
 
 
-@track(StepType.TOOL)
 def web_search(keyword: str):
     try:
-        response = web_engine.responses.create(
+        stream = web_engine.responses.create(
             model=model,
             tools=[{"type": "web_search"}],
             reasoning={"effort": "high"},
@@ -39,8 +38,20 @@ def web_search(keyword: str):
                 "include concise source references, and summarize the result."
             ),
             input=f"Search for {keyword} and summarize the latest useful findings.",
+            # openai web search consumes lots of time using stream decreases the error rate of connection
+            stream=True
         )
-        return response.output_text
+        content = ""
+        for event in stream:
+            event_type = event.type
+            if event_type == "response.output_text.delta":
+                content += event.delta if event.delta is not None else ""
+            elif event_type == "response.failed":
+                raise RuntimeError("Connection Error")
+            elif event_type == "error":
+                raise RuntimeError("Stream error: ", event)
+        return content
+    
     except Exception as exc:
         return f"Web search failed: {exc}"
 
@@ -61,4 +72,4 @@ class WebSearch(Tool):
 
 if __name__ == "__main__":
     print(WebSearch())
-    web_search("RAG Agent 电话客服 主流性能指标")
+    print(web_search("最新的RAG Agent 电话客服 主流性能指标"))
