@@ -42,13 +42,7 @@ public class ProjectServiceImpl implements ProjectService {
         String projectName = createProjectRequest.getProjectName();
         String projectDescription = createProjectRequest.getProjectDescription();
 
-        // Check whether project name has been belongs to this userId
-        List<Project> projectsOwnedByUserId = this.projectRepository.findProjectsByUserId(userId);
-        boolean invalidProjectName = projectsOwnedByUserId.stream().anyMatch(p -> p.getName().equals(projectName));
-        if (invalidProjectName) {
-            throw new DuplicateProjectNameException();
-        }
-
+        ensureProjectNameIsUnique(projectName);
 
         Project project = Project.builder()
             .userId(userId)
@@ -67,11 +61,7 @@ public class ProjectServiceImpl implements ProjectService {
     @Transactional(rollbackFor = Exception.class)
     public Project createNewProjectByProgram(String projectName,
                                              UUID userId) {
-        List<Project> projectsOwnedByUserId = this.projectRepository.findProjectsByUserId(userId);
-        boolean invalidProjectName = projectsOwnedByUserId.stream().anyMatch(p -> p.getName().equals(projectName));
-        if (invalidProjectName) {
-            throw new DuplicateProjectNameException();
-        }
+        ensureProjectNameIsUnique(projectName);
         Project project = Project.builder()
             .userId(userId)
             .name(projectName)
@@ -141,6 +131,13 @@ public class ProjectServiceImpl implements ProjectService {
                 .orElseThrow(() -> new IllegalArgumentException("Project not found"));
             this.projectRepository.deleteById(projectToDelete.getId());
             return projectToDelete;
+        }
+    }
+
+    private void ensureProjectNameIsUnique(String projectName) {
+        boolean invalidProjectName = !this.projectRepository.findProjectsByName(projectName).isEmpty();
+        if (invalidProjectName) {
+            throw new DuplicateProjectNameException();
         }
     }
 }

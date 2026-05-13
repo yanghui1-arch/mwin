@@ -38,9 +38,13 @@ class ProjectServiceImplTest {
     }
 
     private Project buildProject(Long id, String name) {
+        return buildProject(userId, id, name);
+    }
+
+    private Project buildProject(UUID ownerId, Long id, String name) {
         return Project.builder()
             .id(id)
-            .userId(userId)
+            .userId(ownerId)
             .name(name)
             .description("desc")
             .averageDuration(0)
@@ -57,7 +61,7 @@ class ProjectServiceImplTest {
         req.setProjectName("new-project");
         req.setProjectDescription("description");
 
-        when(projectRepository.findProjectsByUserId(userId)).thenReturn(List.of());
+        when(projectRepository.findProjectsByName("new-project")).thenReturn(List.of());
         when(projectRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         Project result = service.createNewProjectByManualCreation(req, userId);
@@ -76,8 +80,23 @@ class ProjectServiceImplTest {
         req.setProjectName("existing");
         req.setProjectDescription("desc");
 
-        when(projectRepository.findProjectsByUserId(userId))
+        when(projectRepository.findProjectsByName("existing"))
             .thenReturn(List.of(buildProject(1L, "existing")));
+
+        assertThrows(DuplicateProjectNameException.class,
+            () -> service.createNewProjectByManualCreation(req, userId));
+
+        verify(projectRepository, never()).save(any());
+    }
+
+    @Test
+    void createNewProjectByManualCreation_nameUsedByAnotherUser_throwsDuplicateProjectNameException() {
+        CreateProjectRequest req = new CreateProjectRequest();
+        req.setProjectName("shared-project");
+        req.setProjectDescription("desc");
+
+        when(projectRepository.findProjectsByName("shared-project"))
+            .thenReturn(List.of(buildProject(UUID.randomUUID(), 1L, "shared-project")));
 
         assertThrows(DuplicateProjectNameException.class,
             () -> service.createNewProjectByManualCreation(req, userId));
@@ -89,7 +108,7 @@ class ProjectServiceImplTest {
 
     @Test
     void createNewProjectByProgram_newName_savesProject() {
-        when(projectRepository.findProjectsByUserId(userId)).thenReturn(List.of());
+        when(projectRepository.findProjectsByName("auto-project")).thenReturn(List.of());
         when(projectRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         Project result = service.createNewProjectByProgram("auto-project", userId);
@@ -102,7 +121,7 @@ class ProjectServiceImplTest {
 
     @Test
     void createNewProjectByProgram_duplicateName_throwsDuplicateProjectNameException() {
-        when(projectRepository.findProjectsByUserId(userId))
+        when(projectRepository.findProjectsByName("auto-project"))
             .thenReturn(List.of(buildProject(1L, "auto-project")));
 
         assertThrows(DuplicateProjectNameException.class,
