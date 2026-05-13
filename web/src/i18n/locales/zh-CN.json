@@ -13,8 +13,6 @@
         "overview": "概览",
         "observability": "监控",
         "projects": "项目",
-        "optimizer": "优化",
-        "kubent": "Kubent",
         "prompts": "提示词",
         "promptManagement": "提示词管理",
         "manageApiKey": "管理API Key",
@@ -48,41 +46,6 @@
                 "filterProjects": "筛选项目...",
                 "congratsCreate": "恭喜创建项目：{{name}}",
                 "failedCreate": "创建项目失败：{{name}}"
-            }
-        },
-        "kubent": {
-            "select": "选择一个项目",
-            "selectProjectDescription": "选择一个项目来与 Kubent 对话以优化你的 Agent 系统。",
-            "selectPlaceholder": "选择一个项目来优化",
-            "projects": "项目",
-            "siderbar": {
-                "newChat": "新对话",
-                "recent": "最近"
-            },
-            "welcome": {
-                "title": "优化你的 Agent 系统",
-                "readyToExplore": "正在分析",
-                "footer": "在下方输入或点击建议开始对话",
-                "suggestions": {
-                    "analyzeProject": {
-                        "title": "分析项目",
-                        "prompt": "给我一个 {{projectName}} 的结构概览"
-                    },
-                    "codeReview": {
-                        "title": "代码审查",
-                        "prompt": "审查这个项目的最近变更"
-                    },
-                    "findIssues": {
-                        "title": "查找问题",
-                        "prompt": "帮我识别潜在的错误或性能问题"
-                    }
-                }
-            },
-            "moreActions": {
-                "delete": "删除",
-                "deleteSession": "删除对话？",
-                "deleteSessionDescription": "这将删除该对话及其所有消息。",
-                "deleting": "删除中..."
             }
         },
         "apiKey": {
@@ -256,15 +219,10 @@
         "trackCount": "{{count}} 个追踪步骤",
         "noTracks": "暂无追踪步骤。"
     },
-    "chat": {
-        "placeholder": "向 Kubent 询问关于您的项目",
-        "thinking": "Kubent 正在思考"
-    },
     "breadcrumb": {
         "home": "首页",
         "overview": "概览",
         "projects": "项目",
-        "kubent": "Kubent",
         "apiKey": "API Key",
         "prompts": "提示词"
     },

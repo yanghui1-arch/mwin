@@ -39,16 +39,32 @@ export function ProjectDataTableToolbar<TData>({
 
   const createProjectSubmit: SubmitHandler<Inputs> = async (data) => {
     try {
+      const projectName = form.getValues("projectName");
+      form.clearErrors("projectName");
       console.log("request body" + JSON.stringify(data));
       const response = await projectApi.createNewProject(data);
       if (response.data.code == 200) {
         table.options.meta?.onRefresh?.();
         setOpenCreateProjectDialog(false);
-        toast.success(t("main.projects.toolbar.congratsCreate", { name: form.getValues("projectName") }))
+        form.reset();
+        toast.success(t("main.projects.toolbar.congratsCreate", { name: projectName }))
       }
     } catch (error) {
-      toast.error(t("main.projects.toolbar.failedCreate", { name: form.getValues("projectName") }))
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : t("main.projects.toolbar.failedCreate", { name: form.getValues("projectName") });
+      form.setError("projectName", { type: "server", message: errorMessage });
+      toast.error(errorMessage)
       console.error(error);
+    }
+  };
+
+  const handleOpenChange = (open: boolean) => {
+    setOpenCreateProjectDialog(open);
+    if (!open) {
+      form.reset();
+      form.clearErrors();
     }
   };
 
@@ -81,7 +97,7 @@ export function ProjectDataTableToolbar<TData>({
         </Button>
         <Dialog
           open={openCreateProjectDialog}
-          onOpenChange={setOpenCreateProjectDialog}
+          onOpenChange={handleOpenChange}
         >
           <DialogContent className="sm:max-w-md">
             <form onSubmit={form.handleSubmit(createProjectSubmit)}>
@@ -100,6 +116,11 @@ export function ProjectDataTableToolbar<TData>({
                       placeholder={t("main.projects.toolbar.newProjectName")}
                       {...form.register("projectName")}
                     />
+                    {form.formState.errors.projectName?.message && (
+                      <p className="text-sm text-destructive">
+                        {form.formState.errors.projectName.message}
+                      </p>
+                    )}
                   </div>
                   <div className="grid gap-3">
                     <Label>{t("main.projects.toolbar.description")}</Label>

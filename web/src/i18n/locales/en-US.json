@@ -13,8 +13,6 @@
         "overview": "Overview",
         "observability": "Observability",
         "projects": "Projects",
-        "optimizer": "Optimizer",
-        "kubent": "Kubent",
         "prompts": "Prompts",
         "promptManagement": "Prompt Management",
         "manageApiKey": "Manage API Key",
@@ -48,39 +46,6 @@
                 "filterProjects": "Filter projects...",
                 "congratsCreate": "Congrats to create project: {{name}}",
                 "failedCreate": "Failed to create project: {{name}}"
-            }
-        },
-        "kubent": {
-            "select": "Select one project",
-            "selectPlaceholder": "Select a project to optimize",
-            "projects": "Projects",
-            "siderbar": {
-                "newChat": "New Chat",
-                "recent": "Recents"
-            },
-            "welcome": {
-                "title": "Improve Your Agent System",
-                "readyToExplore": "Analyzing",
-                "suggestions": {
-                    "analyzeProject": {
-                        "title": "Analyze Project",
-                        "prompt": "Give me an overview of the {{projectName}} structure"
-                    },
-                    "codeReview": {
-                        "title": "Code Review",
-                        "prompt": "Review the recent changes in this project"
-                    },
-                    "findIssues": {
-                        "title": "Find Issues",
-                        "prompt": "Help me identify potential bugs or performance issues"
-                    }
-                }
-            },
-            "moreActions": {
-                "delete": "Delete",
-                "deleteSession": "Delete session?",
-                "deleteSessionDescription": "This will delete the session and all its messages.",
-                "deleting": "Deleting..."
             }
         },
         "apiKey": {
@@ -254,15 +219,10 @@
         "trackCount": "{{count}} tracks",
         "noTracks": "No tracked steps."
     },
-    "chat": {
-        "placeholder": "Ask Kubent about your project",
-        "thinking": "Kubent is thinking"
-    },
     "breadcrumb": {
         "home": "Home",
         "overview": "Overview",
         "projects": "Projects",
-        "kubent": "Kubent",
         "apiKey": "API Key",
         "prompts": "Prompts"
     },
