@@ -53,15 +53,6 @@ class LogStepRequest(BaseModel):
     llm_provider: str
     """llm inference provider"""
 
-    prompt_pipeline: str | None = None
-    """Pipeline"""
-
-    prompt_name: str | None = None
-    """Prompt name"""
-
-    prompt_version: str | None = None
-    """Prompt version"""
-
     @field_serializer('input', 'output')
     def serialize_any_field(self, value: Any):
         return serialize_helper.safe_serialize(value)

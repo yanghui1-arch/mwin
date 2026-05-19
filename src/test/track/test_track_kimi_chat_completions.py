@@ -69,7 +69,7 @@ def test_track_kimi_chat_completions_logs_llm_step(fake_client, monkeypatch):
     original_create = resources.chat.completions.Completions.create
     original_async_create = resources.chat.completions.AsyncCompletions.create
     try:
-        @track(tags=["unit"], llm_provider=LLMProvider.KIMI, system_prompt="kimi/default@1.0")
+        @track(tags=["unit"], llm_provider=LLMProvider.KIMI)
         def call_kimi():
             return resources.chat.completions.Completions.create(
                 object(),
@@ -95,9 +95,6 @@ def test_track_kimi_chat_completions_logs_llm_step(fake_client, monkeypatch):
     llm_output = llm_steps[0]["output"]["llm_outputs"]
     assert llm_output.content == "ok"
 
-    assert llm_steps[0]["pipeline"] == "kimi"
-    assert llm_steps[0]["prompt_name"] == "default"
-    assert llm_steps[0]["prompt_version"] == "1.0"
     assert llm_steps[0]["llm_provider"] == LLMProvider.KIMI
 
 
@@ -112,7 +109,7 @@ def test_track_kimi_chat_completions_stream_logs_llm_step(fake_client, monkeypat
     original_create = resources.chat.completions.Completions.create
     original_async_create = resources.chat.completions.AsyncCompletions.create
     try:
-        @track(tags=["unit"], llm_provider=LLMProvider.KIMI, system_prompt="kimi/default@1.0")
+        @track(tags=["unit"], llm_provider=LLMProvider.KIMI)
         def call_kimi_stream():
             return resources.chat.completions.Completions.create(
                 object(),
@@ -136,9 +133,6 @@ def test_track_kimi_chat_completions_stream_logs_llm_step(fake_client, monkeypat
     llm_output = llm_steps[0]["output"]["llm_outputs"]
     assert llm_output["content"] == "hello kimi"
 
-    assert llm_steps[0]["pipeline"] == "kimi"
-    assert llm_steps[0]["prompt_name"] == "default"
-    assert llm_steps[0]["prompt_version"] == "1.0"
     assert llm_steps[0]["llm_provider"] == LLMProvider.KIMI
 
 
@@ -153,7 +147,7 @@ def test_kimi_not_logged_outside_tracked_call(fake_client, monkeypatch):
     original_create = resources.chat.completions.Completions.create
     original_async_create = resources.chat.completions.AsyncCompletions.create
     try:
-        @track(tags=["unit"], llm_provider=LLMProvider.KIMI, system_prompt="kimi/default@1.0")
+        @track(tags=["unit"], llm_provider=LLMProvider.KIMI)
         def install_patch():
             return "ok"
 
@@ -183,7 +177,7 @@ def test_track_kimi_async_chat_completions_logs_step_model_with_kwargs(fake_clie
     original_create = resources.chat.completions.Completions.create
     original_async_create = resources.chat.completions.AsyncCompletions.create
     try:
-        @track(tags=["unit"], llm_provider=LLMProvider.KIMI, system_prompt="kimi/default@1.0")
+        @track(tags=["unit"], llm_provider=LLMProvider.KIMI)
         async def call_kimi_async():
             kwargs = {
                 "model": "moonshot-v1-8k",

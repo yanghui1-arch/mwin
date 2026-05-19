@@ -57,9 +57,6 @@ class SyncClient:
         end_time: datetime | None,
         description: str | None,
         llm_provider: LLMProvider,
-        pipeline: str | None,
-        prompt_name: str | None,
-        prompt_version: str | None,
     ) -> LogStepResponse:
         """Create a step and log it in server."""
 
@@ -86,9 +83,6 @@ class SyncClient:
             end_time=end_time,
             description=description,
             llm_provider=llm_provider,
-            prompt_pipeline=pipeline,
-            prompt_name=prompt_name,
-            prompt_version=prompt_version,
         )
 
         try:

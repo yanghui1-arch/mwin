@@ -25,7 +25,6 @@ from ...helper.llm import openai_helper
 from ...context.func_context import current_function_name_context
 from ...client import get_cached_sync_client, SyncClient
 from ...logger import logger
-from ...helper import prompt_helper
 
 
 raw_openai_create = resources.chat.completions.Completions.create
@@ -66,9 +65,6 @@ def patch_openai_chat_completions():
             openai_chat_completion_params=raw_openai_inputs,
             ignore_fields=tracker_options.llm_ignore_fields,
         )
-        pipeline, prompt_name, prompt_version = prompt_helper.parse_system_prompt_identifier(
-            tracker_options.system_prompt
-        )
 
         if isinstance(resp, Stream):
             return ProxyStream(
@@ -76,9 +72,6 @@ def patch_openai_chat_completions():
                 tracker_options=tracker_options,
                 step=step,
                 inputs=openai_inputs,
-                pipeline=pipeline,
-                prompt_name=prompt_name,
-                prompt_version=prompt_version
             )
 
         # No stream calling openai
@@ -104,9 +97,6 @@ def patch_openai_chat_completions():
             end_time=datetime.now(),
             description=tracker_options.description,
             llm_provider=tracker_options.llm_provider,
-            pipeline=pipeline,
-            prompt_name=prompt_name,
-            prompt_version=prompt_version,
         )
 
         return resp
@@ -124,9 +114,6 @@ class ProxyStream(Stream):
         tracker_options: TrackerOptions,
         step: Step,
         inputs: Dict[str, Any],
-        pipeline: str | None,
-        prompt_name: str | None,
-        prompt_version: str | None,
     ):
         """Initialize ProxyOpenAIStream
         Wrapper openai.chat.completion.create(stream=True)
@@ -137,9 +124,6 @@ class ProxyStream(Stream):
         self.tracker_options = tracker_options
         self.step = step
         self.inputs = inputs
-        self.pipeline = pipeline
-        self.prompt_name = prompt_name
-        self.prompt_version = prompt_version
         self.model = inputs.get('model', step.model)
         self.tags = step.tags
         if self.model is not None:
@@ -180,9 +164,6 @@ class ProxyStream(Stream):
                 end_time=datetime.now(),
                 description=self.tracker_options.description,
                 llm_provider=self.tracker_options.llm_provider,
-                pipeline=self.pipeline,
-                prompt_name=self.prompt_name,
-                prompt_version=self.prompt_version,
             )
         return chunk
 
@@ -222,9 +203,6 @@ class ProxyStream(Stream):
                     end_time=datetime.now(),
                     description=self.tracker_options.description,
                     llm_provider=self.tracker_options.llm_provider,
-                    pipeline=self.pipeline,
-                    prompt_name=self.prompt_name,
-                    prompt_version=self.prompt_version,
                 )
                 
             yield chunk

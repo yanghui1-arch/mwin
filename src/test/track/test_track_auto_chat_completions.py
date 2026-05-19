@@ -48,7 +48,7 @@ def test_track_auto_chat_completions_resolves_provider_from_model_name(
     original_create = resources.chat.completions.Completions.create
     original_async_create = resources.chat.completions.AsyncCompletions.create
     try:
-        @track(tags=["unit"], llm_provider=LLMProvider.AUTO, system_prompt="auto/default@1.0")
+        @track(tags=["unit"], llm_provider=LLMProvider.AUTO)
         def call_llm():
             return resources.chat.completions.Completions.create(
                 object(),

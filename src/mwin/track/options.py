@@ -17,7 +17,6 @@ class TrackerOptions:
         llm_provider(LLMProvider): llm infer provider. Default to `LLMProvider.AUTO`when set it auto detect based on model name
         llm_ignore_fields(List[str] | None): a list of llm ignore fields name. Default to `None`.
         description(str | None): track step description. Default to `None`.
-        system_prompt(str | None): prompt identifier in `pipeline/name@version` format.
         project_name(str | None): project name which is the tracked step's project.
                                     If it's None, then use the config. It is set to specialize the project
                                     OR deploy two or more programs which use mwin that it can help you
@@ -32,5 +31,4 @@ class TrackerOptions:
     llm_provider: LLMProvider = LLMProvider.AUTO
     llm_ignore_fields: List[str] | None = None
     description: str | None = None
-    system_prompt: str | None = None
     project_name: str | None = None

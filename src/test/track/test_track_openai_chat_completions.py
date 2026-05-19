@@ -71,7 +71,6 @@ def test_track_openai_chat_completions_logs_llm_step(fake_client, monkeypatch):
             tags=["unit"],
             llm_provider=LLMProvider.OPENAI,
             llm_ignore_fields=["temperature"],
-            system_prompt="classification_subject/math@0.9",
         )
         def call_llm():
             return resources.chat.completions.Completions.create(
@@ -105,9 +104,6 @@ def test_track_openai_chat_completions_logs_llm_step(fake_client, monkeypatch):
 
     llm_output = llm_steps[0]["output"]["llm_outputs"]
     assert llm_output.content == "ok"
-    assert llm_steps[0]["pipeline"] == "classification_subject"
-    assert llm_steps[0]["prompt_name"] == "math"
-    assert llm_steps[0]["prompt_version"] == "0.9"
 
 
 def test_track_openai_chat_completions_stream_logs_llm_step(fake_client, monkeypatch):
@@ -121,7 +117,7 @@ def test_track_openai_chat_completions_stream_logs_llm_step(fake_client, monkeyp
     original_create = resources.chat.completions.Completions.create
     original_async_create = resources.chat.completions.AsyncCompletions.create
     try:
-        @track(tags=["unit"], llm_provider=LLMProvider.OPENAI, system_prompt="classification_subject/math@0.9")
+        @track(tags=["unit"], llm_provider=LLMProvider.OPENAI)
         def call_llm_stream():
             return resources.chat.completions.Completions.create(
                 object(),
@@ -144,9 +140,6 @@ def test_track_openai_chat_completions_stream_logs_llm_step(fake_client, monkeyp
     assert len(llm_steps) == 1
     llm_output = llm_steps[0]["output"]["llm_outputs"]
     assert llm_output["content"] == "hi there"
-    assert llm_steps[0]["pipeline"] == "classification_subject"
-    assert llm_steps[0]["prompt_name"] == "math"
-    assert llm_steps[0]["prompt_version"] == "0.9"
 
 
 def test_openai_chat_completions_not_logged_outside_tracked_call(fake_client, monkeypatch):
@@ -160,7 +153,7 @@ def test_openai_chat_completions_not_logged_outside_tracked_call(fake_client, mo
     original_create = resources.chat.completions.Completions.create
     original_async_create = resources.chat.completions.AsyncCompletions.create
     try:
-        @track(tags=["unit"], llm_provider=LLMProvider.OPENAI, system_prompt="classification_subject/math@0.9")
+        @track(tags=["unit"], llm_provider=LLMProvider.OPENAI)
         def install_patch():
             return "ok"
 
