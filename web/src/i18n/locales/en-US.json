@@ -1,324 +1,226 @@
-{
-    "common": {
-        "cancel": "Cancel",
-        "create": "Create",
-        "close": "Close",
-        "reset": "Reset",
-        "somethingErrors": "Something errors.",
-        "noContent": "No content."
-    },
-    "siderbar": {
-        "title": "Optimizer",
-        "dashboard": "Dashboard",
-        "overview": "Overview",
-        "observability": "Observability",
-        "projects": "Projects",
-        "prompts": "Prompts",
-        "promptManagement": "Prompt Management",
-        "manageApiKey": "Manage API Key",
-        "apiKey": "API key",
-        "settings": "Settings",
-        "getHelp": "Get Help",
-        "search": "Search"
-    },
-    "nodeSearch": {
-        "placeholder": "Search nodes...",
-        "noResults": "No results found. {{searchString}}",
-        "nodes": "Nodes"
-    },
-    "main": {
-        "projects": {
-            "title": "Projects",
-            "titleDescription": "Create a new one project to track and improve your agent performance!",
-            "columns": {
-                "name": "Name",
-                "avgDuration": "Duration (avg.)",
-                "cost": "Cost",
-                "lastUpdate": "Last Update"
-            },
-            "toolbar": {
-                "createProject": "Create Project",
-                "createProjectDescription": "Create a new project for Mwin",
-                "projectName": "Project Name",
-                "newProjectName": "New project name",
-                "description": "Description",
-                "briefDescription": "Brief description",
-                "filterProjects": "Filter projects...",
-                "congratsCreate": "Congrats to create project: {{name}}",
-                "failedCreate": "Failed to create project: {{name}}"
-            }
-        },
-        "apiKey": {
-            "title": "Get your Mwin API Key",
-            "checkApiKey": "Check your API key",
-            "changeApiKey": "Change another",
-            "dialogTitle": "Mwin API Key"
-        }
-    },
-    "navUser": {
-        "account": "Account",
-        "billing": "Billing",
-        "notifications": "Notifications",
-        "logOut": "Log out"
-    },
-    "dataTable": {
-        "filterProjects": "Filter projects...",
-        "view": "View",
-        "toggleColumns": "Toggle columns",
-        "rowsPerPage": "Rows per page",
-        "pageInfo": "Page {{current}} of {{total}}",
-        "rowsSelected": "{{selected}} of {{total}} row(s) selected.",
-        "goToFirstPage": "Go to first page",
-        "goToPreviousPage": "Go to previous page",
-        "goToNextPage": "Go to next page",
-        "goToLastPage": "Go to last page",
-        "deleteSuccess": "Successfully deleted {{count}} item(s)."
-    },
-    "login": {
-        "welcomeBack": "Welcome back",
-        "signInDescription": "Sign in with your Github or Google account",
-        "signingIn": "Signing in...",
-        "signInWithGithub": "Sign in with Github",
-        "signInWithGoogle": "Sign in with Google",
-        "orContinueWith": "Or continue with",
-        "email": "Email",
-        "emailPlaceholder": "m@example.com",
-        "password": "Password",
-        "forgotPassword": "Forgot your password?",
-        "login": "Login",
-        "dontHaveAccount": "Don't have an account?",
-        "signUp": "Sign up",
-        "termsNote": "By clicking continue, you agree to our",
-        "termsOfService": "Terms of Service",
-        "and": "and",
-        "privacyPolicy": "Privacy Policy",
-        "missingGithubClientId": "Missing GitHub Client ID",
-        "setClientId": "Set VITE_GITHUB_CLIENT_ID in your environment."
-    },
-    "chart": {
-        "totalVisitors": "Total Visitors",
-        "totalLast3Months": "Total for the last 3 months",
-        "last3Months": "Last 3 months",
-        "last30Days": "Last 30 days",
-        "last7Days": "Last 7 days",
-        "visitors": "Visitors",
-        "desktop": "Desktop",
-        "mobile": "Mobile"
-    },
-    "sectionCards": {
-        "totalRevenue": "Total Revenue",
-        "trendingUpMonth": "Trending up this month",
-        "visitorsLast6Months": "Visitors for the last 6 months",
-        "newCustomers": "New Customers",
-        "down20Period": "Down 20% this period",
-        "acquisitionAttention": "Acquisition needs attention",
-        "activeAccounts": "Active Accounts",
-        "strongRetention": "Strong user retention",
-        "engagementExceed": "Engagement exceed targets",
-        "growthRate": "Growth Rate",
-        "steadyIncrease": "Steady performance increase",
-        "meetsProjections": "Meets growth projections"
-    },
-    "overview": {
-        "cards": {
-            "trackedProjects": "Tracked Projects",
-            "trackedProjectsFooterTitle": "Projects currently available",
-            "trackedProjectsFooterDescription": "All projects under your account",
-            "lifetimeTokens": "Lifetime Tokens",
-            "lifetimeTokensFooterTitle": "Total tokens since tracking started",
-            "lifetimeTokensFooterDescription": "Summed across all tracked projects",
-            "yesterdayTokens": "Yesterday Tokens",
-            "yesterdayTokensFooterTitle": "Compared with the prior day",
-            "todayTokens": "Today Tokens",
-            "todayTokensFooterTitle": "Compared with yesterday",
-            "dayOverDay": "Day-over-day token usage change"
-        },
-        "chart": {
-            "title": "Curve of Tokens",
-            "description": "Token consumption across tracked projects",
-            "tokensSeries": "Tokens",
-            "last24Hours": "Last 24 hours",
-            "selectRange": "Select range",
-            "projectFilter": "Projects",
-            "allProjects": "All projects",
-            "selectedProjects": "{{count}} projects",
-            "noProjects": "No projects available.",
-            "noData": "No token usage data for the selected projects."
-        }
-    },
-    "projectRowAction": {
-        "edit": "Edit",
-        "delete": "Delete",
-        "editProject": "Edit project: {{name}}",
-        "projectName": "Project Name",
-        "description": "Description",
-        "close": "Close",
-        "update": "Update",
-        "confirmDelete": "Confirm Delete",
-        "deleteWarning": "Delete action can't be reversed. Are you sure to delete?",
-        "updateSuccess": "Update project successfully.",
-        "unknownError": "Unknown Error"
-    },
-    "tokensPanel": {
-        "title": "Token Usage",
-        "cost": "Cost",
-        "totalTokens": "Total tokens",
-        "contextLength": "Context length",
-        "promptTokens": "Prompt tokens",
-        "completionTokens": "Completion tokens",
-        "cacheHit": "Cache hit",
-        "cachedPromptTokens": "{{count}} / {{total}} prompt tokens",
-        "prompt": "Prompt",
-        "uncachedPrompt": "Prompt (uncached)",
-        "cachedPrompt": "Prompt (cached)",
-        "completion": "Completion",
-        "noUsage": "No usage available for this step.",
-        "uncachedPromptDetail": "Prompt (uncached): {{count}} ({{pct}}%)",
-        "cachedPromptDetail": "Prompt (cached): {{count}} ({{pct}}%)",
-        "completionDetail": "Completion: {{count}} ({{pct}}%)"
-    },
-    "stepTable": {
-        "functionInput": "Function Input",
-        "functionOutput": "Function Output",
-        "llmInput": "LLM Input",
-        "llmOutput": "LLM Output",
-        "noLLMParams": "No parameters are passed to call LLM model.",
-        "llmError": "Happening some errors when calling LLM. But no error information due to something break. Please report it! Thanks."
-    },
-    "track": {
-        "backToProjects": "Back to Projects",
-        "step": "Step",
-        "trace": "Trace",
-        "conversation": "Conversation",
-        "unknown": "Unknown",
-        "columns": {
-            "name": "Name",
-            "functionInput": "Function Input",
-            "functionOutput": "Function Output",
-            "startTime": "Start Time",
-            "endTime": "End Time",
-            "input": "Input",
-            "output": "Output",
-            "lastUpdate": "Last Update"
-        }
-    },
-    "traceDialog": {
-        "inputOutput": "Input/Output",
-        "processFlow": "Process Flow",
-        "input": "Input",
-        "output": "Output",
-        "step": "Step",
-        "llmInputOutput": "LLM Input/Output",
-        "stepFunctionInputOutput": "Step Function Input/Output",
-        "noLLMTracked": "No llm function is tracked in `{{title}}`.",
-        "noFunctionTracked": "No function is tracked in `{{title}}`.",
-        "enterExecution": "Enter Execution",
-        "root": "Root",
-        "structureTree": "Structure Tree",
-        "graphHint": "Select a track on the left to focus it in the graph.",
-        "trackCount": "{{count}} tracks",
-        "noTracks": "No tracked steps."
-    },
-    "breadcrumb": {
-        "home": "Home",
-        "overview": "Overview",
-        "projects": "Projects",
-        "apiKey": "API Key",
-        "prompts": "Prompts"
-    },
-    "prompts": {
-        "title": "Prompt Management",
-        "description": "Visualize and optimize your agent system's prompt combinations",
-        "selectProject": "Select a project",
-        "createPrompt": {
-            "button": "Create Prompt",
-            "title": "Create Prompt",
-            "name": "Name",
-            "namePlaceholder": "Prompt name",
-            "version": "Version",
-            "versionPlaceholder": "v1",
-            "pipeline": "Pipeline",
-            "pipelinePlaceholder": "Select pipeline",
-            "content": "Prompt Content",
-            "contentPlaceholder": "Enter prompt content",
-            "create": "Create",
-            "cancel": "Cancel",
-            "createFailed": "Failed to create prompt"
-        },
-        "stats": {
-            "totalPipelines": "Total Pipelines",
-            "totalPrompts": "Total Prompts",
-            "avgQualityScore": "Avg Quality Score",
-            "bestSuccessRate": "Best Success Rate",
-            "activeArchived": "{{active}} active · {{archived}} archived",
-            "currentVersions": "{{count}} current versions",
-            "acrossCurrentVersions": "Across current versions",
-            "topPerformingPrompt": "Top performing prompt"
-        },
-        "pipeline": {
-            "title": "Pipelines",
-            "active": "Active",
-            "archived": "Archived",
-            "promptCount": "{{count}} prompts",
-            "selectHint": "Select a pipeline or prompt",
-            "selectHintDescription": "Click any item in the left panel to explore its performance and details"
-        },
-        "prompt": {
-            "current": "Current",
-            "deprecated": "Deprecated",
-            "testing": "Testing",
-            "model": "Model",
-            "createdAt": "Created",
-            "content": "Content",
-            "metrics": "Metrics",
-            "history": "History",
-            "qualityScore": "Quality Score",
-            "successRate": "Success Rate",
-            "latency": "Latency",
-            "tokenCost": "Token Cost",
-            "usageCount": "Usage",
-            "changelog": "What changed",
-            "copyContent": "Copy",
-            "copied": "Copied!",
-            "perThousandCalls": "per 1k calls",
-            "totalCalls": "total calls",
-            "identifierLabel": "SDK Identifier",
-            "identifierFormatHint": "Use this value in the SDK: @track(system_prompt=\"pipeline/name@version\")",
-            "copyIdentifier": "Copy ID",
-            "copyTrackSnippet": "Copy @track",
-            "trackSnippet": "Decorator snippet",
-            "identifierInvalid": "Identifier unavailable",
-            "identifierMissingPart": "Pipeline, prompt name, or version is empty.",
-            "identifierInvalidPipelineChars": "Pipeline name cannot contain '/' or '@'.",
-            "identifierInvalidPromptChars": "Prompt name cannot contain '@'.",
-            "identifierInvalidVersionChars": "Version cannot contain '@'."
-        },
-        "chart": {
-            "title": "Success Rate Trends",
-            "description": "Performance across all active pipelines over time",
-            "versionComparison": "Version performance over time",
-            "versionTimeline": "Version over time",
-            "avgPerformance": "Average by version",
-            "showing": "Showing",
-            "noHistory": "No tracking history available",
-            "compareVersions": "Versions",
-            "successRate": "Success Rate (%)",
-            "latency": "Latency (ms)",
-            "tokenCost": "Token Cost (¢)"
-        },
-        "recommendations": {
-            "title": "AI Recommendations",
-            "description": "Optimized combinations discovered by analyzing your prompt history and performance data",
-            "high": "High",
-            "medium": "Medium",
-            "low": "Low",
-            "confidence": "Confidence",
-            "tradeoffs": "Trade-offs",
-            "rationale": "Rationale",
-            "involvedPipelines": "Involved Pipelines",
-            "explore": "Explore Combination",
-            "analyzed": "{{count}} combinations found"
-        }
-    }
+﻿{
+    "common":  {
+                   "cancel":  "Cancel",
+                   "create":  "Create",
+                   "close":  "Close",
+                   "reset":  "Reset",
+                   "somethingErrors":  "Something errors.",
+                   "noContent":  "No content."
+               },
+    "siderbar":  {
+                     "title":  "Optimizer",
+                     "dashboard":  "Dashboard",
+                     "overview":  "Overview",
+                     "observability":  "Observability",
+                     "projects":  "Projects",
+                     "manageApiKey":  "Manage API Key",
+                     "apiKey":  "API key",
+                     "settings":  "Settings",
+                     "getHelp":  "Get Help",
+                     "search":  "Search"
+                 },
+    "nodeSearch":  {
+                       "placeholder":  "Search nodes...",
+                       "noResults":  "No results found. {{searchString}}",
+                       "nodes":  "Nodes"
+                   },
+    "main":  {
+                 "projects":  {
+                                  "title":  "Projects",
+                                  "titleDescription":  "Create a new one project to track and improve your agent performance!",
+                                  "columns":  {
+                                                  "name":  "Name",
+                                                  "avgDuration":  "Duration (avg.)",
+                                                  "cost":  "Cost",
+                                                  "lastUpdate":  "Last Update"
+                                              },
+                                  "toolbar":  {
+                                                  "createProject":  "Create Project",
+                                                  "createProjectDescription":  "Create a new project for Mwin",
+                                                  "projectName":  "Project Name",
+                                                  "newProjectName":  "New project name",
+                                                  "description":  "Description",
+                                                  "briefDescription":  "Brief description",
+                                                  "filterProjects":  "Filter projects...",
+                                                  "congratsCreate":  "Congrats to create project: {{name}}",
+                                                  "failedCreate":  "Failed to create project: {{name}}"
+                                              }
+                              },
+                 "apiKey":  {
+                                "title":  "Get your Mwin API Key",
+                                "checkApiKey":  "Check your API key",
+                                "changeApiKey":  "Change another",
+                                "dialogTitle":  "Mwin API Key"
+                            }
+             },
+    "navUser":  {
+                    "account":  "Account",
+                    "billing":  "Billing",
+                    "notifications":  "Notifications",
+                    "logOut":  "Log out"
+                },
+    "dataTable":  {
+                      "filterProjects":  "Filter projects...",
+                      "view":  "View",
+                      "toggleColumns":  "Toggle columns",
+                      "rowsPerPage":  "Rows per page",
+                      "pageInfo":  "Page {{current}} of {{total}}",
+                      "rowsSelected":  "{{selected}} of {{total}} row(s) selected.",
+                      "goToFirstPage":  "Go to first page",
+                      "goToPreviousPage":  "Go to previous page",
+                      "goToNextPage":  "Go to next page",
+                      "goToLastPage":  "Go to last page",
+                      "deleteSuccess":  "Successfully deleted {{count}} item(s)."
+                  },
+    "login":  {
+                  "welcomeBack":  "Welcome back",
+                  "signInDescription":  "Sign in with your Github or Google account",
+                  "signingIn":  "Signing in...",
+                  "signInWithGithub":  "Sign in with Github",
+                  "signInWithGoogle":  "Sign in with Google",
+                  "orContinueWith":  "Or continue with",
+                  "email":  "Email",
+                  "emailPlaceholder":  "m@example.com",
+                  "password":  "Password",
+                  "forgotPassword":  "Forgot your password?",
+                  "login":  "Login",
+                  "dontHaveAccount":  "Don\u0027t have an account?",
+                  "signUp":  "Sign up",
+                  "termsNote":  "By clicking continue, you agree to our",
+                  "termsOfService":  "Terms of Service",
+                  "and":  "and",
+                  "privacyPolicy":  "Privacy Policy",
+                  "missingGithubClientId":  "Missing GitHub Client ID",
+                  "setClientId":  "Set VITE_GITHUB_CLIENT_ID in your environment."
+              },
+    "chart":  {
+                  "totalVisitors":  "Total Visitors",
+                  "totalLast3Months":  "Total for the last 3 months",
+                  "last3Months":  "Last 3 months",
+                  "last30Days":  "Last 30 days",
+                  "last7Days":  "Last 7 days",
+                  "visitors":  "Visitors",
+                  "desktop":  "Desktop",
+                  "mobile":  "Mobile"
+              },
+    "sectionCards":  {
+                         "totalRevenue":  "Total Revenue",
+                         "trendingUpMonth":  "Trending up this month",
+                         "visitorsLast6Months":  "Visitors for the last 6 months",
+                         "newCustomers":  "New Customers",
+                         "down20Period":  "Down 20% this period",
+                         "acquisitionAttention":  "Acquisition needs attention",
+                         "activeAccounts":  "Active Accounts",
+                         "strongRetention":  "Strong user retention",
+                         "engagementExceed":  "Engagement exceed targets",
+                         "growthRate":  "Growth Rate",
+                         "steadyIncrease":  "Steady performance increase",
+                         "meetsProjections":  "Meets growth projections"
+                     },
+    "overview":  {
+                     "cards":  {
+                                   "trackedProjects":  "Tracked Projects",
+                                   "trackedProjectsFooterTitle":  "Projects currently available",
+                                   "trackedProjectsFooterDescription":  "All projects under your account",
+                                   "lifetimeTokens":  "Lifetime Tokens",
+                                   "lifetimeTokensFooterTitle":  "Total tokens since tracking started",
+                                   "lifetimeTokensFooterDescription":  "Summed across all tracked projects",
+                                   "yesterdayTokens":  "Yesterday Tokens",
+                                   "yesterdayTokensFooterTitle":  "Compared with the prior day",
+                                   "todayTokens":  "Today Tokens",
+                                   "todayTokensFooterTitle":  "Compared with yesterday",
+                                   "dayOverDay":  "Day-over-day token usage change"
+                               },
+                     "chart":  {
+                                   "title":  "Curve of Tokens",
+                                   "description":  "Token consumption across tracked projects",
+                                   "tokensSeries":  "Tokens",
+                                   "last24Hours":  "Last 24 hours",
+                                   "selectRange":  "Select range",
+                                   "projectFilter":  "Projects",
+                                   "allProjects":  "All projects",
+                                   "selectedProjects":  "{{count}} projects",
+                                   "noProjects":  "No projects available.",
+                                   "noData":  "No token usage data for the selected projects."
+                               }
+                 },
+    "projectRowAction":  {
+                             "edit":  "Edit",
+                             "delete":  "Delete",
+                             "editProject":  "Edit project: {{name}}",
+                             "projectName":  "Project Name",
+                             "description":  "Description",
+                             "close":  "Close",
+                             "update":  "Update",
+                             "confirmDelete":  "Confirm Delete",
+                             "deleteWarning":  "Delete action can\u0027t be reversed. Are you sure to delete?",
+                             "updateSuccess":  "Update project successfully.",
+                             "unknownError":  "Unknown Error"
+                         },
+    "tokensPanel":  {
+                        "title":  "Token Usage",
+                        "cost":  "Cost",
+                        "totalTokens":  "Total tokens",
+                        "contextLength":  "Context length",
+                        "promptTokens":  "Prompt tokens",
+                        "completionTokens":  "Completion tokens",
+                        "cacheHit":  "Cache hit",
+                        "cachedPromptTokens":  "{{count}} / {{total}} prompt tokens",
+                        "prompt":  "Prompt",
+                        "uncachedPrompt":  "Prompt (uncached)",
+                        "cachedPrompt":  "Prompt (cached)",
+                        "completion":  "Completion",
+                        "noUsage":  "No usage available for this step.",
+                        "uncachedPromptDetail":  "Prompt (uncached): {{count}} ({{pct}}%)",
+                        "cachedPromptDetail":  "Prompt (cached): {{count}} ({{pct}}%)",
+                        "completionDetail":  "Completion: {{count}} ({{pct}}%)"
+                    },
+    "stepTable":  {
+                      "functionInput":  "Function Input",
+                      "functionOutput":  "Function Output",
+                      "llmInput":  "LLM Input",
+                      "llmOutput":  "LLM Output",
+                      "noLLMParams":  "No parameters are passed to call LLM model.",
+                      "llmError":  "Happening some errors when calling LLM. But no error information due to something break. Please report it! Thanks."
+                  },
+    "track":  {
+                  "backToProjects":  "Back to Projects",
+                  "step":  "Step",
+                  "trace":  "Trace",
+                  "conversation":  "Conversation",
+                  "unknown":  "Unknown",
+                  "columns":  {
+                                  "name":  "Name",
+                                  "functionInput":  "Function Input",
+                                  "functionOutput":  "Function Output",
+                                  "startTime":  "Start Time",
+                                  "endTime":  "End Time",
+                                  "input":  "Input",
+                                  "output":  "Output",
+                                  "lastUpdate":  "Last Update"
+                              }
+              },
+    "traceDialog":  {
+                        "inputOutput":  "Input/Output",
+                        "processFlow":  "Process Flow",
+                        "input":  "Input",
+                        "output":  "Output",
+                        "step":  "Step",
+                        "llmInputOutput":  "LLM Input/Output",
+                        "stepFunctionInputOutput":  "Step Function Input/Output",
+                        "noLLMTracked":  "No llm function is tracked in `{{title}}`.",
+                        "noFunctionTracked":  "No function is tracked in `{{title}}`.",
+                        "enterExecution":  "Enter Execution",
+                        "root":  "Root",
+                        "structureTree":  "Structure Tree",
+                        "graphHint":  "Select a track on the left to focus it in the graph.",
+                        "trackCount":  "{{count}} tracks",
+                        "noTracks":  "No tracked steps."
+                    },
+    "breadcrumb":  {
+                       "home":  "Home",
+                       "overview":  "Overview",
+                       "projects":  "Projects",
+                       "apiKey":  "API Key"
+                   }
 }
-

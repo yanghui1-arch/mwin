@@ -24,7 +24,6 @@ import {
 } from "@/components/ui/sidebar";
 import { NavMain } from "./nav/nav-main";
 import { useUser } from "./user-provider/use-user";
-import { SlidersHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -56,12 +55,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         url: "/projects",
         icon: IconFolder,
         label: t("siderbar.observability"),
-      },
-      {
-        title: t("siderbar.prompts"),
-        url: "/prompts",
-        icon: SlidersHorizontal,
-        label: t("siderbar.promptManagement"),
       },
       {
         title: t("siderbar.apiKey"),
