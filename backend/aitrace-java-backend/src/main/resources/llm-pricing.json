@@ -14,6 +14,21 @@
           "output_price_per_million": 0.34714
         }
       ]
+    },
+    "gpt-5.4-pro": {
+      "tiers": [
+        {
+          "max_context_tokens": 272000,
+          "input_price_per_million": 0.668571,
+          "cached_input_price_per_million": 0.0668571,
+          "output_price_per_million": 4.011428
+        },
+        {
+          "input_price_per_million": 1.33742,
+          "cached_input_price_per_million": 0.0668571,
+          "output_price_per_million": 6.01714
+        }
+      ]
     }
   },
   "open_router": {
