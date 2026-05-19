@@ -1,6 +1,14 @@
 # Version log
 Every version updates, fixes and removings could be checked here.
 
+## 0.2.5
+### Feature
+- Support automatically detect the llm provider based on the model. - @yanghui1-arch [# f381742](https://github.com/yanghui1-arch/mwin/commit/f3817421ea8c63ed191eaebb39920bd994af34fb)
+- Support deepseek family models. - @yanghui1-arch [# 6c251f7](https://github.com/yanghui1-arch/mwin/commit/6c251f753bbda9fae4abba39b895ab2658acf4a0)
+
+### Fix
+- Remove prompt track. - @yanghui1-arch [# c452922](https://github.com/yanghui1-arch/mwin/commit/c452922151ca144c167708b58ff9e597055a9e2b)
+
 ## 0.2.4
 ### Beaking change
 - Change system prompt track logic in a more clear and easier way. - @yanghui1-arch [# 00ad104](https://github.com/yanghui1-arch/mwin/commit/00ad104c86101d93adf62adaa3e031a3f125c663)
