@@ -1,17 +1,13 @@
 package com.supertrace.aitrace.service.application.impl;
 
 import com.supertrace.aitrace.domain.Project;
-import com.supertrace.aitrace.domain.core.prompt.PromptPipeline;
 import com.supertrace.aitrace.domain.core.Trace;
 import com.supertrace.aitrace.domain.core.usage.LLMUsage;
-import com.supertrace.aitrace.dto.prompt.CreatePromptPipelineRequest;
 import com.supertrace.aitrace.dto.step.LogStepRequest;
 import com.supertrace.aitrace.dto.trace.LogTraceRequest;
 import com.supertrace.aitrace.repository.ProjectRepository;
 import com.supertrace.aitrace.service.application.LogService;
 import com.supertrace.aitrace.service.domain.ProjectService;
-import com.supertrace.aitrace.service.domain.PromptService;
-import com.supertrace.aitrace.domain.core.prompt.PromptRef;
 import com.supertrace.aitrace.service.domain.StepMetaService;
 import com.supertrace.aitrace.service.domain.StepService;
 import com.supertrace.aitrace.service.domain.TraceService;
@@ -31,7 +27,6 @@ public class LogServiceImpl implements LogService {
     private final StepService stepService;
     private final StepMetaService stepMetaService;
     private final TraceService traceService;
-    private final PromptService promptService;
 
     /**
      * Log step
@@ -47,25 +42,7 @@ public class LogServiceImpl implements LogService {
         Project projectOwnedByUserId = this.searchProject(userId, projectName);
         Long projectId = projectOwnedByUserId.getId();
 
-        String promptPipelineName = logStepRequest.getPromptPipeline();
-        String promptVersion = logStepRequest.getPromptVersion();
-        PromptRef promptRef = null;
-        // Get prompt pipeline id then new promptRef instance for log step
-        if (promptPipelineName != null && promptVersion != null) {
-            UUID promptPipelineId = this.promptService.listPromptPipelines(projectId).stream()
-                .filter(pipeline -> promptPipelineName.equals(pipeline.getName()))
-                .map(PromptPipeline::getId)
-                .findFirst()
-                .orElseGet(() -> {
-                    CreatePromptPipelineRequest request = new CreatePromptPipelineRequest();
-                    request.setProjectId(projectId);
-                    request.setName(promptPipelineName);
-                    return this.promptService.createPromptPipeline(request, userId);
-                });
-            promptRef = new PromptRef(promptPipelineId, promptVersion);
-        }
-
-        UUID stepId = this.stepService.logStep(userId, logStepRequest, projectId, promptRef);
+        UUID stepId = this.stepService.logStep(userId, logStepRequest, projectId);
 
         String description = logStepRequest.getDescription();
         String llmProvider = logStepRequest.getLlmProvider();

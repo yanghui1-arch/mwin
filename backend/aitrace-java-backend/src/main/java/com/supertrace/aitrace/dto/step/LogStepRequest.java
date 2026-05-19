@@ -73,10 +73,4 @@ public class LogStepRequest {
 
     private String description;
 
-    private String promptPipeline;
-
-    private String promptName;
-
-    private String promptVersion;
-
 }
