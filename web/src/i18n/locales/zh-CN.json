@@ -4,6 +4,7 @@
                    "create":  "创建",
                    "close":  "关闭",
                    "reset":  "重置",
+                   "refresh":  "刷新",
                    "somethingErrors":  "发生了一些错误。",
                    "noContent":  "没有内容。"
                },
@@ -200,6 +201,20 @@
                                   "lastUpdate":  "最后更新"
                               }
               },
+    "conversation":  {
+                         "title":  "会话列表",
+                         "description":  "查看当前项目的会话汇总。",
+                         "empty":  "暂无会话。",
+                         "loadError":  "加载会话失败：{{message}}",
+                         "normal":  "正常",
+                         "error":  "错误",
+                         "columns":  {
+                                         "traceCount":  "Trace 数",
+                                         "errorStatus":  "错误状态",
+                                         "totalCost":  "总成本",
+                                         "totalTokens":  "总 Token"
+                                     }
+                     },
     "traceDialog":  {
                         "inputOutput":  "输入/输出",
                         "processFlow":  "处理流程",

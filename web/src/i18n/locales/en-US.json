@@ -4,6 +4,7 @@
                    "create":  "Create",
                    "close":  "Close",
                    "reset":  "Reset",
+                   "refresh":  "Refresh",
                    "somethingErrors":  "Something errors.",
                    "noContent":  "No content."
                },
@@ -200,6 +201,20 @@
                                   "lastUpdate":  "Last Update"
                               }
               },
+    "conversation":  {
+                         "title":  "Conversations",
+                         "description":  "Browse conversation rollups for this project.",
+                         "empty":  "No conversations yet.",
+                         "loadError":  "Failed to load conversations: {{message}}",
+                         "normal":  "Normal",
+                         "error":  "Error",
+                         "columns":  {
+                                         "traceCount":  "Traces",
+                                         "errorStatus":  "Error Status",
+                                         "totalCost":  "Total Cost",
+                                         "totalTokens":  "Total Tokens"
+                                     }
+                     },
     "traceDialog":  {
                         "inputOutput":  "Input/Output",
                         "processFlow":  "Process Flow",
