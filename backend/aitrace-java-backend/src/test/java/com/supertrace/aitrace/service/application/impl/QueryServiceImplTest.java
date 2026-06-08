@@ -3,6 +3,7 @@ package com.supertrace.aitrace.service.application.impl;
 import com.supertrace.aitrace.domain.Project;
 import com.supertrace.aitrace.domain.core.Trace;
 import com.supertrace.aitrace.domain.core.step.Step;
+import com.supertrace.aitrace.service.application.model.ConversationSummaryData;
 import com.supertrace.aitrace.service.domain.ProjectService;
 import com.supertrace.aitrace.service.domain.StepService;
 import com.supertrace.aitrace.service.domain.TraceService;
@@ -167,5 +168,70 @@ class QueryServiceImplTest {
             () -> service.getTraces(userId, "ghost", 0, 10));
 
         assertTrue(ex.getMessage().contains("ghost"));
+    }
+
+    @Test
+    void getConversationSummaries_ownedProjectPassesPaginationToTraceService() {
+        ConversationSummaryData summary = mock(ConversationSummaryData.class);
+        Page<ConversationSummaryData> page = new PageImpl<>(List.of(summary));
+        when(projectService.getProjectsByUserId(userId)).thenReturn(List.of(project));
+        when(traceService.getConversationSummariesByProjectId(7L, 2, 5)).thenReturn(page);
+
+        Page<ConversationSummaryData> result = service.getConversationSummaries(userId, 7L, 2, 5);
+
+        assertEquals(1, result.getTotalElements());
+        verify(traceService).getConversationSummariesByProjectId(7L, 2, 5);
+    }
+
+    @Test
+    void getConversationSummaries_unownedProjectDoesNotReturnCrossProjectData() {
+        when(projectService.getProjectsByUserId(userId)).thenReturn(List.of(project));
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+            () -> service.getConversationSummaries(userId, 99L, 0, 10));
+
+        assertTrue(ex.getMessage().contains("99"));
+        verify(traceService, never()).getConversationSummariesByProjectId(anyLong(), anyInt(), anyInt());
+    }
+
+    @Test
+    void getConversationTraceTimeline_filtersByOwnedProjectAndConversation() {
+        UUID conversationId = UUID.randomUUID();
+        Trace trace = Trace.builder()
+            .id(UUID.randomUUID()).projectName("my-project").projectId(7L)
+            .name("trace").conversationId(conversationId).tags(List.of())
+            .startTime(LocalDateTime.now()).lastUpdateTimestamp(LocalDateTime.now())
+            .build();
+        when(projectService.getProjectsByUserId(userId)).thenReturn(List.of(project));
+        when(traceService.getConversationTraceTimeline(7L, conversationId)).thenReturn(List.of(trace));
+
+        List<Trace> result = service.getConversationTraceTimeline(userId, 7L, conversationId);
+
+        assertEquals(List.of(trace), result);
+        verify(traceService).getConversationTraceTimeline(7L, conversationId);
+    }
+
+    @Test
+    void getConversationTraceTimeline_unownedProjectDoesNotLeakData() {
+        UUID conversationId = UUID.randomUUID();
+        when(projectService.getProjectsByUserId(userId)).thenReturn(List.of(project));
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+            () -> service.getConversationTraceTimeline(userId, 99L, conversationId));
+
+        assertTrue(ex.getMessage().contains("99"));
+        verify(traceService, never()).getConversationTraceTimeline(anyLong(), any());
+    }
+
+    @Test
+    void getConversationTraceTimeline_missingConversationReturnsEmptyOwnedProjectResult() {
+        UUID conversationId = UUID.randomUUID();
+        when(projectService.getProjectsByUserId(userId)).thenReturn(List.of(project));
+        when(traceService.getConversationTraceTimeline(7L, conversationId)).thenReturn(List.of());
+
+        List<Trace> result = service.getConversationTraceTimeline(userId, 7L, conversationId);
+
+        assertTrue(result.isEmpty());
+        verify(traceService).getConversationTraceTimeline(7L, conversationId);
     }
 }
