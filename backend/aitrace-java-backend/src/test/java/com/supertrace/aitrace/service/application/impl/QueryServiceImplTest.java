@@ -168,4 +168,39 @@ class QueryServiceImplTest {
 
         assertTrue(ex.getMessage().contains("ghost"));
     }
+
+    @Test
+    void getConversationTraceTimeline_projectOwnedByUser_filtersByProjectAndConversation() {
+        UUID conversationId = UUID.randomUUID();
+        Trace trace = Trace.builder()
+            .id(UUID.randomUUID()).projectName("my-project").projectId(7L)
+            .name("timeline-trace").conversationId(conversationId).tags(List.of())
+            .startTime(LocalDateTime.now()).lastUpdateTimestamp(LocalDateTime.now())
+            .build();
+
+        when(projectService.getProjectByUserIdAndId(userId, 7L))
+            .thenReturn(Optional.of(project));
+        when(traceService.getConversationTraceTimeline(7L, conversationId))
+            .thenReturn(List.of(trace));
+
+        List<Trace> result = service.getConversationTraceTimeline(userId, 7L, conversationId);
+
+        assertEquals(List.of(trace), result);
+        verify(projectService).getProjectByUserIdAndId(userId, 7L);
+        verify(traceService).getConversationTraceTimeline(7L, conversationId);
+    }
+
+    @Test
+    void getConversationTraceTimeline_projectNotOwnedByUser_throwsRuntimeException() {
+        UUID conversationId = UUID.randomUUID();
+        when(projectService.getProjectByUserIdAndId(userId, 99L))
+            .thenReturn(Optional.empty());
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+            () -> service.getConversationTraceTimeline(userId, 99L, conversationId));
+
+        assertTrue(ex.getMessage().contains("99"));
+        verify(traceService, never()).getConversationTraceTimeline(anyLong(), any());
+    }
+
 }
