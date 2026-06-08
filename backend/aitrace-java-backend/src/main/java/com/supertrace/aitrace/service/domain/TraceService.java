@@ -2,6 +2,7 @@ package com.supertrace.aitrace.service.domain;
 
 import com.supertrace.aitrace.domain.core.Trace;
 import com.supertrace.aitrace.dto.trace.LogTraceRequest;
+import com.supertrace.aitrace.vo.conversation.ConversationVO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 
@@ -48,6 +49,18 @@ public interface TraceService {
      * @return all traces
      */
     Page<Trace> getTracesByProjectId(Long projectId, int page, int pageSize, Sort sort);
+
+    Page<ConversationVO> getConversationsByProjectId(Long projectId, int page, int pageSize, Sort sort);
+
+    Page<Trace> getTracesByProjectIdAndConversationId(
+        Long projectId,
+        UUID conversationId,
+        int page,
+        int pageSize,
+        Sort sort
+    );
+
+    boolean existsByProjectIdAndConversationId(Long projectId, UUID conversationId);
 
     Optional<Trace> findById(UUID traceId);
 
