@@ -2,6 +2,7 @@ package com.supertrace.aitrace.service.domain;
 
 import com.supertrace.aitrace.domain.core.Trace;
 import com.supertrace.aitrace.dto.trace.LogTraceRequest;
+import com.supertrace.aitrace.service.application.model.ConversationSummaryData;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 
@@ -52,6 +53,16 @@ public interface TraceService {
     Optional<Trace> findById(UUID traceId);
 
     long countByProjectId(Long projectId);
+
+    /**
+     * Page conversation summaries aggregated from traces and steps in a project.
+     *
+     * @param projectId project id
+     * @param page current page
+     * @param pageSize page size
+     * @return conversation summary page
+     */
+    Page<ConversationSummaryData> getConversationSummariesByProjectId(Long projectId, int page, int pageSize);
 
     /**
      * Delete trace by trace id
