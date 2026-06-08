@@ -7,6 +7,7 @@ import com.supertrace.aitrace.service.domain.ProjectService;
 import com.supertrace.aitrace.service.application.QueryService;
 import com.supertrace.aitrace.service.domain.StepService;
 import com.supertrace.aitrace.service.domain.TraceService;
+import com.supertrace.aitrace.vo.conversation.ConversationVO;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -48,5 +49,34 @@ public class QueryServiceImpl implements QueryService {
         Long projectId = project.getId();
         Sort sort = Sort.by(Sort.Direction.DESC, "startTime");
         return this.traceService.getTracesByProjectId(projectId, page, pageSize, sort);
+    }
+
+    @Override
+    public Page<ConversationVO> getConversations(UUID userId, String projectName, int page, int pageSize) {
+        Project project = getOwnedProject(userId, projectName);
+        Sort sort = Sort.by(Sort.Direction.DESC, "lastUpdateTimestamp");
+        return this.traceService.getConversationsByProjectId(project.getId(), page, pageSize, sort);
+    }
+
+    @Override
+    public Page<Trace> getConversationTraces(
+        UUID userId,
+        String projectName,
+        UUID conversationId,
+        int page,
+        int pageSize
+    ) {
+        Project project = getOwnedProject(userId, projectName);
+        if (!this.traceService.existsByProjectIdAndConversationId(project.getId(), conversationId)) {
+            throw new RuntimeException("Conversation not found");
+        }
+        Sort sort = Sort.by(Sort.Direction.DESC, "startTime");
+        return this.traceService.getTracesByProjectIdAndConversationId(
+            project.getId(), conversationId, page, pageSize, sort);
+    }
+
+    private Project getOwnedProject(UUID userId, String projectName) {
+        return this.projectService.getProjectByUserIdAndName(userId, projectName)
+            .orElseThrow(() -> new RuntimeException("Project not found: " + projectName));
     }
 }
