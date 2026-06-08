@@ -92,6 +92,35 @@ public class TraceController {
         }
     }
 
+    @GetMapping("/trace/project/{projectId}/conversation/{conversationId}")
+    public ResponseEntity<APIResponse<List<GetTraceVO>>> getConversationTraceTimeline(
+        HttpServletRequest request,
+        @PathVariable("projectId") Long projectId,
+        @PathVariable("conversationId") UUID conversationId
+    ) {
+        try {
+            UUID userId = (UUID) request.getAttribute("userId");
+            List<GetTraceVO> traceVOs = this.queryService
+                .getConversationTraceTimeline(userId, projectId, conversationId)
+                .stream()
+                .map(trace -> GetTraceVO.builder()
+                    .id(trace.getId())
+                    .name(trace.getName())
+                    .tags(trace.getTags())
+                    .input(trace.getInput())
+                    .output(trace.getOutput())
+                    .errorInfo(trace.getErrorInfo())
+                    .startTime(trace.getStartTime())
+                    .lastUpdateTimestamp(trace.getLastUpdateTimestamp())
+                    .build()
+                )
+                .toList();
+            return ResponseEntity.ok(APIResponse.success(traceVOs));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(APIResponse.error(e.getMessage()));
+        }
+    }
+
     @PostMapping("/trace/delete")
     public ResponseEntity<APIResponse<List<UUID>>> deleteSteps(@RequestBody List<String> traceIds) {
         try {

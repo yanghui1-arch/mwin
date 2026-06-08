@@ -1,12 +1,15 @@
+import type { Trace } from "@/pages/projects/track/trace-columns"
 import type { InputData, OutputData } from "@/pages/projects/track/step-columns"
 import http from "./http"
 import type { CompletionUsage } from "openai/resources/completions.mjs"
 
-type Response<T> = {
+export type ApiResponse<T> = {
     code: number,
     message: string,
     data: T
 }
+
+type Response<T> = ApiResponse<T>
 
 type DeleteTracesParams = {
     deleteIds: string[]
@@ -34,6 +37,12 @@ export const traceApi = {
         return http.post<Response<string[]>>(
             "/v0/trace/delete",
             deleteIds,
+        )
+    },
+
+    getConversationTraceTimeline(projectId: string, conversationId: string) {
+        return http.get<Response<Trace[]>>(
+            `/v0/trace/project/${encodeURIComponent(projectId)}/conversation/${encodeURIComponent(conversationId)}`,
         )
     },
 
