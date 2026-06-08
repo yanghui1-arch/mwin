@@ -2,10 +2,12 @@ package com.supertrace.aitrace.service.application;
 
 import com.supertrace.aitrace.domain.core.Trace;
 import com.supertrace.aitrace.domain.core.step.Step;
+import com.supertrace.aitrace.service.application.model.ConversationSummaryData;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.data.domain.Page;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface QueryService {
@@ -29,4 +31,17 @@ public interface QueryService {
      * @return All traces
      */
     Page<Trace> getTraces(@NotNull UUID userId, @NotBlank String projectName, int page, int pageSize);
+
+    Page<ConversationSummaryData> getConversationSummaries(
+        @NotNull UUID userId,
+        @NotNull Long projectId,
+        int page,
+        int pageSize
+    );
+
+    List<Trace> getConversationTraceTimeline(
+        @NotNull UUID userId,
+        @NotNull Long projectId,
+        @NotNull UUID conversationId
+    );
 }

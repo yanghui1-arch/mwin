@@ -4,6 +4,7 @@ import com.supertrace.aitrace.domain.core.Trace;
 import com.supertrace.aitrace.dto.trace.LogTraceRequest;
 import com.supertrace.aitrace.factory.TraceFactory;
 import com.supertrace.aitrace.repository.TraceRepository;
+import com.supertrace.aitrace.service.application.model.ConversationSummaryData;
 import com.supertrace.aitrace.service.domain.TraceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -55,6 +56,17 @@ public class TraceServiceImpl implements TraceService {
     public Page<Trace> getTracesByProjectId(Long projectId, int page, int pageSize, Sort sort) {
         Pageable pageable = PageRequest.of(page, pageSize, sort);
         return this.traceRepository.findTracesByProjectId(projectId, pageable);
+    }
+
+    @Override
+    public Page<ConversationSummaryData> getConversationSummariesByProjectId(Long projectId, int page, int pageSize) {
+        Pageable pageable = PageRequest.of(page, pageSize);
+        return this.traceRepository.findConversationSummariesByProjectId(projectId, pageable);
+    }
+
+    @Override
+    public List<Trace> getConversationTraceTimeline(Long projectId, UUID conversationId) {
+        return this.traceRepository.findTracesByProjectIdAndConversationIdOrderByStartTimeAsc(projectId, conversationId);
     }
 
     @Override
