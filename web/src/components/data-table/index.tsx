@@ -58,6 +58,8 @@ export function DataTable<TData extends { name: string }>({
     navigate(String(name), {
       state: {
         description: description,
+        // @ts-expect-error: TData may not have id.
+        id: (row.original as TData)?.id,
       },
     });
   };
