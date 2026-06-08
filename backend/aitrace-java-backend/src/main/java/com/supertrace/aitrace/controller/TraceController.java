@@ -4,6 +4,7 @@ import com.supertrace.aitrace.domain.core.Trace;
 import com.supertrace.aitrace.domain.core.step.Step;
 import com.supertrace.aitrace.dto.trace.GetTracksRequest;
 import com.supertrace.aitrace.dto.trace.LogTraceRequest;
+import com.supertrace.aitrace.dto.trace.TraceSearchCriteria;
 import com.supertrace.aitrace.exception.AuthenticationException;
 import com.supertrace.aitrace.exception.UserIdNotFoundException;
 import com.supertrace.aitrace.response.APIResponse;
@@ -20,10 +21,12 @@ import com.supertrace.aitrace.vo.trace.TrackVO;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -64,11 +67,29 @@ public class TraceController {
         HttpServletRequest request,
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "10") int pageSize,
+        @RequestParam(value = "start_time_from", required = false)
+        @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss[.SSSSSS]") LocalDateTime startTimeFrom,
+        @RequestParam(value = "start_time_to", required = false)
+        @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss[.SSSSSS]") LocalDateTime startTimeTo,
+        @RequestParam(value = "has_error", required = false) Boolean hasError,
+        @RequestParam(value = "tag", required = false) String tag,
+        @RequestParam(value = "keyword", required = false) String keyword,
+        @RequestParam(value = "min_duration_ms", required = false) Long minDurationMs,
+        @RequestParam(value = "max_duration_ms", required = false) Long maxDurationMs,
         @PathVariable("projectName") String projectName
     ) {
+        TraceSearchCriteria criteria = TraceSearchCriteria.builder()
+            .startTimeFrom(startTimeFrom)
+            .startTimeTo(startTimeTo)
+            .hasError(hasError)
+            .tag(tag)
+            .keyword(keyword)
+            .minDurationMs(minDurationMs)
+            .maxDurationMs(maxDurationMs)
+            .build();
         try {
             UUID userId = (UUID) request.getAttribute("userId");
-            Page<Trace> traces = this.queryService.getTraces(userId, projectName, page, pageSize);
+            Page<Trace> traces = this.queryService.getTraces(userId, projectName, page, pageSize, criteria);
             List<GetTraceVO> getTraceVOs = traces.stream()
                 .map(trace -> GetTraceVO.builder()
                     .id(trace.getId())
