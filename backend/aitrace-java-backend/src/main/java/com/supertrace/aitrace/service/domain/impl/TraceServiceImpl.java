@@ -60,7 +60,7 @@ public class TraceServiceImpl implements TraceService {
 
     @Override
     public Page<ConversationVO> getConversationsByProjectId(Long projectId, int page, int pageSize, Sort sort) {
-        Pageable pageable = PageRequest.of(page, pageSize, sort);
+        Pageable pageable = PageRequest.of(page, pageSize);
         return this.traceRepository.findConversationsByProjectId(projectId, pageable);
     }
 
