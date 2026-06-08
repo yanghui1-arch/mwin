@@ -6,6 +6,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.supertrace.aitrace.domain.core.step.Step;
 import com.supertrace.aitrace.domain.core.step.StepOutput;
 import com.supertrace.aitrace.dto.step.LogStepRequest;
+import com.supertrace.aitrace.dto.step.StepSearchCriteria;
 import com.supertrace.aitrace.service.application.ApiKeyService;
 import com.supertrace.aitrace.service.application.LogService;
 import com.supertrace.aitrace.service.application.QueryService;
@@ -152,7 +153,7 @@ class StepControllerTest {
             .build();
         Page<Step> page = new PageImpl<>(List.of(step));
 
-        when(queryService.getSteps(eq(userId), eq("proj"), eq(0), eq(15))).thenReturn(page);
+        when(queryService.getSteps(eq(userId), eq("proj"), eq(0), eq(15), any())).thenReturn(page);
 
         mockMvc.perform(get("/api/v0/step/proj")
                 .requestAttr("userId", userId)
@@ -168,19 +169,54 @@ class StepControllerTest {
     @Test
     void getStep_defaultPagination_usesDefaultValues() throws Exception {
         UUID userId = UUID.randomUUID();
-        when(queryService.getSteps(any(), any(), eq(0), eq(15))).thenReturn(Page.empty());
+        when(queryService.getSteps(any(), any(), eq(0), eq(15), any())).thenReturn(Page.empty());
 
         mockMvc.perform(get("/api/v0/step/proj")
                 .requestAttr("userId", userId))
             .andExpect(status().isOk());
 
-        verify(queryService).getSteps(any(), eq("proj"), eq(0), eq(15));
+        verify(queryService).getSteps(any(), eq("proj"), eq(0), eq(15), any());
+    }
+
+    @Test
+    void getStep_filterQueryParams_buildsSearchCriteria() throws Exception {
+        UUID userId = UUID.randomUUID();
+        when(queryService.getSteps(any(), any(), anyInt(), anyInt(), any())).thenReturn(Page.empty());
+
+        mockMvc.perform(get("/api/v0/step/proj")
+                .requestAttr("userId", userId)
+                .param("start_time_from", "2024-01-01 10:00:00")
+                .param("start_time_to", "2024-01-02 11:30:00")
+                .param("has_error", "true")
+                .param("tag", "prod")
+                .param("keyword", "timeout")
+                .param("min_duration_ms", "100")
+                .param("max_duration_ms", "5000")
+                .param("type", "llm_response")
+                .param("model", "gpt-4o")
+                .param("min_total_tokens", "10")
+                .param("max_total_tokens", "1000"))
+            .andExpect(status().isOk());
+
+        verify(queryService).getSteps(eq(userId), eq("proj"), eq(0), eq(15), argThat(criteria ->
+            criteria.getStartTimeFrom().equals(LocalDateTime.of(2024, 1, 1, 10, 0))
+                && criteria.getStartTimeTo().equals(LocalDateTime.of(2024, 1, 2, 11, 30))
+                && Boolean.TRUE.equals(criteria.getHasError())
+                && criteria.getTag().equals("prod")
+                && criteria.getKeyword().equals("timeout")
+                && criteria.getMinDurationMs().equals(100L)
+                && criteria.getMaxDurationMs().equals(5000L)
+                && criteria.getType().equals("llm_response")
+                && criteria.getModel().equals("gpt-4o")
+                && criteria.getMinTotalTokens().equals(10L)
+                && criteria.getMaxTotalTokens().equals(1000L)
+        ));
     }
 
     @Test
     void getStep_queryServiceThrows_returns400() throws Exception {
         UUID userId = UUID.randomUUID();
-        when(queryService.getSteps(any(), any(), anyInt(), anyInt()))
+        when(queryService.getSteps(any(), any(), anyInt(), anyInt(), any()))
             .thenThrow(new RuntimeException("Project not found: proj"));
 
         mockMvc.perform(get("/api/v0/step/proj")
