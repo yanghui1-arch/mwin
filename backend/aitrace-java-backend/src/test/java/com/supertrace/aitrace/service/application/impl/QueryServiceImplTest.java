@@ -6,6 +6,7 @@ import com.supertrace.aitrace.domain.core.step.Step;
 import com.supertrace.aitrace.service.domain.ProjectService;
 import com.supertrace.aitrace.service.domain.StepService;
 import com.supertrace.aitrace.service.domain.TraceService;
+import com.supertrace.aitrace.vo.conversation.ConversationVO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -167,5 +168,55 @@ class QueryServiceImplTest {
             () -> service.getTraces(userId, "ghost", 0, 10));
 
         assertTrue(ex.getMessage().contains("ghost"));
+    }
+
+    @Test
+    void getConversations_projectFound_returnsConversationPage() {
+        ConversationVO conversation = ConversationVO.builder()
+            .id(UUID.randomUUID())
+            .traceCount(2)
+            .startTime(LocalDateTime.now())
+            .lastUpdateTimestamp(LocalDateTime.now())
+            .build();
+        Page<ConversationVO> page = new PageImpl<>(List.of(conversation));
+
+        when(projectService.getProjectByUserIdAndName(userId, "my-project"))
+            .thenReturn(Optional.of(project));
+        when(traceService.getConversationsByProjectId(eq(7L), eq(0), eq(10), any(Sort.class)))
+            .thenReturn(page);
+
+        Page<ConversationVO> result = service.getConversations(userId, "my-project", 0, 10);
+
+        assertEquals(1, result.getTotalElements());
+    }
+
+    @Test
+    void getConversationTraces_conversationMissing_throwsWithoutQueryingTraces() {
+        UUID conversationId = UUID.randomUUID();
+        when(projectService.getProjectByUserIdAndName(userId, "my-project"))
+            .thenReturn(Optional.of(project));
+        when(traceService.existsByProjectIdAndConversationId(7L, conversationId))
+            .thenReturn(false);
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+            () -> service.getConversationTraces(userId, "my-project", conversationId, 0, 10));
+
+        assertEquals("Conversation not found", ex.getMessage());
+        verify(traceService, never()).getTracesByProjectIdAndConversationId(anyLong(), any(), anyInt(), anyInt(), any());
+    }
+
+    @Test
+    void getConversationTraces_conversationFound_returnsTracePage() {
+        UUID conversationId = UUID.randomUUID();
+        when(projectService.getProjectByUserIdAndName(userId, "my-project"))
+            .thenReturn(Optional.of(project));
+        when(traceService.existsByProjectIdAndConversationId(7L, conversationId))
+            .thenReturn(true);
+        when(traceService.getTracesByProjectIdAndConversationId(eq(7L), eq(conversationId), eq(1), eq(5), any(Sort.class)))
+            .thenReturn(Page.empty());
+
+        Page<Trace> result = service.getConversationTraces(userId, "my-project", conversationId, 1, 5);
+
+        assertTrue(result.isEmpty());
     }
 }
