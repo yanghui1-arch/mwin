@@ -87,6 +87,14 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
+    public Optional<Project> getProjectByUserIdAndId(UUID userId, Long projectId) {
+        List<Project> projectsOwnedByUserId = this.projectRepository.findProjectsByUserId(userId);
+        return projectsOwnedByUserId.stream()
+            .filter(p -> p.getId().equals(projectId))
+            .findFirst();
+    }
+
+    @Override
     public Project updateProjectAfterLogging(UUID userId,
                                              String projectName,
                                              BigDecimal costGeneratedFromThisLog,

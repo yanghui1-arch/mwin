@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.data.domain.Page;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface QueryService {
@@ -29,4 +30,18 @@ public interface QueryService {
      * @return All traces
      */
     Page<Trace> getTraces(@NotNull UUID userId, @NotBlank String projectName, int page, int pageSize);
+
+    /**
+     * Query traces in a conversation timeline for a user-owned project.
+     *
+     * @param userId current user uuid
+     * @param projectId project id
+     * @param conversationId conversation id
+     * @return traces ordered by start time ascending
+     */
+    List<Trace> getConversationTraceTimeline(
+        @NotNull UUID userId,
+        @NotNull Long projectId,
+        @NotNull UUID conversationId
+    );
 }

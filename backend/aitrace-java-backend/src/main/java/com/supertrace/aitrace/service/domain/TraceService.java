@@ -49,6 +49,15 @@ public interface TraceService {
      */
     Page<Trace> getTracesByProjectId(Long projectId, int page, int pageSize, Sort sort);
 
+    /**
+     * Query traces in a conversation timeline by project id.
+     *
+     * @param projectId project id
+     * @param conversationId conversation id
+     * @return traces ordered by start time ascending
+     */
+    List<Trace> getConversationTraceTimeline(Long projectId, UUID conversationId);
+
     Optional<Trace> findById(UUID traceId);
 
     long countByProjectId(Long projectId);

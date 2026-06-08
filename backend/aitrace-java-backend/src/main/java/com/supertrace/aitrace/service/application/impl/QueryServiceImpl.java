@@ -13,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -48,5 +49,12 @@ public class QueryServiceImpl implements QueryService {
         Long projectId = project.getId();
         Sort sort = Sort.by(Sort.Direction.DESC, "startTime");
         return this.traceService.getTracesByProjectId(projectId, page, pageSize, sort);
+    }
+
+    @Override
+    public List<Trace> getConversationTraceTimeline(UUID userId, Long projectId, UUID conversationId) {
+        this.projectService.getProjectByUserIdAndId(userId, projectId)
+            .orElseThrow(() -> new RuntimeException("Project not found: " + projectId));
+        return this.traceService.getConversationTraceTimeline(projectId, conversationId);
     }
 }

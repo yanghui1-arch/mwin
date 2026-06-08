@@ -58,6 +58,14 @@ public class TraceServiceImpl implements TraceService {
     }
 
     @Override
+    public List<Trace> getConversationTraceTimeline(Long projectId, UUID conversationId) {
+        return this.traceRepository.findTracesByProjectIdAndConversationIdOrderByStartTimeAsc(
+            projectId,
+            conversationId
+        );
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public List<UUID> deleteTraceByTraceId(List<UUID> traceIdsToDelete) {
         this.traceRepository.deleteAllById(traceIdsToDelete);
