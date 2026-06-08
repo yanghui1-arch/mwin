@@ -7,9 +7,91 @@ import { Separator } from "@/components/ui/separator";
 import { StepTable } from "@/components/step-table";
 import { traceColumns, type Trace } from "./trace-columns";
 import { TraceTable } from "@/components/trace-table";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import http from "@/api/http";
 import { useManulPaginationDataTable } from "@/hooks/use-datatable";
 import { type PaginationState} from "@tanstack/react-table";
+
+type Conversation = {
+  id: string;
+  traceCount: number;
+  startTime: string;
+  lastUpdateTimestamp: string;
+};
+
+type ConversationPage = {
+  data: Conversation[];
+  pageCount: number;
+};
+
+function formatDateTime(value: string) {
+  return value ? new Date(value).toLocaleString("sv-SE").replace("T", " ") : "";
+}
+
+function ConversationPanel({ projectName }: { projectName: string }) {
+  const { t } = useTranslation();
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadConversations = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await http.get<{ data: ConversationPage }>(
+          `/v0/conversations/${encodeURIComponent(projectName)}`
+        );
+        setConversations(response.data.data.data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadConversations();
+  }, [projectName]);
+
+  if (loading) {
+    return <div className="py-6 text-center text-muted-foreground">Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="py-6 text-center text-destructive">{error}</div>;
+  }
+
+  if (conversations.length === 0) {
+    return <div className="py-6 text-center text-muted-foreground">No conversations.</div>;
+  }
+
+  return (
+    <ScrollArea className="w-full rounded-md border">
+      <table className="w-full caption-bottom text-sm">
+        <thead className="[&_tr]:border-b">
+          <tr className="border-b transition-colors">
+            <th className="h-10 px-4 text-left align-middle font-medium">ID</th>
+            <th className="h-10 px-4 text-center align-middle font-medium">{t("track.trace")}</th>
+            <th className="h-10 px-4 text-center align-middle font-medium">{t("track.columns.startTime")}</th>
+            <th className="h-10 px-4 text-center align-middle font-medium">{t("track.columns.lastUpdate")}</th>
+          </tr>
+        </thead>
+        <tbody className="[&_tr:last-child]:border-0">
+          {conversations.map((conversation) => (
+            <tr key={conversation.id} className="border-b transition-colors hover:bg-muted/50">
+              <td className="p-4 align-middle font-mono text-xs">
+                <div className="w-48 truncate">{conversation.id}</div>
+              </td>
+              <td className="p-4 text-center align-middle">{conversation.traceCount}</td>
+              <td className="p-4 text-center align-middle">{formatDateTime(conversation.startTime)}</td>
+              <td className="p-4 text-center align-middle">{formatDateTime(conversation.lastUpdateTimestamp)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </ScrollArea>
+  );
+}
 
 export default function ProjectDetailPage() {
   const { name } = useParams<{ name: string }>();
@@ -165,7 +247,7 @@ export default function ProjectDetailPage() {
           <TraceTable table={traceTable} />
         </div>
       ) : (
-        t("track.unknown")
+        <ConversationPanel projectName={name as string} />
       )}
     </div>
   );
