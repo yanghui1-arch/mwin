@@ -5,6 +5,7 @@ import com.supertrace.aitrace.service.application.OverviewService;
 import com.supertrace.aitrace.service.application.model.OverviewTokenCurveQuery;
 import com.supertrace.aitrace.vo.overview.OverviewSummaryVO;
 import com.supertrace.aitrace.vo.overview.OverviewTokenCurveVO;
+import com.supertrace.aitrace.vo.overview.OverviewTopCostDriversVO;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -48,6 +49,26 @@ public class OverviewController {
                 parseProjectIds(projectIds)
             );
             return ResponseEntity.ok(APIResponse.success(OverviewTokenCurveVO.from(overviewService.getTokenCurve(userId, query))));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(APIResponse.error(e.getMessage()));
+        }
+    }
+
+    @GetMapping("/top-cost-drivers")
+    public ResponseEntity<APIResponse<OverviewTopCostDriversVO>> getTopCostDrivers(
+        HttpServletRequest request,
+        @RequestParam(name = "window_hours", required = false, defaultValue = "720") Integer windowHours,
+        @RequestParam(name = "limit", required = false, defaultValue = "5") Integer limit
+    ) {
+        try {
+            UUID userId = (UUID) request.getAttribute("userId");
+            return ResponseEntity.ok(APIResponse.success(OverviewTopCostDriversVO.from(
+                overviewService.getTopCostDrivers(
+                    userId,
+                    windowHours == null ? DEFAULT_WINDOW_HOURS : windowHours,
+                    limit == null ? 5 : limit
+                )
+            )));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(APIResponse.error(e.getMessage()));
         }
