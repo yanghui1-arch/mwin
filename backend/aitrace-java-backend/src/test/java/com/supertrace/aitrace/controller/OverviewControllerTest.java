@@ -6,12 +6,14 @@ import com.supertrace.aitrace.service.application.model.OverviewSummaryData;
 import com.supertrace.aitrace.service.application.model.OverviewTokenCurveData;
 import com.supertrace.aitrace.service.application.model.OverviewTokenCurvePointData;
 import com.supertrace.aitrace.service.application.model.OverviewTokenCurveQuery;
+import com.supertrace.aitrace.service.application.model.OverviewTopCostDriversData;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -91,5 +93,34 @@ class OverviewControllerTest {
             .andExpect(jsonPath("$.data.series[0].points[0].tokens").value(30));
 
         verify(overviewService).getTokenCurve(eq(userId), eq(query));
+    }
+
+    @Test
+    void getTopCostDrivers_returnsGroupedCostDrivers() throws Exception {
+        UUID userId = UUID.randomUUID();
+        OverviewTopCostDriversData data = new OverviewTopCostDriversData(
+            24,
+            LocalDateTime.of(2026, 4, 20, 0, 0),
+            LocalDateTime.of(2026, 4, 21, 0, 0),
+            List.of(new OverviewTopCostDriversData.CostDriverData("Alpha", new BigDecimal("2.500000"), 100L, 40L, 60L, null, null, 1L, "Alpha", null, null)),
+            List.of(new OverviewTopCostDriversData.CostDriverData("openai/gpt-4o", new BigDecimal("1.500000"), 80L, 30L, 50L, "openai", "openai/gpt-4o", null, null, null, null)),
+            List.of(new OverviewTopCostDriversData.CostDriverData("trace checkout", new BigDecimal("1.250000"), 70L, 25L, 45L, "openai", "openai/gpt-4o", 1L, "Alpha", "trace-1", null)),
+            List.of(new OverviewTopCostDriversData.CostDriverData("llm call", new BigDecimal("0.750000"), 40L, 15L, 25L, "openai", "openai/gpt-4o", 1L, "Alpha", "trace-1", "step-1"))
+        );
+        when(overviewService.getTopCostDrivers(userId, 24, 3)).thenReturn(data);
+
+        mockMvc.perform(get("/api/v0/overview/top-cost-drivers")
+                .requestAttr("userId", userId)
+                .param("window_hours", "24")
+                .param("limit", "3"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(200))
+            .andExpect(jsonPath("$.data.window_hours").value(24))
+            .andExpect(jsonPath("$.data.projects[0].display_name").value("Alpha"))
+            .andExpect(jsonPath("$.data.models[0].provider").value("openai"))
+            .andExpect(jsonPath("$.data.traces[0].trace_id").value("trace-1"))
+            .andExpect(jsonPath("$.data.steps[0].step_id").value("step-1"));
+
+        verify(overviewService).getTopCostDrivers(userId, 24, 3);
     }
 }
