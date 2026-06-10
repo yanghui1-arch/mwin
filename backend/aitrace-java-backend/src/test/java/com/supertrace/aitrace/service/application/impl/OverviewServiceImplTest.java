@@ -5,6 +5,7 @@ import com.supertrace.aitrace.repository.StepRepository;
 import com.supertrace.aitrace.service.application.model.OverviewSummaryData;
 import com.supertrace.aitrace.service.application.model.OverviewTokenCurveData;
 import com.supertrace.aitrace.service.application.model.OverviewTokenCurveQuery;
+import com.supertrace.aitrace.service.application.model.OverviewTopCostDriversData;
 import com.supertrace.aitrace.service.domain.ProjectService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -161,11 +162,63 @@ class OverviewServiceImplTest {
         assertEquals(15L, result.series().get(0).points().get(6).tokens());
     }
 
+    @Test
+    void getTopCostDrivers_returnsGroupedDriversForOwnedProjects() {
+        when(projectService.getProjectsByUserId(userId)).thenReturn(List.of(project1, project2));
+        when(stepRepository.findTopProjectCostDrivers(org.mockito.ArgumentMatchers.eq(List.of(1L, 2L)), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(3)))
+            .thenReturn(List.of(costRow(1L, "p1", null, null, "2.500000", 100L, 40L, 60L, null, null, null)));
+        when(stepRepository.findTopModelCostDrivers(org.mockito.ArgumentMatchers.eq(List.of(1L, 2L)), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(3)))
+            .thenReturn(List.of(costRow(null, null, "openai", "openai/gpt-4o", "1.500000", 80L, 30L, 50L, null, null, null)));
+        when(stepRepository.findTopTraceCostDrivers(org.mockito.ArgumentMatchers.eq(List.of(1L, 2L)), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(3)))
+            .thenReturn(List.of(costRow(1L, "p1", "openai", "openai/gpt-4o", "1.250000", 70L, 25L, 45L, "trace-1", null, "checkout")));
+        when(stepRepository.findTopStepCostDrivers(org.mockito.ArgumentMatchers.eq(List.of(1L, 2L)), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(3)))
+            .thenReturn(List.of(costRow(1L, "p1", "openai", "openai/gpt-4o", "0.750000", 40L, 15L, 25L, "trace-1", "step-1", "llm call")));
+
+        OverviewTopCostDriversData result = service.getTopCostDrivers(userId, 24, 3);
+
+        assertEquals(24, result.windowHours());
+        assertEquals("p1", result.projects().get(0).displayName());
+        assertEquals(new BigDecimal("2.500000"), result.projects().get(0).cost());
+        assertEquals("openai/gpt-4o", result.models().get(0).displayName());
+        assertEquals("checkout", result.traces().get(0).displayName());
+        assertEquals("trace-1", result.traces().get(0).traceId());
+        assertEquals("llm call", result.steps().get(0).displayName());
+        assertEquals("step-1", result.steps().get(0).stepId());
+    }
+
     private Object[] summaryRow(LocalDateTime startTime, Long totalTokens) {
         return new Object[] { Timestamp.valueOf(startTime), totalTokens };
     }
 
     private Object[] curveRow(Long projectId, LocalDateTime startTime, Long totalTokens) {
         return new Object[] { projectId, Timestamp.valueOf(startTime), totalTokens };
+    }
+
+    private Object[] costRow(
+        Long projectId,
+        String projectName,
+        String provider,
+        String model,
+        String cost,
+        Long totalTokens,
+        Long promptTokens,
+        Long completionTokens,
+        String traceId,
+        String stepId,
+        String displayName
+    ) {
+        return new Object[] {
+            projectId,
+            projectName,
+            provider,
+            model,
+            new BigDecimal(cost),
+            totalTokens,
+            promptTokens,
+            completionTokens,
+            traceId,
+            stepId,
+            displayName
+        };
     }
 }
