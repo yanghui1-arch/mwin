@@ -3,6 +3,7 @@ package com.supertrace.aitrace.service.application.impl;
 import com.supertrace.aitrace.domain.Project;
 import com.supertrace.aitrace.domain.core.Trace;
 import com.supertrace.aitrace.domain.core.step.Step;
+import com.supertrace.aitrace.service.application.model.ConversationSummaryData;
 import com.supertrace.aitrace.service.domain.ProjectService;
 import com.supertrace.aitrace.service.application.QueryService;
 import com.supertrace.aitrace.service.domain.StepService;
@@ -48,5 +49,22 @@ public class QueryServiceImpl implements QueryService {
         Long projectId = project.getId();
         Sort sort = Sort.by(Sort.Direction.DESC, "startTime");
         return this.traceService.getTracesByProjectId(projectId, page, pageSize, sort);
+    }
+
+    @Override
+    public Page<ConversationSummaryData> getConversationSummaries(UUID userId, String projectName, int page, int pageSize) {
+        Project project = this.projectService.getProjectByUserIdAndName(userId, projectName)
+            .orElseThrow(() -> new RuntimeException("Project not found: " + projectName));
+        return this.traceService.getConversationSummariesByProjectId(project.getId(), page, pageSize);
+    }
+
+    @Override
+    public Page<ConversationSummaryData> getConversationSummaries(UUID userId, Long projectId, int page, int pageSize) {
+        boolean canAccessProject = this.projectService.getProjectsByUserId(userId).stream()
+            .anyMatch(project -> project.getId().equals(projectId));
+        if (!canAccessProject) {
+            throw new RuntimeException("Project not found: " + projectId);
+        }
+        return this.traceService.getConversationSummariesByProjectId(projectId, page, pageSize);
     }
 }

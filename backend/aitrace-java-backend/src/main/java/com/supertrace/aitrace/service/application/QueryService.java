@@ -2,6 +2,7 @@ package com.supertrace.aitrace.service.application;
 
 import com.supertrace.aitrace.domain.core.Trace;
 import com.supertrace.aitrace.domain.core.step.Step;
+import com.supertrace.aitrace.service.application.model.ConversationSummaryData;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.data.domain.Page;
@@ -29,4 +30,36 @@ public interface QueryService {
      * @return All traces
      */
     Page<Trace> getTraces(@NotNull UUID userId, @NotBlank String projectName, int page, int pageSize);
+
+    /**
+     * Pagination search conversation summaries of project which is owned by user uuid.
+     *
+     * @param userId user uuid
+     * @param projectName project name
+     * @param page current page
+     * @param pageSize page size
+     * @return conversation summaries
+     */
+    Page<ConversationSummaryData> getConversationSummaries(
+        @NotNull UUID userId,
+        @NotBlank String projectName,
+        int page,
+        int pageSize
+    );
+
+    /**
+     * Pagination search conversation summaries of project id which is owned by user uuid.
+     *
+     * @param userId user uuid
+     * @param projectId project id
+     * @param page current page
+     * @param pageSize page size
+     * @return conversation summaries
+     */
+    Page<ConversationSummaryData> getConversationSummaries(
+        @NotNull UUID userId,
+        @NotNull Long projectId,
+        int page,
+        int pageSize
+    );
 }

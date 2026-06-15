@@ -3,6 +3,7 @@ package com.supertrace.aitrace.service.application.impl;
 import com.supertrace.aitrace.domain.Project;
 import com.supertrace.aitrace.domain.core.Trace;
 import com.supertrace.aitrace.domain.core.step.Step;
+import com.supertrace.aitrace.service.application.model.ConversationSummaryData;
 import com.supertrace.aitrace.service.domain.ProjectService;
 import com.supertrace.aitrace.service.domain.StepService;
 import com.supertrace.aitrace.service.domain.TraceService;
@@ -167,5 +168,54 @@ class QueryServiceImplTest {
             () -> service.getTraces(userId, "ghost", 0, 10));
 
         assertTrue(ex.getMessage().contains("ghost"));
+    }
+
+    @Test
+    void getConversationSummaries_projectFound_returnsSummaryPage() {
+        ConversationSummaryData summary = mock(ConversationSummaryData.class);
+        Page<ConversationSummaryData> page = new PageImpl<>(List.of(summary));
+
+        when(projectService.getProjectByUserIdAndName(userId, "my-project"))
+            .thenReturn(Optional.of(project));
+        when(traceService.getConversationSummariesByProjectId(7L, 2, 20))
+            .thenReturn(page);
+
+        Page<ConversationSummaryData> result = service.getConversationSummaries(userId, "my-project", 2, 20);
+
+        assertEquals(1, result.getTotalElements());
+        verify(traceService).getConversationSummariesByProjectId(7L, 2, 20);
+    }
+
+    @Test
+    void getConversationSummaries_projectNotFound_throwsRuntimeException() {
+        when(projectService.getProjectByUserIdAndName(userId, "ghost"))
+            .thenReturn(Optional.empty());
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+            () -> service.getConversationSummaries(userId, "ghost", 0, 10));
+
+        assertTrue(ex.getMessage().contains("ghost"));
+        verify(traceService, never()).getConversationSummariesByProjectId(anyLong(), anyInt(), anyInt());
+    }
+
+    @Test
+    void getConversationSummariesByProjectId_ownedProject_returnsSummaryPage() {
+        when(projectService.getProjectsByUserId(userId)).thenReturn(List.of(project));
+        when(traceService.getConversationSummariesByProjectId(7L, 0, 10)).thenReturn(Page.empty());
+
+        service.getConversationSummaries(userId, 7L, 0, 10);
+
+        verify(traceService).getConversationSummariesByProjectId(7L, 0, 10);
+    }
+
+    @Test
+    void getConversationSummariesByProjectId_unownedProject_throwsRuntimeException() {
+        when(projectService.getProjectsByUserId(userId)).thenReturn(List.of(project));
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+            () -> service.getConversationSummaries(userId, 99L, 0, 10));
+
+        assertTrue(ex.getMessage().contains("99"));
+        verify(traceService, never()).getConversationSummariesByProjectId(anyLong(), anyInt(), anyInt());
     }
 }
