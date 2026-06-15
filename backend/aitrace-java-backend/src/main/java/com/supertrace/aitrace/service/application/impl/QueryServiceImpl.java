@@ -3,6 +3,7 @@ package com.supertrace.aitrace.service.application.impl;
 import com.supertrace.aitrace.domain.Project;
 import com.supertrace.aitrace.domain.core.Trace;
 import com.supertrace.aitrace.domain.core.step.Step;
+import com.supertrace.aitrace.service.application.model.ConversationSummaryData;
 import com.supertrace.aitrace.service.domain.ProjectService;
 import com.supertrace.aitrace.service.application.QueryService;
 import com.supertrace.aitrace.service.domain.StepService;
@@ -13,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -48,5 +50,25 @@ public class QueryServiceImpl implements QueryService {
         Long projectId = project.getId();
         Sort sort = Sort.by(Sort.Direction.DESC, "startTime");
         return this.traceService.getTracesByProjectId(projectId, page, pageSize, sort);
+    }
+
+    @Override
+    public Page<ConversationSummaryData> getConversationSummaries(UUID userId, Long projectId, int page, int pageSize) {
+        ensureProjectOwnedByUser(userId, projectId);
+        return this.traceService.getConversationSummariesByProjectId(projectId, page, pageSize);
+    }
+
+    @Override
+    public List<Trace> getConversationTraceTimeline(UUID userId, Long projectId, UUID conversationId) {
+        ensureProjectOwnedByUser(userId, projectId);
+        return this.traceService.getConversationTraceTimeline(projectId, conversationId);
+    }
+
+    private void ensureProjectOwnedByUser(UUID userId, Long projectId) {
+        boolean canAccessProject = this.projectService.getProjectsByUserId(userId).stream()
+            .anyMatch(project -> project.getId().equals(projectId));
+        if (!canAccessProject) {
+            throw new RuntimeException("Project not found: " + projectId);
+        }
     }
 }
