@@ -10,6 +10,9 @@ import { TraceTable } from "@/components/trace-table";
 import http from "@/api/http";
 import { useManulPaginationDataTable } from "@/hooks/use-datatable";
 import { type PaginationState} from "@tanstack/react-table";
+import { conversationApi } from "@/api/conversation";
+import { ConversationTable } from "@/components/conversation-table";
+import { conversationColumns, toConversationRow, type Conversation } from "./conversation-columns";
 
 export default function ProjectDetailPage() {
   const { name } = useParams<{ name: string }>();
@@ -30,6 +33,11 @@ export default function ProjectDetailPage() {
   const [traceData, setTraceData] = useState<Trace[]>([]);
   const [tracePagination, setTracePagination] = useState<PaginationState>({pageIndex: 0, pageSize: 10})
   const [tracePageCount, setTracePageCount] = useState<number>(0);
+  const [conversationData, setConversationData] = useState<Conversation[]>([]);
+  const [conversationPagination, setConversationPagination] = useState<PaginationState>({pageIndex: 0, pageSize: 10})
+  const [conversationPageCount, setConversationPageCount] = useState<number>(0);
+  const [conversationLoading, setConversationLoading] = useState(false);
+  const [conversationError, setConversationError] = useState<string | null>(null);
 
   const refreshStepData = async () => {
     const response = await http.get(
@@ -63,6 +71,31 @@ export default function ProjectDetailPage() {
     setTraceData(data);
   };
 
+  const refreshConversationData = async () => {
+    setConversationLoading(true);
+    setConversationError(null);
+    try {
+      const responseData = await conversationApi.getConversations({
+        projectName: name as string,
+        page: conversationPagination.pageIndex,
+        pageSize: conversationPagination.pageSize,
+      });
+      const data = responseData.data.map(toConversationRow);
+      const newPageCount = responseData.pageCount;
+      setConversationPageCount(newPageCount);
+      if (data.length === 0 && conversationPagination.pageIndex > 0) {
+        const lastPage = Math.max(0, newPageCount - 1);
+        setConversationPagination({ ...conversationPagination, pageIndex: lastPage });
+        return;
+      }
+      setConversationData(data);
+    } catch (error) {
+      setConversationError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setConversationLoading(false);
+    }
+  };
+
   const { table: stepTable } = useManulPaginationDataTable({
     columns: stepColumns,
     data: stepData,
@@ -79,6 +112,15 @@ export default function ProjectDetailPage() {
     pageCount: tracePageCount,
     setPagination: setTracePagination,
     onRefresh: refreshTraceData,
+  });
+
+  const { table: conversationTable } = useManulPaginationDataTable({
+    columns: conversationColumns,
+    data: conversationData,
+    pagination: conversationPagination,
+    pageCount: conversationPageCount,
+    setPagination: setConversationPagination,
+    onRefresh: refreshConversationData,
   });
 
   useEffect(() => {
@@ -105,6 +147,10 @@ export default function ProjectDetailPage() {
     loadStepDataOfProject();
     loadTraceDataOfProject();
   }, [pagination, name, tracePagination]);
+
+  useEffect(() => {
+    void refreshConversationData();
+  }, [conversationPagination, name]);
 
   return (
     <div className="flex flex-col gap-2 px-4 lg:px-6">
@@ -165,7 +211,11 @@ export default function ProjectDetailPage() {
           <TraceTable table={traceTable} />
         </div>
       ) : (
-        t("track.unknown")
+        <ConversationTable
+          table={conversationTable}
+          loading={conversationLoading}
+          error={conversationError}
+        />
       )}
     </div>
   );
