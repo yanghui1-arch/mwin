@@ -5,6 +5,7 @@ import com.supertrace.aitrace.dto.trace.LogTraceRequest;
 import com.supertrace.aitrace.factory.TraceFactory;
 import com.supertrace.aitrace.repository.TraceRepository;
 import com.supertrace.aitrace.service.domain.TraceService;
+import com.supertrace.aitrace.vo.conversation.ConversationVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -55,6 +56,29 @@ public class TraceServiceImpl implements TraceService {
     public Page<Trace> getTracesByProjectId(Long projectId, int page, int pageSize, Sort sort) {
         Pageable pageable = PageRequest.of(page, pageSize, sort);
         return this.traceRepository.findTracesByProjectId(projectId, pageable);
+    }
+
+    @Override
+    public Page<ConversationVO> getConversationsByProjectId(Long projectId, int page, int pageSize, Sort sort) {
+        Pageable pageable = PageRequest.of(page, pageSize);
+        return this.traceRepository.findConversationsByProjectId(projectId, pageable);
+    }
+
+    @Override
+    public Page<Trace> getTracesByProjectIdAndConversationId(
+        Long projectId,
+        UUID conversationId,
+        int page,
+        int pageSize,
+        Sort sort
+    ) {
+        Pageable pageable = PageRequest.of(page, pageSize, sort);
+        return this.traceRepository.findTracesByProjectIdAndConversationId(projectId, conversationId, pageable);
+    }
+
+    @Override
+    public boolean existsByProjectIdAndConversationId(Long projectId, UUID conversationId) {
+        return this.traceRepository.existsByProjectIdAndConversationId(projectId, conversationId);
     }
 
     @Override
