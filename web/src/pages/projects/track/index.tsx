@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -7,14 +8,17 @@ import { Separator } from "@/components/ui/separator";
 import { StepTable } from "@/components/step-table";
 import { traceColumns, type Trace } from "./trace-columns";
 import { TraceTable } from "@/components/trace-table";
+import { ConversationTraceTimeline } from "@/components/conversation-trace-timeline";
 import http from "@/api/http";
+import { traceApi } from "@/api/trace";
 import { useManulPaginationDataTable } from "@/hooks/use-datatable";
 import { type PaginationState} from "@tanstack/react-table";
 
 export default function ProjectDetailPage() {
   const { name } = useParams<{ name: string }>();
   const location = useLocation();
-  const projectDescription = location.state.description;
+  const projectDescription = location.state?.description ?? "";
+  const projectId = location.state?.id;
   const { t } = useTranslation();
 
   const [navButtonType, setNavButtonType] = useState<
@@ -30,6 +34,9 @@ export default function ProjectDetailPage() {
   const [traceData, setTraceData] = useState<Trace[]>([]);
   const [tracePagination, setTracePagination] = useState<PaginationState>({pageIndex: 0, pageSize: 10})
   const [tracePageCount, setTracePageCount] = useState<number>(0);
+  const [conversationId, setConversationId] = useState("");
+  const [conversationTraces, setConversationTraces] = useState<Trace[]>([]);
+  const [conversationMessage, setConversationMessage] = useState("");
 
   const refreshStepData = async () => {
     const response = await http.get(
@@ -61,6 +68,21 @@ export default function ProjectDetailPage() {
       return;
     }
     setTraceData(data);
+  };
+
+  const loadConversationTimeline = async () => {
+    if (!projectId || !conversationId.trim()) {
+      setConversationMessage("Enter a conversation ID to load its trace timeline.");
+      return;
+    }
+    const response = await traceApi.getConversationTraceTimeline(String(projectId), conversationId.trim());
+    if (response.data.code === 200) {
+      setConversationTraces(response.data.data);
+      setConversationMessage("");
+      return;
+    }
+    setConversationTraces([]);
+    setConversationMessage(response.data.message || "Failed to load conversation timeline.");
   };
 
   const { table: stepTable } = useManulPaginationDataTable({
@@ -165,7 +187,22 @@ export default function ProjectDetailPage() {
           <TraceTable table={traceTable} />
         </div>
       ) : (
-        t("track.unknown")
+        <div className="space-y-4 py-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input
+              value={conversationId}
+              onChange={(event) => setConversationId(event.target.value)}
+              placeholder="Conversation ID"
+            />
+            <Button onClick={loadConversationTimeline}>Load timeline</Button>
+          </div>
+          {conversationMessage && (
+            <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+              {conversationMessage}
+            </div>
+          )}
+          <ConversationTraceTimeline traces={conversationTraces} />
+        </div>
       )}
     </div>
   );

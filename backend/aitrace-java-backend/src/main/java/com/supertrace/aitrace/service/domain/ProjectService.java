@@ -48,6 +48,15 @@ public interface ProjectService {
     Optional<Project> getProjectByUserIdAndName(UUID userId, String projectName);
 
     /**
+     * Get project by id when it is owned by user uuid.
+     *
+     * @param userId user uuid
+     * @param projectId project id
+     * @return Project optional
+     */
+    Optional<Project> getProjectByUserIdAndId(UUID userId, Long projectId);
+
+    /**
      * Update project after logging.
      * Offer parameters are all raw data of this log. Complex calculation is implemented in this function.
      * Average calculation is implemented using stream update method.
