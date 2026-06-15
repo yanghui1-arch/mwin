@@ -39,4 +39,76 @@ public interface StepRepository extends JpaRepository<Step, UUID> {
         LocalDateTime startTime,
         LocalDateTime endTime
     );
+
+    @Query(value = """
+        SELECT s.project_id, s.project_name, NULL, NULL,
+               SUM(COALESCE(sm.cost, 0)),
+               SUM(COALESCE(CAST(s.usage ->> 'total_tokens' AS bigint), 0)),
+               SUM(COALESCE(CAST(s.usage ->> 'prompt_tokens' AS bigint), 0)),
+               SUM(COALESCE(CAST(s.usage ->> 'completion_tokens' AS bigint), 0)),
+               NULL, NULL, NULL
+        FROM step s
+        LEFT JOIN step_meta sm ON sm.id = s.id
+        WHERE s.project_id IN (:projectIds)
+          AND s.start_time >= :startTime
+          AND s.start_time < :endTime
+        GROUP BY s.project_id, s.project_name
+        ORDER BY SUM(COALESCE(sm.cost, 0)) DESC
+        LIMIT :limit
+        """, nativeQuery = true)
+    List<Object[]> findTopProjectCostDrivers(Collection<Long> projectIds, LocalDateTime startTime, LocalDateTime endTime, int limit);
+
+    @Query(value = """
+        SELECT NULL, NULL, split_part(COALESCE(s.model, ''), '/', 1), COALESCE(s.model, 'unknown'),
+               SUM(COALESCE(sm.cost, 0)),
+               SUM(COALESCE(CAST(s.usage ->> 'total_tokens' AS bigint), 0)),
+               SUM(COALESCE(CAST(s.usage ->> 'prompt_tokens' AS bigint), 0)),
+               SUM(COALESCE(CAST(s.usage ->> 'completion_tokens' AS bigint), 0)),
+               NULL, NULL, NULL
+        FROM step s
+        LEFT JOIN step_meta sm ON sm.id = s.id
+        WHERE s.project_id IN (:projectIds)
+          AND s.start_time >= :startTime
+          AND s.start_time < :endTime
+        GROUP BY COALESCE(s.model, 'unknown')
+        ORDER BY SUM(COALESCE(sm.cost, 0)) DESC
+        LIMIT :limit
+        """, nativeQuery = true)
+    List<Object[]> findTopModelCostDrivers(Collection<Long> projectIds, LocalDateTime startTime, LocalDateTime endTime, int limit);
+
+    @Query(value = """
+        SELECT s.project_id, s.project_name, split_part(MIN(COALESCE(s.model, 'unknown')), '/', 1), MIN(COALESCE(s.model, 'unknown')),
+               SUM(COALESCE(sm.cost, 0)),
+               SUM(COALESCE(CAST(s.usage ->> 'total_tokens' AS bigint), 0)),
+               SUM(COALESCE(CAST(s.usage ->> 'prompt_tokens' AS bigint), 0)),
+               SUM(COALESCE(CAST(s.usage ->> 'completion_tokens' AS bigint), 0)),
+               s.trace_id::text, NULL, t.name
+        FROM step s
+        LEFT JOIN step_meta sm ON sm.id = s.id
+        LEFT JOIN trace t ON t.id = s.trace_id
+        WHERE s.project_id IN (:projectIds)
+          AND s.start_time >= :startTime
+          AND s.start_time < :endTime
+        GROUP BY s.project_id, s.project_name, s.trace_id, t.name
+        ORDER BY SUM(COALESCE(sm.cost, 0)) DESC
+        LIMIT :limit
+        """, nativeQuery = true)
+    List<Object[]> findTopTraceCostDrivers(Collection<Long> projectIds, LocalDateTime startTime, LocalDateTime endTime, int limit);
+
+    @Query(value = """
+        SELECT s.project_id, s.project_name, split_part(COALESCE(s.model, ''), '/', 1), COALESCE(s.model, 'unknown'),
+               COALESCE(sm.cost, 0),
+               COALESCE(CAST(s.usage ->> 'total_tokens' AS bigint), 0),
+               COALESCE(CAST(s.usage ->> 'prompt_tokens' AS bigint), 0),
+               COALESCE(CAST(s.usage ->> 'completion_tokens' AS bigint), 0),
+               s.trace_id::text, s.id::text, s.name
+        FROM step s
+        LEFT JOIN step_meta sm ON sm.id = s.id
+        WHERE s.project_id IN (:projectIds)
+          AND s.start_time >= :startTime
+          AND s.start_time < :endTime
+        ORDER BY COALESCE(sm.cost, 0) DESC
+        LIMIT :limit
+        """, nativeQuery = true)
+    List<Object[]> findTopStepCostDrivers(Collection<Long> projectIds, LocalDateTime startTime, LocalDateTime endTime, int limit);
 }

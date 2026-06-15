@@ -8,10 +8,12 @@ import com.supertrace.aitrace.service.application.model.OverviewSummaryData;
 import com.supertrace.aitrace.service.application.model.OverviewTokenCurveData;
 import com.supertrace.aitrace.service.application.model.OverviewTokenCurvePointData;
 import com.supertrace.aitrace.service.application.model.OverviewTokenCurveQuery;
+import com.supertrace.aitrace.service.application.model.OverviewTopCostDriversData;
 import com.supertrace.aitrace.service.domain.ProjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -29,6 +31,8 @@ public class OverviewServiceImpl implements OverviewService {
     private static final int ONE_DAY_HOURS = 24;
     private static final int SEVEN_DAYS_HOURS = 24 * 7;
     private static final int THIRTY_DAYS_HOURS = 24 * 30;
+    private static final int DEFAULT_COST_DRIVER_LIMIT = 5;
+    private static final int MAX_COST_DRIVER_LIMIT = 50;
 
     private final ProjectService projectService;
     private final StepRepository stepRepository;
@@ -129,6 +133,29 @@ public class OverviewServiceImpl implements OverviewService {
         );
     }
 
+    @Override
+    public OverviewTopCostDriversData getTopCostDrivers(UUID userId, int requestedWindowHours, int requestedLimit) {
+        int windowHours = normalizeWindowHours(requestedWindowHours);
+        int limit = normalizeLimit(requestedLimit);
+        LocalDateTime end = LocalDateTime.now();
+        LocalDateTime start = end.minusHours(windowHours);
+        List<Project> ownedProjects = projectService.getProjectsByUserId(userId);
+        if (ownedProjects.isEmpty()) {
+            return emptyCostDrivers(windowHours, start, end);
+        }
+
+        List<Long> projectIds = ownedProjects.stream().map(Project::getId).toList();
+        return new OverviewTopCostDriversData(
+            windowHours,
+            start,
+            end,
+            toCostDrivers(stepRepository.findTopProjectCostDrivers(projectIds, start, end, limit)),
+            toCostDrivers(stepRepository.findTopModelCostDrivers(projectIds, start, end, limit)),
+            toCostDrivers(stepRepository.findTopTraceCostDrivers(projectIds, start, end, limit)),
+            toCostDrivers(stepRepository.findTopStepCostDrivers(projectIds, start, end, limit))
+        );
+    }
+
     static Double calculatePercentageChange(long previousValue, long currentValue) {
         if (previousValue == 0L) {
             return null;
@@ -187,5 +214,70 @@ public class OverviewServiceImpl implements OverviewService {
 
     private static String granularityForWindow(int windowHours) {
         return windowHours == ONE_DAY_HOURS ? "hour" : "day";
+    }
+
+    private static int normalizeLimit(int limit) {
+        if (limit <= 0) {
+            return DEFAULT_COST_DRIVER_LIMIT;
+        }
+        return Math.min(limit, MAX_COST_DRIVER_LIMIT);
+    }
+
+    private static OverviewTopCostDriversData emptyCostDrivers(int windowHours, LocalDateTime start, LocalDateTime end) {
+        return new OverviewTopCostDriversData(windowHours, start, end, List.of(), List.of(), List.of(), List.of());
+    }
+
+    private static List<OverviewTopCostDriversData.CostDriverData> toCostDrivers(List<Object[]> rows) {
+        return rows.stream()
+            .map(row -> new OverviewTopCostDriversData.CostDriverData(
+                displayName(row),
+                bigDecimal(row[4]),
+                longValue(row[5]),
+                longValue(row[6]),
+                longValue(row[7]),
+                stringValue(row[2]),
+                stringValue(row[3]),
+                longObject(row[0]),
+                stringValue(row[1]),
+                stringValue(row[8]),
+                stringValue(row[9])
+            ))
+            .toList();
+    }
+
+    private static String displayName(Object[] row) {
+        String namedEntity = stringValue(row[10]);
+        if (namedEntity != null) {
+            return namedEntity;
+        }
+        String projectName = stringValue(row[1]);
+        String model = stringValue(row[3]);
+        return projectName != null ? projectName : model;
+    }
+
+    private static BigDecimal bigDecimal(Object value) {
+        if (value == null) {
+            return BigDecimal.ZERO;
+        }
+        return value instanceof BigDecimal number ? number : new BigDecimal(value.toString());
+    }
+
+    private static long longValue(Object value) {
+        if (value == null) {
+            return 0L;
+        }
+        return ((Number) value).longValue();
+    }
+
+    private static Long longObject(Object value) {
+        return value == null ? null : ((Number) value).longValue();
+    }
+
+    private static String stringValue(Object value) {
+        if (value == null) {
+            return null;
+        }
+        String string = value.toString();
+        return string.isBlank() ? null : string;
     }
 }
