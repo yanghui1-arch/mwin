@@ -118,6 +118,32 @@ class SyncClient:
                 server_error_info="Network failure"
             )
 
+    def upload_media(self, data: bytes, mime_type: str) -> str | None:
+        """Upload tracked image bytes to the configured mwin project.
+
+        Returns the authenticated media URL stored in the step input, or None
+        when the upload request fails. Tracking callers decide how to represent
+        that failure and must not restore the original Base64 payload.
+        """
+        extension = {
+            "image/png": "png",
+            "image/jpeg": "jpg",
+            "image/gif": "gif",
+            "image/webp": "webp",
+        }.get(mime_type, "bin")
+
+        try:
+            response = self._client.post(
+                "/media/upload",
+                data={"project_name": self._project_name},
+                files={"file": (f"image.{extension}", data, mime_type)},
+                timeout=10.0,
+            )
+            response.raise_for_status()
+            return response.json()["data"]["url"]
+        except httpx.HTTPError:
+            return None
+
     def log_trace(
         self,
         trace_name: str,

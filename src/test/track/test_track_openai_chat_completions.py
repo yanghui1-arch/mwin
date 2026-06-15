@@ -1,3 +1,5 @@
+import base64
+
 from openai import resources, Stream
 from openai.types.completion_usage import CompletionUsage
 from openai.types.chat import ChatCompletion, chat_completion
@@ -170,3 +172,54 @@ def test_openai_chat_completions_not_logged_outside_tracked_call(fake_client, mo
         resources.chat.completions.AsyncCompletions.create = original_async_create
 
     assert len(fake_client.steps) == step_count
+
+
+def test_track_openai_multimodal_input_uploads_data_url_in_log_copy(fake_client, monkeypatch):
+    import mwin.patches.openai.completions as openai_completions
+
+    captured_messages = None
+
+    def fake_create(self, *, model, messages, stream=False):
+        nonlocal captured_messages
+        captured_messages = messages
+        return _build_chat_completion(content="ok", model=model)
+
+    monkeypatch.setattr(openai_completions, "raw_openai_create", fake_create)
+    image_bytes = b"\x89PNG\r\n\x1a\ntracked-image"
+    data_url = "data:image/png;base64," + base64.b64encode(image_bytes).decode()
+    messages = [
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "describe this image"},
+                {"type": "image_url", "image_url": {"url": data_url, "detail": "high"}},
+            ],
+        }
+    ]
+
+    original_create = resources.chat.completions.Completions.create
+    original_async_create = resources.chat.completions.AsyncCompletions.create
+    try:
+        @track(tags=["unit"], llm_provider=LLMProvider.OPENAI)
+        def call_llm():
+            return resources.chat.completions.Completions.create(
+                object(),
+                model="gpt-4o-mini",
+                messages=messages,
+            )
+
+        call_llm()
+    finally:
+        resources.chat.completions.Completions.create = original_create
+        resources.chat.completions.AsyncCompletions.create = original_async_create
+
+    assert captured_messages[0]["content"][1]["image_url"]["url"] == data_url
+    assert fake_client.media == [{"data": image_bytes, "mime_type": "image/png"}]
+
+    llm_step = next(
+        step for step in fake_client.steps
+        if "llm_inputs" in (step.get("input") or {})
+    )
+    logged_image = llm_step["input"]["llm_inputs"]["messages"][0]["content"][1]
+    assert logged_image["image_url"]["url"] == "/api/v0/media/media-1"
+    assert logged_image["image_url"]["detail"] == "high"

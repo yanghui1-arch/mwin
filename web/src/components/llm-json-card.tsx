@@ -1,12 +1,16 @@
 import { useState } from "react";
 import { Code, FileText } from "lucide-react";
 import { IOFieldViewer } from "./io-field-viewer";
-import { LLMMessagesViewer, type LLMMessage } from "./llm-messages-viewer";
+import { LLMMessagesViewer } from "./llm-messages-viewer";
 import { ToolsViewer } from "./tools-viewer";
 import { Markdown } from "./markdown";
 import { Button } from "./ui/button";
 import { Label } from "./ui/label";
 import { useTranslation } from "react-i18next";
+import type {
+  ChatCompletion,
+  ChatCompletionMessageParam,
+} from "openai/resources/chat/completions/completions";
 
 interface StepDetailProp {
   labelTitle?: string;
@@ -48,7 +52,7 @@ export function LLMJsonCard({
 
     // LLM input: messages array
     const inputMessages = Array.isArray(messages) && messages.length > 0
-      ? (messages as LLMMessage[])
+      ? (messages as ChatCompletionMessageParam[])
       : null;
 
     // LLM input: tools array
@@ -59,10 +63,7 @@ export function LLMJsonCard({
     // LLM output: extract message from each choice
     const responseMessages =
       Array.isArray(choices) && choices.length > 0
-        ? (choices as Array<Record<string, unknown>>)
-            .map((c) => c.message)
-            .filter((m): m is Record<string, unknown> => !!m && typeof m === "object")
-            .map((m) => m as LLMMessage)
+        ? (choices as ChatCompletion.Choice[]).map((choice) => choice.message)
         : null;
 
     // Optional top-level content (flattened by some backends)

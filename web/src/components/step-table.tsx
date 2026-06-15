@@ -175,7 +175,7 @@ export function StepTable({ table }: StepTableProps) {
                 {displayPanel === Display.LLMInput && (
                   rowData.input.llm_inputs ? (
                     <LLMJsonCard
-                      jsonObject={rowData.input.llm_inputs as Record<string, unknown>}
+                      jsonObject={rowData.input.llm_inputs as unknown as Record<string, unknown>}
                     />
                   ) : (
                     <LLMJsonCard errorInfo={t("stepTable.noLLMParams")} />

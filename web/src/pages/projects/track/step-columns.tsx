@@ -1,9 +1,8 @@
 import { type ChatCompletionAudio } from "openai/resources/index.mjs";
 import { type Annotation } from "openai/resources/beta/threads/messages.mjs";
 import { type ChatCompletionMessageToolCall } from "openai/resources/index.mjs";
-import { type ChatCompletion } from "openai/resources/chat/completions/completions";
+import { type ChatCompletion, type ChatCompletionCreateParams } from "openai/resources/chat/completions/completions";
 import { type CompletionUsage } from "openai/resources/index.mjs";
-import { type ResponseCreateParams } from "openai/resources/responses/responses.mjs";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
@@ -29,7 +28,7 @@ export interface FilteredFieldsOpenAIChatCompletionsOutput extends Record<string
 /* style as the same as python to sql storage */
 export interface InputData {
   func_inputs: Record<string, unknown>;
-  llm_inputs?: ResponseCreateParams;
+  llm_inputs?: ChatCompletionCreateParams;
 }
 
 /* style as the same as python to sql storage */

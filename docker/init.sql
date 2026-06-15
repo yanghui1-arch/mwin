@@ -73,6 +73,24 @@ create table step
 alter table step
     owner to postgres;
 
+create table media_asset
+(
+    id           uuid         not null
+        constraint media_asset_pk primary key,
+    project_id   bigint       not null,
+    user_id      uuid         not null,
+    storage_key  varchar(512) not null,
+    mime_type    varchar(128) not null,
+    size_bytes   bigint       not null,
+    created_time timestamp    not null
+);
+
+create index media_asset_user_id_idx on media_asset (user_id);
+create index media_asset_project_id_idx on media_asset (project_id);
+
+alter table media_asset
+    owner to postgres;
+
 create table step_meta
 (
     id       uuid  not null

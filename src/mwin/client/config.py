@@ -88,7 +88,6 @@ def build_client_config(
 
     headers = {
         "Authorization": f"Bearer {apikey}",
-        "Content-Type": "application/json",
     }
 
     return ClientConfig(

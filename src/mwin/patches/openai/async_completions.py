@@ -15,7 +15,7 @@ from ...models import Step
 from ...track.options import TrackerOptions
 from ...context.func_context import current_function_name_context
 from ...helper import inspect_helper
-from ...helper.llm import openai_helper
+from ...helper.llm import openai_helper, openai_multimodal_helper
 from ...client import SyncClient, get_cached_sync_client
 from ...logger import logger
 
@@ -54,6 +54,12 @@ def patch_async_openai_chat_completions():
             ignore_fields=tracker_options.llm_ignore_fields,
         )
 
+        client: SyncClient = get_cached_sync_client(project_name=tracker_options.project_name)
+        async_openai_inputs = openai_multimodal_helper.prepare_chat_completion_inputs_for_logging(
+            inputs=async_openai_inputs,
+            upload_image=client.upload_media,
+        )
+
         if isinstance(resp, AsyncStream):
             return ProxyAsyncStream(
                 real_async_stream=resp,
@@ -69,7 +75,6 @@ def patch_async_openai_chat_completions():
             tags += [model]
 
         # log
-        client: SyncClient = get_cached_sync_client(project_name=tracker_options.project_name)
         client.log_step(
             step_name=step.name,
             step_id=step.id,

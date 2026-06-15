@@ -12,6 +12,7 @@ class FakeClient:
     def __init__(self) -> None:
         self.steps = []
         self.traces = []
+        self.media = []
 
     def log_step(self, **kwargs):
         kwargs["llm_provider"] = provider_helper.resolve_llm_provider(
@@ -22,6 +23,10 @@ class FakeClient:
 
     def log_trace(self, **kwargs):
         self.traces.append(kwargs)
+
+    def upload_media(self, data: bytes, mime_type: str):
+        self.media.append({"data": data, "mime_type": mime_type})
+        return f"/api/v0/media/media-{len(self.media)}"
 
 
 @pytest.fixture

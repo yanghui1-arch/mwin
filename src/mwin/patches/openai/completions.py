@@ -21,7 +21,7 @@ from ..std import PatchStreamResponse, ToolFunctionCall, Function, patch_std_out
 from ...track.options import TrackerOptions
 from ...models import Step
 from ...helper import inspect_helper
-from ...helper.llm import openai_helper
+from ...helper.llm import openai_helper, openai_multimodal_helper
 from ...context.func_context import current_function_name_context
 from ...client import get_cached_sync_client, SyncClient
 from ...logger import logger
@@ -66,6 +66,12 @@ def patch_openai_chat_completions():
             ignore_fields=tracker_options.llm_ignore_fields,
         )
 
+        client: SyncClient = get_cached_sync_client(project_name=tracker_options.project_name)
+        openai_inputs = openai_multimodal_helper.prepare_chat_completion_inputs_for_logging(
+            inputs=openai_inputs,
+            upload_image=client.upload_media,
+        )
+
         if isinstance(resp, Stream):
             return ProxyStream(
                 real_stream=resp,
@@ -80,7 +86,6 @@ def patch_openai_chat_completions():
         if model is not None:
             tags += [model]
 
-        client: SyncClient = get_cached_sync_client(project_name=tracker_options.project_name)
         client.log_step(
             step_name=step.name,
             step_id=step.id,

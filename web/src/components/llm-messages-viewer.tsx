@@ -1,14 +1,22 @@
-import { useState } from "react";
-import { ChevronDown, ChevronRight, Code, FileText } from "lucide-react";
+import { useEffect, useState } from "react";
+import { AlertCircle, ChevronDown, ChevronRight, Code, FileText, ImageIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import { Markdown } from "./markdown";
 import { cn } from "@/lib/utils";
+import http from "@/api/http";
+import type {
+  ChatCompletionContentPart,
+  ChatCompletionContentPartRefusal,
+  ChatCompletionContentPartText,
+  ChatCompletionMessage,
+  ChatCompletionMessageParam,
+} from "openai/resources/chat/completions/completions";
 
-export interface LLMMessage {
-  role: string;
-  content?: string | unknown;
-  [key: string]: unknown;
-}
+export type LLMMessage = ChatCompletionMessageParam | ChatCompletionMessage;
+type MessageContentPart =
+  | ChatCompletionContentPart
+  | ChatCompletionContentPartText
+  | ChatCompletionContentPartRefusal;
 
 interface LLMMessagesViewerProps {
   messages: LLMMessage[];
@@ -82,6 +90,9 @@ function MessageRow({ message, index, isExpanded, onToggle }: MessageRowProps) {
   const { role, content, ...rest } = message;
 
   const hasStringContent = typeof content === "string";
+  const contentParts = Array.isArray(content)
+    ? content as MessageContentPart[]
+    : null;
   const contentStr = hasStringContent
     ? (content as string)
     : JSON.stringify(content, null, 2);
@@ -89,6 +100,8 @@ function MessageRow({ message, index, isExpanded, onToggle }: MessageRowProps) {
   const preview =
     typeof content === "string"
       ? content.trim().replace(/\s+/g, " ").slice(0, 90)
+      : contentParts
+        ? buildContentPartsPreview(contentParts)
       : typeof content === "object" && content !== null
         ? JSON.stringify(content).slice(0, 90)
         : "";
@@ -158,7 +171,9 @@ function MessageRow({ message, index, isExpanded, onToggle }: MessageRowProps) {
           {/* Content — capped height so long responses don't explode the layout */}
           {content !== undefined && content !== null && (
             <div className="px-4 pb-4 pt-1">
-              {markdownMode && hasStringContent ? (
+              {contentParts ? (
+                <ContentPartsViewer parts={contentParts} />
+              ) : markdownMode && hasStringContent ? (
                 <Markdown content={contentStr} className="text-sm" />
               ) : (
                 <pre className="text-sm font-mono whitespace-pre-wrap wrap-anywhere bg-black/10 rounded p-2.5">
@@ -182,5 +197,107 @@ function MessageRow({ message, index, isExpanded, onToggle }: MessageRowProps) {
         </div>
       )}
     </div>
+  );
+}
+
+function buildContentPartsPreview(parts: MessageContentPart[]): string {
+  const labels = parts.map((part) => {
+    if (part.type === "text") {
+      return part.text.trim().replace(/\s+/g, " ");
+    }
+    if (part.type === "image_url") return "[image]";
+    return `[${part.type}]`;
+  });
+  return labels.join(" ").slice(0, 90);
+}
+
+function ContentPartsViewer({ parts }: { parts: MessageContentPart[] }) {
+  return (
+    <div className="space-y-3">
+      {parts.map((part, index) => (
+        <ContentPart key={index} part={part} />
+      ))}
+    </div>
+  );
+}
+
+function ContentPart({ part }: { part: MessageContentPart }) {
+  if (part.type === "text") {
+    return <Markdown content={part.text} className="text-sm" />;
+  }
+
+  if (part.type === "image_url") {
+    return <TrackedImage url={part.image_url.url} />;
+  }
+
+  if (part.type === "refusal") {
+    return <Markdown content={part.refusal} className="text-sm" />;
+  }
+
+  return (
+    <pre className="text-xs font-mono whitespace-pre-wrap wrap-anywhere bg-black/10 rounded p-2.5">
+      {JSON.stringify(part, null, 2)}
+    </pre>
+  );
+}
+
+/** Render either a public OpenAI image URL or protected media stored by mwin. */
+function TrackedImage({ url }: { url: string }) {
+  const trackedMedia = url.startsWith("/api/v0/media/");
+  const uploadFailed = url.startsWith("mwin://media/");
+  const [src, setSrc] = useState<string | null>(trackedMedia ? null : url);
+  const [failed, setFailed] = useState(uploadFailed);
+
+  useEffect(() => {
+    if (!trackedMedia) return;
+
+    let active = true;
+    let objectUrl: string | null = null;
+    const apiPath = url.startsWith("/api/") ? url.slice(4) : url;
+
+    // An img tag cannot send the AT-token header, so load protected media as a Blob.
+    http.get<Blob>(apiPath, { responseType: "blob" })
+      .then((response) => {
+        if (!active) return;
+        objectUrl = URL.createObjectURL(response.data);
+        setSrc(objectUrl);
+      })
+      .catch(() => {
+        if (active) setFailed(true);
+      });
+
+    return () => {
+      active = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [trackedMedia, url]);
+
+  if (failed) {
+    return (
+      <div className="flex items-center gap-2 rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+        <AlertCircle className="h-4 w-4" />
+        Image is unavailable
+      </div>
+    );
+  }
+
+  if (!src) {
+    return (
+      <div className="flex items-center gap-2 rounded-md border p-3 text-sm text-muted-foreground">
+        <ImageIcon className="h-4 w-4" />
+        Loading image...
+      </div>
+    );
+  }
+
+  return (
+    <a href={src} target="_blank" rel="noreferrer" className="block w-fit">
+      <img
+        src={src}
+        alt="LLM message input"
+        className="max-h-96 max-w-full rounded-md border object-contain"
+        onError={() => setFailed(true)}
+      />
+    </a>
   );
 }

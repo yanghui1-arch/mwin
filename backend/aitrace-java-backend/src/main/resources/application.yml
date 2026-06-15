@@ -17,6 +17,16 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
+  servlet:
+    multipart:
+      max-file-size: ${MWIN_MEDIA_MAX_FILE_SIZE:20MB}
+      max-request-size: ${MWIN_MEDIA_MAX_REQUEST_SIZE:21MB}
+
+mwin:
+  media:
+    root-dir: ${MWIN_MEDIA_ROOT:/data/mwin/media}
+    max-size-bytes: ${MWIN_MEDIA_MAX_SIZE_BYTES:20971520}
+
 jwt:
   secret: "aitraceinitialsecaitraceinitialsecretaitraceinitialsecretaitraceinitialsecretaitraceinitialsecretaitraceinitialsecretaitraceinitialsecretret"
   expiration: 604800000       # 7 days in ms
