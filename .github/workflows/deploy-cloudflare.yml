@@ -155,3 +155,5 @@ jobs:
             echo "- D1 database: aitrace"
             echo "- R2 bucket: aitrace-media"
           } >> "${GITHUB_STEP_SUMMARY}"
+
+# Initial production deployment trigger.
