@@ -1,7 +1,9 @@
-/** D1 operations for trace persistence and pagination. */
-import { traceFromRow, type TraceRow } from './mappers.js';
-import type { Trace } from '../domain/types.js';
-import { stringifyJson } from '../lib/utils.js';
+/** Trace persistence: Drizzle handles typed reads; raw D1 batch is reserved for atomic aggregate mutations. */
+import { count, desc, eq } from 'drizzle-orm';
+import { traces as traceTable } from '../db/schema.js';
+import type { AppDatabase } from '../db/index.js';
+import type { JsonObject, Trace } from '../domain/types.js';
+import { parseJson, stringifyJson } from '../lib/utils.js';
 
 interface IdentifierRow { id: string }
 
@@ -30,6 +32,22 @@ function projectAggregateStatement(db: D1Database, userId: string): D1PreparedSt
     WHERE user_uuid = ?`).bind(userId);
 }
 
+function toTrace(row: typeof traceTable.$inferSelect): Trace {
+  return {
+    id: row.id,
+    projectName: row.projectName,
+    projectId: row.projectId,
+    name: row.name,
+    conversationId: row.conversationId,
+    tags: parseJson<string[]>(row.tags, []),
+    input: parseJson<JsonObject>(row.input),
+    output: parseJson<JsonObject>(row.output),
+    errorInfo: row.errorInfo,
+    startTime: row.startTime,
+    lastUpdateTimestamp: row.lastUpdateTimestamp,
+  };
+}
+
 /**
  * Upserts a trace and recomputes the owner's project aggregates in one D1
  * transaction. The UPSERT itself refuses to overwrite another user's trace.
@@ -56,16 +74,21 @@ export async function upsertTraceForUser(db: D1Database, userId: string, trace: 
   if (results[0].meta.changes === 0) throw new Error('Trace is not owned by the authenticated user');
 }
 
-export async function findTrace(db: D1Database, traceId: string): Promise<Trace | null> {
-  return traceFromRow(await db.prepare('SELECT * FROM trace WHERE id = ?').bind(traceId).first<TraceRow>());
+export async function findTrace(db: AppDatabase, traceId: string): Promise<Trace | null> {
+  const row = await db.select().from(traceTable).where(eq(traceTable.id, traceId)).get();
+  return row ? toTrace(row) : null;
 }
-export async function countTraces(db: D1Database, projectId: number): Promise<number> {
-  return (await db.prepare('SELECT COUNT(*) AS count FROM trace WHERE project_id = ?').bind(projectId).first<{ count: number }>())?.count ?? 0;
+
+export async function countTraces(db: AppDatabase, projectId: number): Promise<number> {
+  const row = await db.select({ value: count() }).from(traceTable).where(eq(traceTable.projectId, projectId)).get();
+  return row?.value ?? 0;
 }
-export async function listTraces(db: D1Database, projectId: number, page: number, pageSize: number): Promise<{ total: number; data: Trace[] }> {
+
+export async function listTraces(db: AppDatabase, projectId: number, page: number, pageSize: number): Promise<{ total: number; data: Trace[] }> {
   const total = await countTraces(db, projectId);
-  const { results } = await db.prepare('SELECT * FROM trace WHERE project_id = ? ORDER BY start_time DESC LIMIT ? OFFSET ?').bind(projectId, pageSize, page * pageSize).all<TraceRow>();
-  return { total, data: results.map((row) => traceFromRow(row)!) };
+  const rows = await db.select().from(traceTable).where(eq(traceTable.projectId, projectId))
+    .orderBy(desc(traceTable.startTime)).limit(pageSize).offset(page * pageSize).all();
+  return { total, data: rows.map(toTrace) };
 }
 
 /** Deletes only caller-owned traces, their steps and metadata, then rebuilds aggregates atomically. */
