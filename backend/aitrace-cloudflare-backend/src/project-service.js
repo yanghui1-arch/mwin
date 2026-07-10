@@ -25,12 +25,12 @@ export class ProjectService {
   async createProject(userId, request) {
     const name = request.project_name ?? request.projectName;
     const description = request.project_description ?? request.projectDescription ?? null;
-    return (await this.repositories.createProject(projectTemplate(userId, name, description, toDecimalString(0n), nowIso()))).name;
+    return (await this.repositories.createProject(projectTemplate(userId, name, description, toDecimalString(0), nowIso()))).name;
   }
 
   async ensureProject(userId, projectName) {
     const existing = await this.repositories.findProject(userId, projectName);
-    return existing ?? this.repositories.createProject(projectTemplate(userId, projectName, null, toDecimalString(0n), nowIso()));
+    return existing ?? this.repositories.createProject(projectTemplate(userId, projectName, null, toDecimalString(0), nowIso()));
   }
 
   async listProjects(userId) {

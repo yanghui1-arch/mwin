@@ -7,6 +7,9 @@
     "test": "node --test",
     "deploy": "wrangler deploy"
   },
+  "dependencies": {
+    "decimal.js": "^10.4.3"
+  },
   "devDependencies": {
     "wrangler": "^4.0.0"
   }

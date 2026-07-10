@@ -1,4 +1,4 @@
-import { add, decimal, subtract, toDecimalString } from './decimal.js';
+import { add, isPositive, subtract, toDecimalString } from './decimal.js';
 import { calcUsageCost } from './pricing.js';
 import { mergeStep } from './service-mappers.js';
 import { durationMillis } from './utils.js';
@@ -45,9 +45,9 @@ export class LogService {
     await this.repositories.upsertStep(step);
 
     const previousMeta = await this.repositories.findStepMeta(stepId);
-    const previousCost = previousMeta?.cost ?? toDecimalString(0n);
+    const previousCost = previousMeta?.cost ?? toDecimalString(0);
     const newCost = calcUsageCost(request.llm_provider ?? request.llmProvider, step.model, step.usage);
-    const mergedCost = decimal(newCost) > 0n ? newCost : previousCost;
+    const mergedCost = isPositive(newCost) ? newCost : previousCost;
     const description = request.description ?? JSON.parse(previousMeta?.metadata ?? '{}').description ?? null;
     await this.repositories.upsertStepMeta(stepId, { description }, mergedCost);
 
