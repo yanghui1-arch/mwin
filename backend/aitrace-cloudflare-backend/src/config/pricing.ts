@@ -28,5 +28,6 @@ export function resolvePricing(provider: string | null | undefined, model: strin
   const tiers = pricing[normalizedProvider]?.[model]?.tiers;
   if (!tiers?.length) return null;
   if (contextTokens == null) return tiers[0];
+  // Pricing tiers are ordered by context limit; models beyond all limits use the final tier.
   return tiers.find((tier) => tier.max_context_tokens == null || contextTokens <= tier.max_context_tokens) ?? tiers[tiers.length - 1];
 }

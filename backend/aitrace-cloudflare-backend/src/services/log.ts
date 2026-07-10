@@ -29,6 +29,7 @@ export class LogService {
       startTime, lastUpdateTimestamp: updated });
     const count = await this.repositories.countTraces(project.id);
     const previous = existing ? durationMillis(existing.startTime, existing.lastUpdateTimestamp) : project.averageDuration;
+    // Replace an existing trace's contribution instead of counting the same trace twice.
     await this.repositories.updateProjectAverageDuration(project.id, Math.trunc(project.averageDuration + (durationMillis(startTime, updated) - previous) / count));
     return traceId;
   }
@@ -43,6 +44,7 @@ export class LogService {
     const mergedCost = isPositive(newCost) ? newCost : previousCost;
     const oldMetadata = previousMeta ? JSON.parse(previousMeta.metadata) as { description?: string } : {};
     await this.repositories.upsertStepMeta(stepId, { description: request.description ?? oldMetadata.description ?? null }, mergedCost);
+    // A re-logged step replaces its previous charge, so only the delta affects the project total.
     await this.repositories.updateProjectCost(project.id, toDecimalString(add(project.cost, subtract(mergedCost, previousCost))));
     return stepId;
   }

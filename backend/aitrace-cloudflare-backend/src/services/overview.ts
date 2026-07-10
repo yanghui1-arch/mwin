@@ -11,6 +11,7 @@ export class OverviewService {
   }
 }
 export function buildSummary(projectCount: number, rows: TokenSnapshot[], todayDate = new Date()) {
+  // Persisted timestamps are ISO values; UTC date keys keep aggregation independent of Worker location.
   const today = todayDate.toISOString().slice(0, 10);
   const yesterday = new Date(todayDate.getTime() - 86_400_000).toISOString().slice(0, 10);
   const before = new Date(todayDate.getTime() - 172_800_000).toISOString().slice(0, 10);
