@@ -28,8 +28,8 @@ test('key rotation is issued as one two-statement D1 transaction', async () => {
 
   assert.equal(rawDb.batches.length, 1);
   assert.equal(rawDb.batches[0].length, 2);
-  assert.match(rawDb.batches[0][0].sql, /^DELETE FROM api_key/);
-  assert.match(rawDb.batches[0][1].sql, /^INSERT INTO api_key/);
+  assert.match(rawDb.batches[0][0].sql, /^delete from "api_key"/i);
+  assert.match(rawDb.batches[0][1].sql, /^insert into "api_key"/i);
 });
 
 test('trace and step telemetry mutations keep dependent writes in one batch', async () => {
