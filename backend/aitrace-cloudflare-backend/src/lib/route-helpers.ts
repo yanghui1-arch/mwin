@@ -1,7 +1,7 @@
 import { signJwt } from './auth.js';
 import { success } from './response.js';
-import type { Services } from './services.js';
-import type { Bindings, JsonObject } from './types.js';
+import type { Services } from '../services/index.js';
+import type { Bindings, JsonObject } from '../domain/types.js';
 import { extractApiKey, newId, nowIso } from './utils.js';
 
 interface GitHubUser { id: number; name: string | null; login: string; email: string | null; avatar_url: string | null }
