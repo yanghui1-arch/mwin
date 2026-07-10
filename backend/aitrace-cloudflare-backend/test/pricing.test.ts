@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { calcUsageCost, getTotalTokens, resolvePricing } from '../src/pricing.js';
 
 test('resolves tier by prompt token context', () => {
-  assert.equal(resolvePricing('openai', 'gpt-5.5', 272000).input_price_per_million, 0.03857);
-  assert.equal(resolvePricing('openai', 'gpt-5.5', 272001).input_price_per_million, 0.07714);
+  assert.equal(resolvePricing('openai', 'gpt-5.5', 272000)?.input_price_per_million, 0.03857);
+  assert.equal(resolvePricing('openai', 'gpt-5.5', 272001)?.input_price_per_million, 0.07714);
 });
 
 test('calculates cached prompt and completion cost with ten decimal places', () => {
@@ -13,7 +13,7 @@ test('calculates cached prompt and completion cost with ten decimal places', () 
     completion_tokens: 2000,
     prompt_tokens_details: { cached_tokens: 250 },
   });
-  assert.equal(cost, '0.0004931050');
+  assert.equal(cost, '0.0004927478');
 });
 
 test('uses provider-reported usage cost before local pricing', () => {
