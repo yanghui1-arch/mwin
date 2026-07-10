@@ -4,9 +4,9 @@ from functools import lru_cache
 import os
 import warnings
 
-# TODO: update it before deploy
-# DEFAULT_HOST_URL = "http://localhost:8080/api/v0"
-DEFAULT_HOST_URL = "http://petmate.fun/api/v0"
+from ..config.configurator import CLOUD_BASE_URL
+
+DEFAULT_HOST_URL = CLOUD_BASE_URL
 DEFAULT_PROJECT_NAME = "Default project"
 DEFAULT_API_KEY = "<DEFAULT_LOCAL_API_KEY>"
 

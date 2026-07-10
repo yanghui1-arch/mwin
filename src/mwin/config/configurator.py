@@ -8,8 +8,10 @@ from .loader import save_config
 from .._client import client as at_client
 from .._exception import APIKeyException
 
-CLOUD_BASE_URL: Final[str] = "http://localhost:8080/api/v0"
-localhost_base_url: str  = "http://localhost:8080/api/v0"
+CLOUD_BASE_URL: Final[str] = (
+    "https://aitrace-cloudflare-backend.mwin-172f8144.workers.dev/api/v0"
+)
+LOCAL_BASE_URL: Final[str] = "http://localhost:8080/api/v0"
 
 class MwinConfigurator:
     """AI trace configurator
@@ -39,7 +41,7 @@ class MwinConfigurator:
         self._project_name = project_name
 
         if url is None:
-            self._url = CLOUD_BASE_URL if self._use_local is False else localhost_base_url
+            self._url = LOCAL_BASE_URL if self._use_local else CLOUD_BASE_URL
         else:
             self._url = url
         
