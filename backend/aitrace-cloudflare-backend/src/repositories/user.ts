@@ -22,6 +22,29 @@ export async function insertApiKey(db: D1Database, apiKey: ApiKey): Promise<ApiK
   await db.prepare('INSERT INTO api_key (id, user_id, key, created_time) VALUES (?, ?, ?, ?)').bind(apiKey.id, apiKey.userId, apiKey.key, apiKey.createdTime).run();
   return apiKey;
 }
+
+/** Creates the local account, identity binding, and initial API key as one D1 transaction. */
+export async function createUserWithAuthAndApiKey(db: D1Database, user: User, auth: UserAuth, apiKey: ApiKey): Promise<void> {
+  await db.batch([
+    db.prepare('INSERT INTO users (id, email, username, avatar, register_time) VALUES (?, ?, ?, ?, ?)')
+      .bind(user.id, user.email, user.username, user.avatar, user.registerTime),
+    db.prepare('INSERT INTO user_auth (id, user_uuid, auth_type, identifier, created_at) VALUES (?, ?, ?, ?, ?)')
+      .bind(auth.id, auth.userId, auth.authType, auth.identifier, auth.createdAt),
+    db.prepare('INSERT INTO api_key (id, user_id, key, created_time) VALUES (?, ?, ?, ?)')
+      .bind(apiKey.id, apiKey.userId, apiKey.key, apiKey.createdTime),
+  ]);
+}
+
+/** Replaces every active telemetry key atomically, so failures cannot leave a user keyless. */
+export async function rotateApiKey(db: D1Database, apiKey: ApiKey): Promise<ApiKey> {
+  await db.batch([
+    db.prepare('DELETE FROM api_key WHERE user_id = ?').bind(apiKey.userId),
+    db.prepare('INSERT INTO api_key (id, user_id, key, created_time) VALUES (?, ?, ?, ?)')
+      .bind(apiKey.id, apiKey.userId, apiKey.key, apiKey.createdTime),
+  ]);
+  return apiKey;
+}
+
 export async function deleteApiKeys(db: D1Database, userId: string): Promise<void> {
   await db.prepare('DELETE FROM api_key WHERE user_id = ?').bind(userId).run();
 }
