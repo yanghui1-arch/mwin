@@ -38,10 +38,10 @@ export class Repositories implements RepositoryPort {
   deleteProject(userId: string, name: string) { return projects.deleteProject(this.db, userId, name); }
 
   upsertTraceForUser(userId: string, trace: Trace) { return traces.upsertTraceForUser(this.rawDb, userId, trace); }
-  findTrace(traceId: string) { return traces.findTrace(this.rawDb, traceId); }
-  countTraces(projectId: number) { return traces.countTraces(this.rawDb, projectId); }
+  findTrace(traceId: string) { return traces.findTrace(this.db, traceId); }
+  countTraces(projectId: number) { return traces.countTraces(this.db, projectId); }
   listTraces(projectId: number, page: number, pageSize: number) {
-    return traces.listTraces(this.rawDb, projectId, page, pageSize);
+    return traces.listTraces(this.db, projectId, page, pageSize);
   }
   deleteTracesForUser(userId: string, traceIds: string[]) {
     return traces.deleteTracesForUser(this.rawDb, userId, traceIds);
@@ -50,18 +50,18 @@ export class Repositories implements RepositoryPort {
   upsertStepForUser(userId: string, step: Step, metadata: JsonObject, cost: string) {
     return steps.upsertStepForUser(this.rawDb, userId, step, metadata, cost);
   }
-  findStepForUser(userId: string, stepId: string) { return steps.findStepForUser(this.rawDb, userId, stepId); }
+  findStepForUser(userId: string, stepId: string) { return steps.findStepForUser(this.db, userId, stepId); }
   listSteps(projectId: number, page: number, pageSize: number) {
-    return steps.listSteps(this.rawDb, projectId, page, pageSize);
+    return steps.listSteps(this.db, projectId, page, pageSize);
   }
   listStepsByTraceForUser(userId: string, traceId: string) {
-    return steps.listStepsByTraceForUser(this.rawDb, userId, traceId);
+    return steps.listStepsByTraceForUser(this.db, userId, traceId);
   }
   deleteStepsForUser(userId: string, stepIds: string[]) {
     return steps.deleteStepsForUser(this.rawDb, userId, stepIds);
   }
   findStepMetaForUser(userId: string, stepId: string) {
-    return steps.findStepMetaForUser(this.rawDb, userId, stepId);
+    return steps.findStepMetaForUser(this.db, userId, stepId);
   }
-  tokenSnapshots(projectIds: number[]) { return steps.tokenSnapshots(this.rawDb, projectIds); }
+  tokenSnapshots(projectIds: number[]) { return steps.tokenSnapshots(this.db, projectIds); }
 }
