@@ -6,15 +6,19 @@
   "scripts": {
     "test": "tsx --test test/*.test.ts",
     "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:check": "drizzle-kit check",
     "deploy": "wrangler deploy"
   },
   "dependencies": {
     "decimal.js": "^10.4.3",
+    "drizzle-orm": "^0.45.2",
     "hono": "^4.8.3"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250709.0",
     "@types/node": "^22.15.0",
+    "drizzle-kit": "^0.31.10",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3",
     "wrangler": "4.24.3"
