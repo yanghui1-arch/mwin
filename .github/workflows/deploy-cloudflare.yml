@@ -105,10 +105,6 @@ jobs:
             exit 1
           fi
 
-          if ! api_get "accounts/${ACCOUNT_ID}/r2/buckets/aitrace-media" >/dev/null 2>&1; then
-            api_post "accounts/${ACCOUNT_ID}/r2/buckets" '{"name":"aitrace-media"}' >/dev/null
-          fi
-
           SUBDOMAIN_JSON="$(api_get "accounts/${ACCOUNT_ID}/workers/subdomain")"
           WORKERS_SUBDOMAIN="$(jq -r '.result.subdomain // empty' <<<"${SUBDOMAIN_JSON}")"
           if [[ -z "${WORKERS_SUBDOMAIN}" ]]; then
@@ -187,5 +183,4 @@ jobs:
             echo "- Application: ${APP_URL}/"
             echo "- API base URL: ${APP_URL}/api"
             echo "- D1 database: aitrace"
-            echo "- R2 bucket: aitrace-media"
           } >> "${GITHUB_STEP_SUMMARY}"
