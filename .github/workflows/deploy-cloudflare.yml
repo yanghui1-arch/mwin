@@ -72,7 +72,7 @@ jobs:
 
       - name: Lint web
         working-directory: web
-        run: npm run lint
+        run: npm run lint -- --max-warnings=0
 
       - name: Build production web
         working-directory: web
