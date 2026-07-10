@@ -17,6 +17,22 @@ export async function createProject(db: D1Database, project: NewProject): Promis
     .bind(project.userId, project.name, project.description, project.strategy, project.averageDuration, project.cost, project.createdTimestamp, project.lastUpdateTimestamp).run();
   return { ...project, id: Number(result.meta.last_row_id) };
 }
+
+/** Resolves concurrent first telemetry writes without creating duplicate projects. */
+export async function ensureProject(db: D1Database, project: NewProject): Promise<Project> {
+  const statements = [
+    db.prepare(`INSERT INTO project (user_uuid, name, description, strategy, avg_duration, cost, created_timestamp, last_update_timestamp)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(user_uuid, name) DO NOTHING`)
+      .bind(project.userId, project.name, project.description, project.strategy, project.averageDuration, project.cost, project.createdTimestamp, project.lastUpdateTimestamp),
+    db.prepare('SELECT * FROM project WHERE user_uuid = ? AND name = ?').bind(project.userId, project.name),
+  ];
+  const [, selected] = await db.batch(statements);
+  const row = (selected.results ?? [])[0] as ProjectRow | undefined;
+  const resolved = projectFromRow(row ?? null);
+  if (!resolved) throw new Error('Project could not be created');
+  return resolved;
+}
+
 export async function updateProjectCost(db: D1Database, projectId: number, cost: string): Promise<void> {
   await db.prepare('UPDATE project SET cost = ?, last_update_timestamp = CURRENT_TIMESTAMP WHERE id = ?').bind(cost, projectId).run();
 }
