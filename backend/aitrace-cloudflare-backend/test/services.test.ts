@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { LogService } from '../src/log-service.js';
-import type { JsonObject, Project, Step, StepMeta } from '../src/types.js';
+import { LogService } from '../src/services/log.js';
+import type { JsonObject, Project, Step, StepMeta } from '../src/domain/types.js';
 
 class MemoryRepositories {
   project: Project = { id: 1, userId: 'user-1', name: 'demo', description: null, strategy: null,

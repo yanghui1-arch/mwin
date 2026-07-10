@@ -1,10 +1,10 @@
-import { add, isPositive, subtract, toDecimalString } from './decimal.js';
+import { add, isPositive, subtract, toDecimalString } from '../lib/decimal.js';
 import { calcUsageCost } from './pricing.js';
-import type { ProjectService } from './project-service.js';
-import { stringField } from './project-service.js';
-import type { JsonObject, LogRequest, Project, Step, StepMeta, Trace } from './types.js';
-import { mergeStep } from './service-mappers.js';
-import { durationMillis } from './utils.js';
+import type { ProjectService } from './project.js';
+import { stringField } from './project.js';
+import type { JsonObject, LogRequest, Project, Step, StepMeta, Trace } from '../domain/types.js';
+import { mergeStep } from './mappers.js';
+import { durationMillis } from '../lib/utils.js';
 
 interface LogRepositories {
   findTrace(id: string): Promise<Trace | null>; upsertTrace(trace: Trace): Promise<void>; countTraces(projectId: number): Promise<number>;

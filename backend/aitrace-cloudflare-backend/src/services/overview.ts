@@ -1,6 +1,6 @@
 import { getTotalTokens } from './pricing.js';
-import type { RepositoryPort } from './repository-port.js';
-import type { TokenSnapshot, Usage } from './types.js';
+import type { RepositoryPort } from '../repositories/port.js';
+import type { TokenSnapshot, Usage } from '../domain/types.js';
 
 export class OverviewService {
   constructor(private readonly repositories: RepositoryPort) {}

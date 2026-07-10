@@ -1,8 +1,8 @@
-import { toDecimalString } from './decimal.js';
-import type { RepositoryPort } from './repository-port.js';
-import { projectTemplate, toProjectInfo } from './service-mappers.js';
-import type { JsonObject, Project } from './types.js';
-import { concealApiKey, newId, nowIso, pageCount, sha256Hex } from './utils.js';
+import { toDecimalString } from '../lib/decimal.js';
+import type { RepositoryPort } from '../repositories/port.js';
+import { projectTemplate, toProjectInfo } from './mappers.js';
+import type { JsonObject, Project } from '../domain/types.js';
+import { concealApiKey, newId, nowIso, pageCount, sha256Hex } from '../lib/utils.js';
 
 export class ProjectService {
   constructor(private readonly repositories: RepositoryPort) {}

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildSummary, percentageChange } from '../src/services.js';
+import { buildSummary, percentageChange } from '../src/services/index.js';
 
 test('builds overview token totals for lifetime and recent days', () => {
   const today = new Date('2026-07-09T12:00:00Z');

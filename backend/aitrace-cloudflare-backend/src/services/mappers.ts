@@ -1,4 +1,4 @@
-import type { NewProject, Project, Step } from './types.js';
+import type { NewProject, Project, Step } from '../domain/types.js';
 
 export function toProjectInfo(project: Project) {
   return { projectId: project.id, projectName: project.name, description: project.description, averageDuration: project.averageDuration,

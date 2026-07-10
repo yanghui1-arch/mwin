@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { calcUsageCost, getTotalTokens, resolvePricing } from '../src/pricing.js';
+import { calcUsageCost, getTotalTokens, resolvePricing } from '../src/services/pricing.js';
 
 test('resolves tier by prompt token context', () => {
   assert.equal(resolvePricing('openai', 'gpt-5.5', 272000)?.input_price_per_million, 0.03857);

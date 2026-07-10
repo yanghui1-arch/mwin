@@ -1,6 +1,6 @@
-import { add, decimal, divideIntegerHalfUp, multiplyInteger, toDecimalString, ZERO } from './decimal.js';
-import { resolvePricing } from './pricing-config.js';
-import type { Usage } from './types.js';
+import { add, decimal, divideIntegerHalfUp, multiplyInteger, toDecimalString, ZERO } from '../lib/decimal.js';
+import { resolvePricing } from '../config/pricing.js';
+import type { Usage } from '../domain/types.js';
 
 function tokenCost(pricePerMillion: number | null | undefined, tokens: number | null | undefined) {
   if (!tokens || pricePerMillion == null) return ZERO;
@@ -44,4 +44,4 @@ export function calcUsageCost(provider: string | null | undefined, model: string
   return toDecimalString(add(cost, tokenCost(outputPrice, completionTokens)));
 }
 
-export { resolvePricing } from './pricing-config.js';
+export { resolvePricing } from '../config/pricing.js';

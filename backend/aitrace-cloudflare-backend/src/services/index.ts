@@ -1,8 +1,8 @@
-import { LogService } from './log-service.js';
-import { OverviewService, buildSummary, percentageChange } from './overview-service.js';
-import { ProjectService } from './project-service.js';
-import type { RepositoryPort } from './repository-port.js';
-import type { JsonObject, LogRequest } from './types.js';
+import { LogService } from './log.js';
+import { OverviewService, buildSummary, percentageChange } from './overview.js';
+import { ProjectService } from './project.js';
+import type { RepositoryPort } from '../repositories/port.js';
+import type { JsonObject, LogRequest } from '../domain/types.js';
 
 export class Services {
   readonly projectService: ProjectService;
