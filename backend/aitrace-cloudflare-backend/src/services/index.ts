@@ -39,7 +39,7 @@ export class Services {
   /** Records telemetry and billing data for one step. */
   logStep(userId: string, request: LogRequest) { return this.logService.logStep(userId, request); }
   /** Lists the steps belonging to a trace in execution order. */
-  getTracks(traceId: string) { return this.repositories.listStepsByTrace(traceId); }
+  getTracks(userId: string, traceId: string) { return this.repositories.listStepsByTraceForUser(userId, traceId); }
   /** Builds the dashboard token-usage summary. */
   getSummary(userId: string, today?: Date) { return this.overviewService.getSummary(userId, today); }
 }

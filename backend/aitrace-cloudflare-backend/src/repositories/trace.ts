@@ -22,7 +22,11 @@ export async function listTraces(db: D1Database, projectId: number, page: number
   const { results } = await db.prepare('SELECT * FROM trace WHERE project_id = ? ORDER BY start_time DESC LIMIT ? OFFSET ?').bind(projectId, pageSize, page * pageSize).all<TraceRow>();
   return { total, data: results.map((row) => traceFromRow(row)!) };
 }
-export async function deleteTraces(db: D1Database, traceIds: string[]): Promise<string[]> {
-  for (const id of traceIds) await db.prepare('DELETE FROM trace WHERE id = ?').bind(id).run();
-  return traceIds;
+export async function deleteTracesForUser(db: D1Database, userId: string, traceIds: string[]): Promise<string[]> {
+  const deleted: string[] = [];
+  for (const id of traceIds) {
+    const result = await db.prepare(`DELETE FROM trace WHERE id = ? AND project_id IN (SELECT id FROM project WHERE user_uuid = ?)`).bind(id, userId).run();
+    if (result.meta.changes > 0) deleted.push(id);
+  }
+  return deleted;
 }

@@ -10,8 +10,8 @@ steps.get('/:projectName', (c) => withUser(c.req.raw, c.env, async (userId) => {
   const pageSize = Number(c.req.query('pageSize') ?? 15);
   return success(await c.var.services.getSteps(userId, c.req.param('projectName'), page, pageSize));
 }));
-steps.post('/delete', async (c) => {
-  return success(await c.var.services.repositories.deleteSteps(await c.req.json<string[]>()));
-});
+steps.post('/delete', (c) => withUser(c.req.raw, c.env, async (userId) => {
+  return success(await c.var.services.repositories.deleteStepsForUser(userId, await c.req.json<string[]>()));
+}));
 
 export default steps;
