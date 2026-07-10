@@ -3,16 +3,21 @@
 This Worker is a Cloudflare-free-tier-compatible backend that mirrors the Java
 Spring service under `backend/aitrace-java-backend`.
 
-## Runtime mapping
+## Architecture
 
-- Hono owns Worker routing, path/query parsing, middleware, 404s, and errors in
-  `src/index.js`, `src/routes.js`, and `src/routes-v0.js`.
-- Spring controllers become focused Hono route handlers.
-- JPA repositories become D1 SQL helpers in `src/repositories.js`.
-- Java service behavior is implemented in `src/services.js`.
-- `llm-pricing.json` is copied from the Java backend and resolved by
-  `src/pricing.js`.
-- Media upload metadata is stored in D1 and binary data is written to R2.
+The Worker follows Hono's larger-application pattern: each API resource is an
+independent `Hono` sub-application, and `src/app.ts` composes those routers with
+`app.route()`. `src/index.ts` only exports the Worker entry point.
+
+- `src/routes/`: HTTP handlers grouped by API resource.
+- `src/middleware/`: request-scoped dependency setup.
+- `src/services/`: business behavior shared by route handlers.
+- `src/repositories/`: D1 queries and persistence mapping.
+- `src/domain/`: application types and repository contracts.
+- `src/lib/`: authentication, response, decimal, and request helpers.
+- `src/config/`: model pricing configuration and its loader.
+
+R2 stores optional media binaries, while their metadata is persisted in D1.
 
 ## Cloudflare bindings
 
