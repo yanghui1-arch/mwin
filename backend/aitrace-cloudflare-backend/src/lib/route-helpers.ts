@@ -12,6 +12,16 @@ export async function requestJson<T extends JsonObject = JsonObject>(request: Re
   return request.headers.get('content-type')?.includes('application/json') ? request.json<T>() : {} as T;
 }
 
+/** Parses an identifier list with a D1-safe bound-parameter limit. */
+export async function requestIdList(request: Request, maxItems = 50): Promise<string[]> {
+  const value: unknown = await request.json();
+  if (!Array.isArray(value) || value.some((id) => typeof id !== 'string' || !id)) {
+    throw new Error('Expected a non-empty string identifier list');
+  }
+  if (value.length > maxItems) throw new Error(`A maximum of ${maxItems} identifiers may be processed at once`);
+  return value;
+}
+
 /** Validates a telemetry API key and returns its owning user. */
 export async function requireApiUser(request: Request, svc: Services): Promise<string> {
   const userId = await svc.userIdForApiKey(extractApiKey(request.headers.get('authorization')));
