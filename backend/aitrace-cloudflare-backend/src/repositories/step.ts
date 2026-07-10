@@ -140,7 +140,8 @@ export async function findStepMetaForUser(db: AppDatabase, userId: string, stepI
     .innerJoin(stepTable, eq(stepTable.id, stepMeta.id))
     .innerJoin(projects, eq(projects.id, stepTable.projectId))
     .where(and(eq(stepMeta.id, stepId), eq(projects.userId, userId))).get();
-  return row && row.metadata !== null ? row : null;
+  if (!row || row.metadata === null) return null;
+  return { id: row.id, metadata: row.metadata, cost: row.cost };
 }
 
 export async function tokenSnapshots(db: AppDatabase, projectIds: number[]): Promise<TokenSnapshot[]> {
