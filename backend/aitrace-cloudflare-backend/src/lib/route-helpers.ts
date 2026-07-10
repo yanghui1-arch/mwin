@@ -7,14 +7,17 @@ import { extractApiKey, newId, nowIso } from './utils.js';
 interface GitHubUser { id: number; name: string | null; login: string; email: string | null; avatar_url: string | null }
 interface GitHubToken { access_token: string }
 
+/** Parses JSON request bodies and treats non-JSON bodies as empty objects. */
 export async function requestJson<T extends JsonObject = JsonObject>(request: Request): Promise<T> {
   return request.headers.get('content-type')?.includes('application/json') ? request.json<T>() : {} as T;
 }
+/** Validates a telemetry API key and returns its owning user. */
 export async function requireApiUser(request: Request, svc: Services): Promise<string> {
   const userId = await svc.userIdForApiKey(extractApiKey(request.headers.get('authorization')));
   if (!userId) throw new Error('Invalid AITrace API key. Please ensure your API Key is valid and not expired.');
   return userId;
 }
+/** Exchanges a GitHub OAuth code and creates first-time users with an API key. */
 export async function authenticate(request: Request, env: Bindings, svc: Services): Promise<Response> {
   const ghUser = await githubUser(env, new URL(request.url).searchParams.get('code'));
   const auth = await svc.repositories.findUserAuth(String(ghUser.id));

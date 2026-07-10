@@ -1,3 +1,4 @@
+/** D1 operations for steps, metadata, and usage snapshots. */
 import { stepFromRow, type StepRow } from './mappers.js';
 import type { JsonObject, Step, StepMeta, TokenSnapshot } from '../domain/types.js';
 import { stringifyJson } from '../lib/utils.js';

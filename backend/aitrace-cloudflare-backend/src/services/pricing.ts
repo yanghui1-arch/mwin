@@ -7,21 +7,26 @@ function tokenCost(pricePerMillion: number | null | undefined, tokens: number | 
   return divideIntegerHalfUp(multiplyInteger(pricePerMillion, tokens), 1_000_000);
 }
 
+/** Reads provider-normalized prompt tokens from a usage payload. */
 export function getPromptTokens(usage: Usage | null | undefined): number | null {
   return usage?.prompt_tokens ?? null;
 }
+/** Reads completion tokens, including the Gemini-compatible fallback field. */
 export function getCompletionTokens(usage: Usage | null | undefined): number | null {
   return usage?.completion_tokens ?? usage?.candidates_token_count ?? null;
 }
+/** Uses a reported total when present, otherwise sums prompt and completion tokens. */
 export function getTotalTokens(usage: Usage | null | undefined): number {
   if (!usage) return 0;
   return usage.total_tokens ?? (getPromptTokens(usage) ?? 0) + (getCompletionTokens(usage) ?? 0);
 }
+/** Sums prompt and completion audio tokens, returning null when none were reported. */
 export function getAudioTokens(usage: Usage | null | undefined): number | null {
   const total = (usage?.prompt_tokens_details?.audio_tokens ?? 0) + (usage?.completion_tokens_details?.audio_tokens ?? 0);
   return total > 0 ? total : null;
 }
 
+/** Returns provider-reported cost or computes a fixed-precision local pricing estimate. */
 export function calcUsageCost(provider: string | null | undefined, model: string | null | undefined, usage: Usage | null | undefined): string {
   if (!usage) return toDecimalString(ZERO);
   if (usage.cost != null) return toDecimalString(decimal(usage.cost));

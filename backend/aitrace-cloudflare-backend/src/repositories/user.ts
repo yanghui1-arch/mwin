@@ -1,3 +1,4 @@
+/** D1 operations for users, GitHub identities, and API keys. */
 import type { ApiKey, User, UserAuth } from '../domain/types.js';
 
 interface UserRow { id: string; email: string | null; username: string; avatar: string | null; register_time: string }

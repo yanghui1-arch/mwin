@@ -16,12 +16,14 @@ export const LLM_PROVIDERS = new Set([
   'anthropic', 'google', 'vllm', 'ollama', 'transformers',
 ]);
 
+/** Accepts only provider identifiers represented in the pricing configuration. */
 export function normalizeProvider(provider: string | null | undefined): string | null {
   if (!provider) return null;
   const value = provider.toLowerCase();
   return LLM_PROVIDERS.has(value) ? value : null;
 }
 
+/** Selects the model pricing tier that covers the supplied prompt context. */
 export function resolvePricing(provider: string | null | undefined, model: string | null | undefined, contextTokens: number | null = null): PricingTier | null {
   const normalizedProvider = normalizeProvider(provider);
   if (!normalizedProvider || !model) return null;

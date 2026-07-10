@@ -1,3 +1,4 @@
+/** Binds the request D1 database to the repository operation modules. */
 import * as users from './user.js';
 import * as projects from './project.js';
 import * as traces from './trace.js';

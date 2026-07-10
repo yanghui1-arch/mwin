@@ -1,5 +1,6 @@
 import type { ApiKey, JsonObject, NewProject, Project, Step, StepMeta, TokenSnapshot, Trace, User, UserAuth } from '../domain/types.js';
 
+/** Persistence operations required by the application services. */
 export interface RepositoryPort {
   findUser(id: string): Promise<User | null>;
   findUserAuth(identifier: string): Promise<{ user_uuid: string } | null>;

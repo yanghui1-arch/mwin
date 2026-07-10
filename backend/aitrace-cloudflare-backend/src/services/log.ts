@@ -15,6 +15,7 @@ interface LogRepositories {
 
 export class LogService {
   constructor(private readonly repositories: LogRepositories, private readonly projectService: Pick<ProjectService, 'ensureProject'>) {}
+  /** Creates or updates a trace and keeps the project average duration consistent. */
   async logTrace(userId: string, request: LogRequest): Promise<string> {
     const projectName = stringField(request.project_name ?? request.projectName, 'project name');
     const project = await this.projectService.ensureProject(userId, projectName);
@@ -33,6 +34,7 @@ export class LogService {
     await this.repositories.updateProjectAverageDuration(project.id, Math.trunc(project.averageDuration + (durationMillis(startTime, updated) - previous) / count));
     return traceId;
   }
+  /** Creates or enriches a step and applies its calculated cost to the project. */
   async logStep(userId: string, request: LogRequest): Promise<string> {
     const project = await this.projectService.ensureProject(userId, stringField(request.project_name ?? request.projectName, 'project name'));
     const stepId = stringField(request.step_id ?? request.stepId, 'step id');

@@ -10,6 +10,7 @@ import projects from './routes/projects.js';
 import steps from './routes/steps.js';
 import traces from './routes/traces.js';
 
+/** Composes resource routers and shared middleware into the Worker application. */
 export function createApp() {
   const app = new Hono<AppEnv>();
 

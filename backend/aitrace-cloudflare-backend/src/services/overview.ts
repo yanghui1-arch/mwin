@@ -4,12 +4,14 @@ import type { TokenSnapshot, Usage } from '../domain/types.js';
 
 export class OverviewService {
   constructor(private readonly repositories: RepositoryPort) {}
+  /** Builds token totals and daily comparisons across all projects owned by a user. */
   async getSummary(userId: string, today = new Date()) {
     const projects = await this.repositories.listProjects(userId);
     if (!projects.length) return buildSummary(0, [], today);
     return buildSummary(projects.length, await this.repositories.tokenSnapshots(projects.map((project) => project.id)), today);
   }
 }
+/** Aggregates token snapshots into lifetime and recent UTC-day totals. */
 export function buildSummary(projectCount: number, rows: TokenSnapshot[], todayDate = new Date()) {
   // Persisted timestamps are ISO values; UTC date keys keep aggregation independent of Worker location.
   const today = todayDate.toISOString().slice(0, 10);
@@ -29,6 +31,7 @@ export function buildSummary(projectCount: number, rows: TokenSnapshot[], todayD
     todayVsYesterdayPercentage: percentageChange(yesterdayTotalTokens, todayTotalTokens),
     yesterdayVsDayBeforePercentage: percentageChange(dayBeforeYesterdayTotalTokens, yesterdayTotalTokens) };
 }
+/** Returns percentage growth, or null when no previous baseline exists. */
 export function percentageChange(previousValue: number, currentValue: number): number | null {
   return previousValue === 0 ? null : ((currentValue - previousValue) * 100) / previousValue;
 }

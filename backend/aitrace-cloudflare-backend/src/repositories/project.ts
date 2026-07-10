@@ -1,3 +1,4 @@
+/** D1 operations for user-owned projects and project aggregates. */
 import { projectFromRow, type ProjectRow } from './mappers.js';
 import type { NewProject, Project } from '../domain/types.js';
 

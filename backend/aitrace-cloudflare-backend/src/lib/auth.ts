@@ -15,6 +15,7 @@ async function hmacKey(secret: string): Promise<CryptoKey> {
   return crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify']);
 }
 
+/** Signs a short-lived HS256 session token with issued-at and expiry claims. */
 export async function signJwt(payload: JsonObject, secret: string, expiresInSeconds = 7 * 24 * 3600): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
   const header = base64Url(new TextEncoder().encode(JSON.stringify({ alg: 'HS256', typ: 'JWT' })));
@@ -24,6 +25,7 @@ export async function signJwt(payload: JsonObject, secret: string, expiresInSeco
   return `${data}.${base64Url(signature)}`;
 }
 
+/** Verifies an HS256 signature and rejects expired session tokens. */
 export async function verifyJwt(token: string, secret: string): Promise<JsonObject> {
   const [header, body, signature] = token.split('.');
   if (!header || !body || !signature) throw new Error('Invalid token');
@@ -34,6 +36,7 @@ export async function verifyJwt(token: string, secret: string): Promise<JsonObje
   return payload;
 }
 
+/** Extracts and validates the dashboard token, returning its user identifier. */
 export async function requireUserId(request: Request, env: Bindings): Promise<string> {
   const token = request.headers.get('AT-token') ?? request.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
   if (!token) throw new Error('Missing token');
@@ -42,6 +45,7 @@ export async function requireUserId(request: Request, env: Bindings): Promise<st
   return userId;
 }
 
+/** Runs an authenticated handler and converts authentication failures to API errors. */
 export async function withUser(request: Request, env: Bindings, callback: (userId: string) => Promise<Response>): Promise<Response> {
   try { return await callback(await requireUserId(request, env)); }
   catch (err) { return error(err instanceof Error ? err.message : 'Authentication failed'); }

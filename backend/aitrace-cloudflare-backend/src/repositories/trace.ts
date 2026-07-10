@@ -1,3 +1,4 @@
+/** D1 operations for trace persistence and pagination. */
 import { traceFromRow, type TraceRow } from './mappers.js';
 import type { Trace } from '../domain/types.js';
 import { stringifyJson } from '../lib/utils.js';
