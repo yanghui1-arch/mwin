@@ -182,8 +182,8 @@ jobs:
           APP_URL: ${{ steps.cloudflare.outputs.app_url }}
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error --retry 6 --retry-delay 5 "${APP_URL}/" | grep -qi '<html'
-          BACKEND_RESPONSE="$(curl --fail --silent --show-error --retry 6 --retry-delay 5 "${APP_URL}/api/does-not-exist")"
+          curl --fail --silent --show-error --retry 12 --retry-delay 5 --retry-all-errors "${APP_URL}/" | grep -qi '<html'
+          BACKEND_RESPONSE="$(curl --fail --silent --show-error --retry 12 --retry-delay 5 --retry-all-errors "${APP_URL}/api/does-not-exist")"
           jq -e '.code == 404' <<<"${BACKEND_RESPONSE}" >/dev/null
           {
             echo "## Cloudflare deployment"
