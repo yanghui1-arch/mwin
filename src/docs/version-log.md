@@ -1,6 +1,15 @@
 # Version log
 Every version updates, fixes and removings could be checked here.
 
+## 0.2.6
+### Break Change
+- Cloud server is not set localhost by default. - @yanghui1-arch [# 331f](https://github.com/yanghui1-arch/mwin/commit/331f2ec27ed23dfc75b00e2649ca05d567ebdced)
+
+### Feature
+- Support tracking OpenAI Chat Completions image inputs in sync and async calls.
+- Upload Base64 image data URLs to the mwin backend and store the returned media URL in the logged OpenAI request copy.
+- Preserve the original OpenAI request passed to the model and keep remote image URLs unchanged.
+
 ## 0.2.5
 ### Feature
 - Support automatically detect the llm provider based on the model. - @yanghui1-arch [# f381742](https://github.com/yanghui1-arch/mwin/commit/f3817421ea8c63ed191eaebb39920bd994af34fb)
