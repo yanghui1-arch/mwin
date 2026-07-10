@@ -1,7 +1,9 @@
-/** D1 operations for steps, metadata, and usage snapshots. */
-import { stepFromRow, type StepRow } from './mappers.js';
-import type { JsonObject, Step, StepMeta, TokenSnapshot } from '../domain/types.js';
-import { stringifyJson } from '../lib/utils.js';
+/** Step persistence: Drizzle handles typed reads; raw D1 batch is reserved for atomic billing mutations. */
+import { and, count, desc, eq, inArray, isNotNull } from 'drizzle-orm';
+import { projects, stepMeta, steps as stepTable } from '../db/schema.js';
+import type { AppDatabase } from '../db/index.js';
+import type { JsonObject, Step, StepMeta, TokenSnapshot, Usage } from '../domain/types.js';
+import { parseJson, stringifyJson } from '../lib/utils.js';
 import { toCostUnits } from '../lib/decimal.js';
 
 interface IdentifierRow { id: string }
@@ -24,6 +26,27 @@ function rebuildProjectCostsStatement(db: D1Database, userId: string): D1Prepare
     cost = ${formattedCost(units)},
     last_update_timestamp = CURRENT_TIMESTAMP
     WHERE user_uuid = ?`).bind(userId);
+}
+
+function toStep(row: typeof stepTable.$inferSelect, cost: string | null): Step {
+  return {
+    id: row.id,
+    parentStepId: row.parentStepId,
+    name: row.name,
+    traceId: row.traceId,
+    type: row.type,
+    tags: parseJson<string[]>(row.tags, []),
+    input: parseJson<JsonObject>(row.input),
+    output: parseJson<JsonObject>(row.output),
+    errorInfo: row.errorInfo,
+    model: row.model,
+    usage: parseJson<Usage>(row.usage),
+    projectName: row.projectName,
+    projectId: row.projectId,
+    startTime: row.startTime,
+    endTime: row.endTime,
+    cost,
+  };
 }
 
 /**
@@ -68,22 +91,30 @@ export async function upsertStepForUser(db: D1Database, userId: string, step: St
   if (results.some((result) => result.meta.changes === 0)) throw new Error('Step is not owned by the authenticated user');
 }
 
-export async function findStep(db: D1Database, stepId: string): Promise<Step | null> {
-  return stepFromRow(await db.prepare('SELECT step.*, step_meta.cost FROM step LEFT JOIN step_meta ON step_meta.id = step.id WHERE step.id = ?').bind(stepId).first<StepRow>());
+export async function findStepForUser(db: AppDatabase, userId: string, stepId: string): Promise<Step | null> {
+  const row = await db.select({ step: stepTable, cost: stepMeta.cost }).from(stepTable)
+    .innerJoin(projects, eq(projects.id, stepTable.projectId))
+    .leftJoin(stepMeta, eq(stepMeta.id, stepTable.id))
+    .where(and(eq(stepTable.id, stepId), eq(projects.userId, userId))).get();
+  return row ? toStep(row.step, row.cost) : null;
 }
-export async function findStepForUser(db: D1Database, userId: string, stepId: string): Promise<Step | null> {
-  return stepFromRow(await db.prepare(`SELECT step.*, step_meta.cost FROM step LEFT JOIN step_meta ON step_meta.id = step.id
-    WHERE step.id = ? AND step.project_id IN (SELECT id FROM project WHERE user_uuid = ?)`).bind(stepId, userId).first<StepRow>());
+
+export async function listSteps(db: AppDatabase, projectId: number, page: number, pageSize: number): Promise<{ total: number; data: Step[] }> {
+  const totalRow = await db.select({ value: count() }).from(stepTable).where(eq(stepTable.projectId, projectId)).get();
+  const rows = await db.select({ step: stepTable, cost: stepMeta.cost }).from(stepTable)
+    .leftJoin(stepMeta, eq(stepMeta.id, stepTable.id))
+    .where(eq(stepTable.projectId, projectId))
+    .orderBy(desc(stepTable.startTime)).limit(pageSize).offset(page * pageSize).all();
+  return { total: totalRow?.value ?? 0, data: rows.map((row) => toStep(row.step, row.cost)) };
 }
-export async function listSteps(db: D1Database, projectId: number, page: number, pageSize: number): Promise<{ total: number; data: Step[] }> {
-  const total = (await db.prepare('SELECT COUNT(*) AS count FROM step WHERE project_id = ?').bind(projectId).first<{ count: number }>())?.count ?? 0;
-  const { results } = await db.prepare('SELECT step.*, step_meta.cost FROM step LEFT JOIN step_meta ON step_meta.id = step.id WHERE project_id = ? ORDER BY start_time DESC LIMIT ? OFFSET ?').bind(projectId, pageSize, page * pageSize).all<StepRow>();
-  return { total, data: results.map((row) => stepFromRow(row)!) };
-}
-export async function listStepsByTraceForUser(db: D1Database, userId: string, traceId: string): Promise<Step[]> {
-  const { results } = await db.prepare(`SELECT step.*, step_meta.cost FROM step LEFT JOIN step_meta ON step_meta.id = step.id
-    WHERE trace_id = ? AND project_id IN (SELECT id FROM project WHERE user_uuid = ?) ORDER BY start_time ASC`).bind(traceId, userId).all<StepRow>();
-  return results.map((row) => stepFromRow(row)!);
+
+export async function listStepsByTraceForUser(db: AppDatabase, userId: string, traceId: string): Promise<Step[]> {
+  const rows = await db.select({ step: stepTable, cost: stepMeta.cost }).from(stepTable)
+    .innerJoin(projects, eq(projects.id, stepTable.projectId))
+    .leftJoin(stepMeta, eq(stepMeta.id, stepTable.id))
+    .where(and(eq(stepTable.traceId, traceId), eq(projects.userId, userId)))
+    .orderBy(stepTable.startTime).all();
+  return rows.map((row) => toStep(row.step, row.cost));
 }
 
 /** Deletes a caller-owned set of steps and rebuilds the affected user's aggregates atomically. */
@@ -100,19 +131,24 @@ export async function deleteStepsForUser(db: D1Database, userId: string, stepIds
   return ((results[0].results ?? []) as IdentifierRow[]).map((row) => row.id);
 }
 
-export async function findStepMeta(db: D1Database, stepId: string): Promise<StepMeta | null> {
-  return db.prepare('SELECT * FROM step_meta WHERE id = ?').bind(stepId).first<StepMeta>();
+export async function findStepMetaForUser(db: AppDatabase, userId: string, stepId: string): Promise<StepMeta | null> {
+  const row = await db.select({
+    id: stepMeta.id,
+    metadata: stepMeta.metadata,
+    cost: stepMeta.cost,
+  }).from(stepMeta)
+    .innerJoin(stepTable, eq(stepTable.id, stepMeta.id))
+    .innerJoin(projects, eq(projects.id, stepTable.projectId))
+    .where(and(eq(stepMeta.id, stepId), eq(projects.userId, userId))).get();
+  return row && row.metadata !== null ? row : null;
 }
-export async function findStepMetaForUser(db: D1Database, userId: string, stepId: string): Promise<StepMeta | null> {
-  return db.prepare(`SELECT step_meta.* FROM step_meta INNER JOIN step ON step.id = step_meta.id
-    WHERE step_meta.id = ? AND step.project_id IN (SELECT id FROM project WHERE user_uuid = ?)`).bind(stepId, userId).first<StepMeta>();
-}
-export async function upsertStepMeta(db: D1Database, stepId: string, metadata: JsonObject, cost: string): Promise<StepMeta> {
-  await db.prepare(`INSERT INTO step_meta (id, metadata, cost) VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET metadata = excluded.metadata, cost = excluded.cost`).bind(stepId, stringifyJson(metadata), cost).run();
-  return { id: stepId, metadata: JSON.stringify(metadata), cost };
-}
-export async function tokenSnapshots(db: D1Database, projectIds: number[]): Promise<TokenSnapshot[]> {
+
+export async function tokenSnapshots(db: AppDatabase, projectIds: number[]): Promise<TokenSnapshot[]> {
   if (!projectIds.length) return [];
-  const placeholders = projectIds.map(() => '?').join(',');
-  return (await db.prepare(`SELECT start_time, usage FROM step WHERE project_id IN (${placeholders}) AND usage IS NOT NULL`).bind(...projectIds).all<TokenSnapshot>()).results;
+  const rows = await db.select({
+    startTime: stepTable.startTime,
+    usage: stepTable.usage,
+  }).from(stepTable)
+    .where(and(inArray(stepTable.projectId, projectIds), isNotNull(stepTable.usage))).all();
+  return rows.map((row) => ({ startTime: row.startTime, usage: row.usage! }));
 }
