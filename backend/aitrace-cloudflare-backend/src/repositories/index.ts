@@ -1,4 +1,5 @@
-/** Binds the request D1 database to the repository operation modules. */
+/** Binds the request D1 database to Drizzle-backed repositories and atomic D1 mutations. */
+import { createDatabase, type AppDatabase } from '../db/index.js';
 import * as users from './user.js';
 import * as projects from './project.js';
 import * as traces from './trace.js';
@@ -7,7 +8,11 @@ import type { RepositoryPort } from './port.js';
 import type { ApiKey, JsonObject, NewProject, Step, Trace, User, UserAuth } from '../domain/types.js';
 
 export class Repositories implements RepositoryPort {
-  constructor(private readonly db: D1Database) {}
+  private readonly db: AppDatabase;
+
+  constructor(private readonly rawDb: D1Database) {
+    this.db = createDatabase(rawDb);
+  }
 
   findUser(id: string) { return users.findUser(this.db, id); }
   findUserAuth(identifier: string) { return users.findUserAuth(this.db, identifier); }
@@ -32,31 +37,31 @@ export class Repositories implements RepositoryPort {
   }
   deleteProject(userId: string, name: string) { return projects.deleteProject(this.db, userId, name); }
 
-  upsertTraceForUser(userId: string, trace: Trace) { return traces.upsertTraceForUser(this.db, userId, trace); }
-  findTrace(traceId: string) { return traces.findTrace(this.db, traceId); }
-  countTraces(projectId: number) { return traces.countTraces(this.db, projectId); }
+  upsertTraceForUser(userId: string, trace: Trace) { return traces.upsertTraceForUser(this.rawDb, userId, trace); }
+  findTrace(traceId: string) { return traces.findTrace(this.rawDb, traceId); }
+  countTraces(projectId: number) { return traces.countTraces(this.rawDb, projectId); }
   listTraces(projectId: number, page: number, pageSize: number) {
-    return traces.listTraces(this.db, projectId, page, pageSize);
+    return traces.listTraces(this.rawDb, projectId, page, pageSize);
   }
   deleteTracesForUser(userId: string, traceIds: string[]) {
-    return traces.deleteTracesForUser(this.db, userId, traceIds);
+    return traces.deleteTracesForUser(this.rawDb, userId, traceIds);
   }
 
   upsertStepForUser(userId: string, step: Step, metadata: JsonObject, cost: string) {
-    return steps.upsertStepForUser(this.db, userId, step, metadata, cost);
+    return steps.upsertStepForUser(this.rawDb, userId, step, metadata, cost);
   }
-  findStepForUser(userId: string, stepId: string) { return steps.findStepForUser(this.db, userId, stepId); }
+  findStepForUser(userId: string, stepId: string) { return steps.findStepForUser(this.rawDb, userId, stepId); }
   listSteps(projectId: number, page: number, pageSize: number) {
-    return steps.listSteps(this.db, projectId, page, pageSize);
+    return steps.listSteps(this.rawDb, projectId, page, pageSize);
   }
   listStepsByTraceForUser(userId: string, traceId: string) {
-    return steps.listStepsByTraceForUser(this.db, userId, traceId);
+    return steps.listStepsByTraceForUser(this.rawDb, userId, traceId);
   }
   deleteStepsForUser(userId: string, stepIds: string[]) {
-    return steps.deleteStepsForUser(this.db, userId, stepIds);
+    return steps.deleteStepsForUser(this.rawDb, userId, stepIds);
   }
   findStepMetaForUser(userId: string, stepId: string) {
-    return steps.findStepMetaForUser(this.db, userId, stepId);
+    return steps.findStepMetaForUser(this.rawDb, userId, stepId);
   }
-  tokenSnapshots(projectIds: number[]) { return steps.tokenSnapshots(this.db, projectIds); }
+  tokenSnapshots(projectIds: number[]) { return steps.tokenSnapshots(this.rawDb, projectIds); }
 }
