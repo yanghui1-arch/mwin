@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import type { AppEnv } from '../domain/types.js';
 import { withUser } from '../lib/auth.js';
 import { success } from '../lib/response.js';
+import { requestIdList } from '../lib/route-helpers.js';
 
 const steps = new Hono<AppEnv>();
 
@@ -11,7 +12,7 @@ steps.get('/:projectName', (c) => withUser(c.req.raw, c.env, async (userId) => {
   return success(await c.var.services.getSteps(userId, c.req.param('projectName'), page, pageSize));
 }));
 steps.post('/delete', (c) => withUser(c.req.raw, c.env, async (userId) => {
-  return success(await c.var.services.repositories.deleteStepsForUser(userId, await c.req.json<string[]>()));
+  return success(await c.var.services.repositories.deleteStepsForUser(userId, await requestIdList(c.req.raw)));
 }));
 
 export default steps;

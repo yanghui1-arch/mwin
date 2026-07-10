@@ -3,6 +3,7 @@ import Decimal from 'decimal.js';
 Decimal.set({ precision: 40, rounding: Decimal.ROUND_HALF_UP });
 
 export type DecimalInput = Decimal.Value | Decimal;
+const COST_SCALE = new Decimal('10000000000');
 
 /** Normalizes supported numeric input into the configured Decimal representation. */
 export function decimal(value: DecimalInput | null | undefined): Decimal {
@@ -37,6 +38,18 @@ export function isPositive(amount: DecimalInput): boolean {
 /** Formats an amount with a stable number of fractional digits. */
 export function toDecimalString(amount: DecimalInput, fractionDigits = 10): string {
   return decimal(amount).toFixed(fractionDigits);
+}
+
+/**
+ * Converts the persisted 10-decimal monetary representation to a safe fixed-point
+ * integer for atomic D1 arithmetic.
+ */
+export function toCostUnits(amount: DecimalInput): number {
+  const units = decimal(amount).times(COST_SCALE).toDecimalPlaces(0, Decimal.ROUND_HALF_UP);
+  if (!units.isInteger() || units.abs().greaterThan(Number.MAX_SAFE_INTEGER)) {
+    throw new Error('Cost exceeds the supported fixed-point range');
+  }
+  return units.toNumber();
 }
 
 /** Converts non-monetary aggregate values to a JavaScript number. */

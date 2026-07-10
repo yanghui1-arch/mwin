@@ -18,6 +18,8 @@ export function stringifyJson(value: JsonValue | undefined): string | null {
 export function nowIso(): string { return new Date().toISOString(); }
 /** Generates identifiers with the Worker Web Crypto API. */
 export function newId(): string { return crypto.randomUUID(); }
+/** Generates an unguessable telemetry key from 122 bits of Web Crypto entropy. */
+export function newApiKey(): string { return `at-${newId().replace(/-/g, '')}`; }
 
 /** Accepts either a raw API key or a Bearer authorization value. */
 export function extractApiKey(authorization: string | null): string {
