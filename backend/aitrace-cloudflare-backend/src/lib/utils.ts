@@ -1,4 +1,4 @@
-import type { JsonValue } from './types.js';
+import type { JsonValue } from '../domain/types.js';
 
 export function parseJson<T extends JsonValue>(value: unknown, fallback: T): T;
 export function parseJson<T extends JsonValue>(value: unknown, fallback?: null): T | null;

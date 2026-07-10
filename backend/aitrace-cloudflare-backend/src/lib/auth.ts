@@ -1,5 +1,5 @@
 import { error } from './response.js';
-import type { Bindings, JsonObject } from './types.js';
+import type { Bindings, JsonObject } from '../domain/types.js';
 
 function base64Url(bytes: ArrayBuffer | ArrayBufferView): string {
   const view = bytes instanceof ArrayBuffer ? new Uint8Array(bytes) : new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength);

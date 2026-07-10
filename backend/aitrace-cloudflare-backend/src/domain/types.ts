@@ -1,4 +1,4 @@
-import type { Services } from './services.js';
+import type { Services } from '../services/index.js';
 
 export interface Bindings {
   DB: D1Database;
