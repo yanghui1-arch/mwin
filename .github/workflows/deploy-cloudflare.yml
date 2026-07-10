@@ -157,3 +157,5 @@ jobs:
           } >> "${GITHUB_STEP_SUMMARY}"
 
 # Initial production deployment trigger.
+
+# Triggered through a reviewed merge so GitHub emits the deployment event.
