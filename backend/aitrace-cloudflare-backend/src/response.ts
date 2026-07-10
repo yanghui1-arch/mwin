@@ -1,21 +1,8 @@
-export function success(data, message = 'Response successfully') {
-  return json({ code: 200, message, data }, 200);
+export function success(data: unknown, message = 'Successfully'): Response {
+  return json({ code: 200, message, data });
 }
-
-export function error(message, status = 400) {
-  return json({ code: status, message, data: null }, status);
-}
-
-export function notFound(message) {
-  return json({ code: 404, message, data: null }, 404);
-}
-
-export function json(body, status = 200, headers = {}) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: {
-      'content-type': 'application/json; charset=utf-8',
-      ...headers,
-    },
-  });
+export function error(message: string): Response { return json({ code: 500, message, data: null }); }
+export function notFound(message: string): Response { return json({ code: 404, message, data: null }); }
+export function json(body: unknown): Response {
+  return new Response(JSON.stringify(body), { headers: { 'content-type': 'application/json; charset=utf-8' } });
 }
