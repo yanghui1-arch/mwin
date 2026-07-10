@@ -46,345 +46,41 @@ jobs:
             exit 1
           fi
 
-          api_get() {
-            local endpoint="$1"
-            local response body status errors
-            response="$(curl --silent --show-error --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" --header "Content-Type: application/json" --write-out "${CLOUDFLARE_ACCOUNT_ID:-}"
-          if [[ -z "${ACCOUNT_ID}" ]]; then
-            ACCOUNTS_JSON="$(api_get "accounts?per_page=50")"
-            ACCOUNT_ID="$(jq -r '.result[0].id // empty' <<<"${ACCOUNTS_JSON}")"
-          fi
-          if [[ -z "${ACCOUNT_ID}" ]]; then
-            echo "::error::No Cloudflare account is visible to CLOUDFLARE_API_TOKEN."
-            exit 1
-          fi
-
-          DB_JSON="$(api_get "accounts/${ACCOUNT_ID}/d1/database?name=aitrace")"
-          DB_ID="$(jq -r '.result[0].uuid // empty' <<<"${DB_JSON}")"
-          if [[ -z "${DB_ID}" ]]; then
-            DB_JSON="$(curl --fail --silent --show-error               --request POST               --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"               --header "Content-Type: application/json"               --data '{"name":"aitrace"}'               "https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/d1/database")"
-            DB_ID="$(jq -r '.result.uuid // empty' <<<"${DB_JSON}")"
-          fi
-          if [[ -z "${DB_ID}" ]]; then
-            echo "::error::Unable to resolve or create the aitrace D1 database."
-            exit 1
-          fi
-
-          if ! api_get "accounts/${ACCOUNT_ID}/r2/buckets/aitrace-media" >/dev/null 2>&1; then
-            curl --fail --silent --show-error               --request POST               --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"               --header "Content-Type: application/json"               --data '{"name":"aitrace-media"}'               "https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/r2/buckets" >/dev/null
-          fi
-
-          SUBDOMAIN_JSON="$(api_get "accounts/${ACCOUNT_ID}/workers/subdomain")"
-          WORKERS_SUBDOMAIN="$(jq -r '.result.subdomain // empty' <<<"${SUBDOMAIN_JSON}")"
-          if [[ -z "${WORKERS_SUBDOMAIN}" ]]; then
-            echo "::error::The Cloudflare account does not have a workers.dev subdomain."
-            exit 1
-          fi
-
-          APP_URL="https://aitrace-cloudflare-backend.${WORKERS_SUBDOMAIN}.workers.dev"
-          echo "account_id=${ACCOUNT_ID}" >> "${GITHUB_OUTPUT}"
-          echo "db_id=${DB_ID}" >> "${GITHUB_OUTPUT}"
-          echo "app_url=${APP_URL}" >> "${GITHUB_OUTPUT}"
-
-      - name: Configure D1 binding
-        shell: bash
-        run: |
-          set -euo pipefail
-          sed -i "s/replace-with-cloudflare-d1-id/${{ steps.cloudflare.outputs.db_id }}/"             backend/aitrace-cloudflare-backend/wrangler.toml
-
-      - name: Build frontend
-        working-directory: web
-        env:
-          VITE_API_BASE_URL: /api
-          VITE_GITHUB_CLIENT_ID: Ov23liWyhyfoA5aDkDQx
-          VITE_GITHUB_REDIRECT_URI: ${{ steps.cloudflare.outputs.app_url }}/auth/github/callback
-        run: |
-          npm ci
-          npm run build
-
-      - name: Install Cloudflare backend dependencies
-        working-directory: backend/aitrace-cloudflare-backend
-        run: npm install --no-audit --no-fund
-
-      - name: Configure Worker secrets
-        working-directory: backend/aitrace-cloudflare-backend
-        shell: bash
-        run: |
-          set -euo pipefail
-          APPLICATION_YML="../aitrace-java-backend/src/main/resources/application.yml"
-          JWT_SECRET="$(sed -n 's/^  secret: "\(.*\)"/\1/p' "${APPLICATION_YML}" | head -n 1)"
-          GITHUB_CLIENT_ID="$(sed -n 's/^  client-id: //p' "${APPLICATION_YML}" | head -n 1)"
-          GITHUB_CLIENT_SECRET="$(sed -n 's/^  client-secret: //p' "${APPLICATION_YML}" | head -n 1)"
-          if [[ -z "${JWT_SECRET}" || -z "${GITHUB_CLIENT_ID}" || -z "${GITHUB_CLIENT_SECRET}" ]]; then
-            echo "::error::Required Worker secrets could not be read from application.yml."
-            exit 1
-          fi
-          jq -n             --arg jwt "${JWT_SECRET}"             --arg client_id "${GITHUB_CLIENT_ID}"             --arg client_secret "${GITHUB_CLIENT_SECRET}"             '{JWT_SECRET:$jwt,GITHUB_CLIENT_ID:$client_id,GITHUB_CLIENT_SECRET:$client_secret}'             > /tmp/mwin-worker-secrets.json
-          npx wrangler secret bulk /tmp/mwin-worker-secrets.json
-          rm -f /tmp/mwin-worker-secrets.json
-        env:
-          CLOUDFLARE_ACCOUNT_ID: ${{ steps.cloudflare.outputs.account_id }}
-
-      - name: Apply D1 migrations
-        working-directory: backend/aitrace-cloudflare-backend
-        run: npx wrangler d1 migrations apply DB --remote
-        env:
-          CLOUDFLARE_ACCOUNT_ID: ${{ steps.cloudflare.outputs.account_id }}
-
-      - name: Deploy frontend and backend
-        working-directory: backend/aitrace-cloudflare-backend
-        run: npx wrangler deploy
-        env:
-          CLOUDFLARE_ACCOUNT_ID: ${{ steps.cloudflare.outputs.account_id }}
-
-      - name: Verify frontend and backend
-        shell: bash
-        env:
-          APP_URL: ${{ steps.cloudflare.outputs.app_url }}
-        run: |
-          set -euo pipefail
-          curl --fail --silent --show-error --retry 6 --retry-delay 5 "${APP_URL}/"             | grep -qi '<html'
-          BACKEND_RESPONSE="$(curl --fail --silent --show-error --retry 6 --retry-delay 5             "${APP_URL}/api/does-not-exist")"
-          jq -e '.code == 404' <<<"${BACKEND_RESPONSE}" >/dev/null
-          {
-            echo "## Cloudflare deployment"
-            echo
-            echo "- Application: ${APP_URL}/"
-            echo "- API base URL: ${APP_URL}/api"
-            echo "- D1 database: aitrace"
-            echo "- R2 bucket: aitrace-media"
-          } >> "${GITHUB_STEP_SUMMARY}"
-
-# Initial production deployment trigger.
-
-# Triggered through a reviewed merge so GitHub emits the deployment event.
-\\n%{http_code}' "https://api.cloudflare.com/client/v4/${endpoint}")"
-            status="${response##*"${CLOUDFLARE_ACCOUNT_ID:-}"
-          if [[ -z "${ACCOUNT_ID}" ]]; then
-            ACCOUNTS_JSON="$(api_get "accounts?per_page=50")"
-            ACCOUNT_ID="$(jq -r '.result[0].id // empty' <<<"${ACCOUNTS_JSON}")"
-          fi
-          if [[ -z "${ACCOUNT_ID}" ]]; then
-            echo "::error::No Cloudflare account is visible to CLOUDFLARE_API_TOKEN."
-            exit 1
-          fi
-
-          DB_JSON="$(api_get "accounts/${ACCOUNT_ID}/d1/database?name=aitrace")"
-          DB_ID="$(jq -r '.result[0].uuid // empty' <<<"${DB_JSON}")"
-          if [[ -z "${DB_ID}" ]]; then
-            DB_JSON="$(curl --fail --silent --show-error               --request POST               --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"               --header "Content-Type: application/json"               --data '{"name":"aitrace"}'               "https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/d1/database")"
-            DB_ID="$(jq -r '.result.uuid // empty' <<<"${DB_JSON}")"
-          fi
-          if [[ -z "${DB_ID}" ]]; then
-            echo "::error::Unable to resolve or create the aitrace D1 database."
-            exit 1
-          fi
-
-          if ! api_get "accounts/${ACCOUNT_ID}/r2/buckets/aitrace-media" >/dev/null 2>&1; then
-            curl --fail --silent --show-error               --request POST               --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"               --header "Content-Type: application/json"               --data '{"name":"aitrace-media"}'               "https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/r2/buckets" >/dev/null
-          fi
-
-          SUBDOMAIN_JSON="$(api_get "accounts/${ACCOUNT_ID}/workers/subdomain")"
-          WORKERS_SUBDOMAIN="$(jq -r '.result.subdomain // empty' <<<"${SUBDOMAIN_JSON}")"
-          if [[ -z "${WORKERS_SUBDOMAIN}" ]]; then
-            echo "::error::The Cloudflare account does not have a workers.dev subdomain."
-            exit 1
-          fi
-
-          APP_URL="https://aitrace-cloudflare-backend.${WORKERS_SUBDOMAIN}.workers.dev"
-          echo "account_id=${ACCOUNT_ID}" >> "${GITHUB_OUTPUT}"
-          echo "db_id=${DB_ID}" >> "${GITHUB_OUTPUT}"
-          echo "app_url=${APP_URL}" >> "${GITHUB_OUTPUT}"
-
-      - name: Configure D1 binding
-        shell: bash
-        run: |
-          set -euo pipefail
-          sed -i "s/replace-with-cloudflare-d1-id/${{ steps.cloudflare.outputs.db_id }}/"             backend/aitrace-cloudflare-backend/wrangler.toml
-
-      - name: Build frontend
-        working-directory: web
-        env:
-          VITE_API_BASE_URL: /api
-          VITE_GITHUB_CLIENT_ID: Ov23liWyhyfoA5aDkDQx
-          VITE_GITHUB_REDIRECT_URI: ${{ steps.cloudflare.outputs.app_url }}/auth/github/callback
-        run: |
-          npm ci
-          npm run build
-
-      - name: Install Cloudflare backend dependencies
-        working-directory: backend/aitrace-cloudflare-backend
-        run: npm install --no-audit --no-fund
-
-      - name: Configure Worker secrets
-        working-directory: backend/aitrace-cloudflare-backend
-        shell: bash
-        run: |
-          set -euo pipefail
-          APPLICATION_YML="../aitrace-java-backend/src/main/resources/application.yml"
-          JWT_SECRET="$(sed -n 's/^  secret: "\(.*\)"/\1/p' "${APPLICATION_YML}" | head -n 1)"
-          GITHUB_CLIENT_ID="$(sed -n 's/^  client-id: //p' "${APPLICATION_YML}" | head -n 1)"
-          GITHUB_CLIENT_SECRET="$(sed -n 's/^  client-secret: //p' "${APPLICATION_YML}" | head -n 1)"
-          if [[ -z "${JWT_SECRET}" || -z "${GITHUB_CLIENT_ID}" || -z "${GITHUB_CLIENT_SECRET}" ]]; then
-            echo "::error::Required Worker secrets could not be read from application.yml."
-            exit 1
-          fi
-          jq -n             --arg jwt "${JWT_SECRET}"             --arg client_id "${GITHUB_CLIENT_ID}"             --arg client_secret "${GITHUB_CLIENT_SECRET}"             '{JWT_SECRET:$jwt,GITHUB_CLIENT_ID:$client_id,GITHUB_CLIENT_SECRET:$client_secret}'             > /tmp/mwin-worker-secrets.json
-          npx wrangler secret bulk /tmp/mwin-worker-secrets.json
-          rm -f /tmp/mwin-worker-secrets.json
-        env:
-          CLOUDFLARE_ACCOUNT_ID: ${{ steps.cloudflare.outputs.account_id }}
-
-      - name: Apply D1 migrations
-        working-directory: backend/aitrace-cloudflare-backend
-        run: npx wrangler d1 migrations apply DB --remote
-        env:
-          CLOUDFLARE_ACCOUNT_ID: ${{ steps.cloudflare.outputs.account_id }}
-
-      - name: Deploy frontend and backend
-        working-directory: backend/aitrace-cloudflare-backend
-        run: npx wrangler deploy
-        env:
-          CLOUDFLARE_ACCOUNT_ID: ${{ steps.cloudflare.outputs.account_id }}
-
-      - name: Verify frontend and backend
-        shell: bash
-        env:
-          APP_URL: ${{ steps.cloudflare.outputs.app_url }}
-        run: |
-          set -euo pipefail
-          curl --fail --silent --show-error --retry 6 --retry-delay 5 "${APP_URL}/"             | grep -qi '<html'
-          BACKEND_RESPONSE="$(curl --fail --silent --show-error --retry 6 --retry-delay 5             "${APP_URL}/api/does-not-exist")"
-          jq -e '.code == 404' <<<"${BACKEND_RESPONSE}" >/dev/null
-          {
-            echo "## Cloudflare deployment"
-            echo
-            echo "- Application: ${APP_URL}/"
-            echo "- API base URL: ${APP_URL}/api"
-            echo "- D1 database: aitrace"
-            echo "- R2 bucket: aitrace-media"
-          } >> "${GITHUB_STEP_SUMMARY}"
-
-# Initial production deployment trigger.
-
-# Triggered through a reviewed merge so GitHub emits the deployment event.
-\\n'}"
-            body="${response%"${CLOUDFLARE_ACCOUNT_ID:-}"
-          if [[ -z "${ACCOUNT_ID}" ]]; then
-            ACCOUNTS_JSON="$(api_get "accounts?per_page=50")"
-            ACCOUNT_ID="$(jq -r '.result[0].id // empty' <<<"${ACCOUNTS_JSON}")"
-          fi
-          if [[ -z "${ACCOUNT_ID}" ]]; then
-            echo "::error::No Cloudflare account is visible to CLOUDFLARE_API_TOKEN."
-            exit 1
-          fi
-
-          DB_JSON="$(api_get "accounts/${ACCOUNT_ID}/d1/database?name=aitrace")"
-          DB_ID="$(jq -r '.result[0].uuid // empty' <<<"${DB_JSON}")"
-          if [[ -z "${DB_ID}" ]]; then
-            DB_JSON="$(curl --fail --silent --show-error               --request POST               --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"               --header "Content-Type: application/json"               --data '{"name":"aitrace"}'               "https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/d1/database")"
-            DB_ID="$(jq -r '.result.uuid // empty' <<<"${DB_JSON}")"
-          fi
-          if [[ -z "${DB_ID}" ]]; then
-            echo "::error::Unable to resolve or create the aitrace D1 database."
-            exit 1
-          fi
-
-          if ! api_get "accounts/${ACCOUNT_ID}/r2/buckets/aitrace-media" >/dev/null 2>&1; then
-            curl --fail --silent --show-error               --request POST               --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"               --header "Content-Type: application/json"               --data '{"name":"aitrace-media"}'               "https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/r2/buckets" >/dev/null
-          fi
-
-          SUBDOMAIN_JSON="$(api_get "accounts/${ACCOUNT_ID}/workers/subdomain")"
-          WORKERS_SUBDOMAIN="$(jq -r '.result.subdomain // empty' <<<"${SUBDOMAIN_JSON}")"
-          if [[ -z "${WORKERS_SUBDOMAIN}" ]]; then
-            echo "::error::The Cloudflare account does not have a workers.dev subdomain."
-            exit 1
-          fi
-
-          APP_URL="https://aitrace-cloudflare-backend.${WORKERS_SUBDOMAIN}.workers.dev"
-          echo "account_id=${ACCOUNT_ID}" >> "${GITHUB_OUTPUT}"
-          echo "db_id=${DB_ID}" >> "${GITHUB_OUTPUT}"
-          echo "app_url=${APP_URL}" >> "${GITHUB_OUTPUT}"
-
-      - name: Configure D1 binding
-        shell: bash
-        run: |
-          set -euo pipefail
-          sed -i "s/replace-with-cloudflare-d1-id/${{ steps.cloudflare.outputs.db_id }}/"             backend/aitrace-cloudflare-backend/wrangler.toml
-
-      - name: Build frontend
-        working-directory: web
-        env:
-          VITE_API_BASE_URL: /api
-          VITE_GITHUB_CLIENT_ID: Ov23liWyhyfoA5aDkDQx
-          VITE_GITHUB_REDIRECT_URI: ${{ steps.cloudflare.outputs.app_url }}/auth/github/callback
-        run: |
-          npm ci
-          npm run build
-
-      - name: Install Cloudflare backend dependencies
-        working-directory: backend/aitrace-cloudflare-backend
-        run: npm install --no-audit --no-fund
-
-      - name: Configure Worker secrets
-        working-directory: backend/aitrace-cloudflare-backend
-        shell: bash
-        run: |
-          set -euo pipefail
-          APPLICATION_YML="../aitrace-java-backend/src/main/resources/application.yml"
-          JWT_SECRET="$(sed -n 's/^  secret: "\(.*\)"/\1/p' "${APPLICATION_YML}" | head -n 1)"
-          GITHUB_CLIENT_ID="$(sed -n 's/^  client-id: //p' "${APPLICATION_YML}" | head -n 1)"
-          GITHUB_CLIENT_SECRET="$(sed -n 's/^  client-secret: //p' "${APPLICATION_YML}" | head -n 1)"
-          if [[ -z "${JWT_SECRET}" || -z "${GITHUB_CLIENT_ID}" || -z "${GITHUB_CLIENT_SECRET}" ]]; then
-            echo "::error::Required Worker secrets could not be read from application.yml."
-            exit 1
-          fi
-          jq -n             --arg jwt "${JWT_SECRET}"             --arg client_id "${GITHUB_CLIENT_ID}"             --arg client_secret "${GITHUB_CLIENT_SECRET}"             '{JWT_SECRET:$jwt,GITHUB_CLIENT_ID:$client_id,GITHUB_CLIENT_SECRET:$client_secret}'             > /tmp/mwin-worker-secrets.json
-          npx wrangler secret bulk /tmp/mwin-worker-secrets.json
-          rm -f /tmp/mwin-worker-secrets.json
-        env:
-          CLOUDFLARE_ACCOUNT_ID: ${{ steps.cloudflare.outputs.account_id }}
-
-      - name: Apply D1 migrations
-        working-directory: backend/aitrace-cloudflare-backend
-        run: npx wrangler d1 migrations apply DB --remote
-        env:
-          CLOUDFLARE_ACCOUNT_ID: ${{ steps.cloudflare.outputs.account_id }}
-
-      - name: Deploy frontend and backend
-        working-directory: backend/aitrace-cloudflare-backend
-        run: npx wrangler deploy
-        env:
-          CLOUDFLARE_ACCOUNT_ID: ${{ steps.cloudflare.outputs.account_id }}
-
-      - name: Verify frontend and backend
-        shell: bash
-        env:
-          APP_URL: ${{ steps.cloudflare.outputs.app_url }}
-        run: |
-          set -euo pipefail
-          curl --fail --silent --show-error --retry 6 --retry-delay 5 "${APP_URL}/"             | grep -qi '<html'
-          BACKEND_RESPONSE="$(curl --fail --silent --show-error --retry 6 --retry-delay 5             "${APP_URL}/api/does-not-exist")"
-          jq -e '.code == 404' <<<"${BACKEND_RESPONSE}" >/dev/null
-          {
-            echo "## Cloudflare deployment"
-            echo
-            echo "- Application: ${APP_URL}/"
-            echo "- API base URL: ${APP_URL}/api"
-            echo "- D1 database: aitrace"
-            echo "- R2 bucket: aitrace-media"
-          } >> "${GITHUB_STEP_SUMMARY}"
-
-# Initial production deployment trigger.
-
-# Triggered through a reviewed merge so GitHub emits the deployment event.
-\\n'*}"
-            if [[ ! "${status}" =~ ^2 ]] || ! jq -e '.success == true' <<<"${body}" >/dev/null 2>&1; then
-              errors="$(jq -c '[.errors[]? | {code, message}]' <<<"${body}" 2>/dev/null || printf '"unparseable response"')"
+          api_request() {
+            local method="$1"
+            local endpoint="$2"
+            local data="${3:-}"
+            local body_file status errors
+            body_file="$(mktemp)"
+            local curl_args=(
+              --silent
+              --show-error
+              --output "${body_file}"
+              --write-out "%{http_code}"
+              --request "${method}"
+              --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"
+              --header "Content-Type: application/json"
+            )
+            if [[ -n "${data}" ]]; then
+              curl_args+=(--data "${data}")
+            fi
+            status="$(curl "${curl_args[@]}" "https://api.cloudflare.com/client/v4/${endpoint}")"
+            if [[ ! "${status}" =~ ^2 ]] || ! jq -e '.success == true' "${body_file}" >/dev/null 2>&1; then
+              errors="$(jq -c '[.errors[]? | {code, message}]' "${body_file}" 2>/dev/null || printf '"unparseable response"')"
               echo "::error::Cloudflare API request to ${endpoint} failed (HTTP ${status}): ${errors}" >&2
+              rm -f "${body_file}"
               return 1
             fi
-            printf '%s' "${body}"
+            cat "${body_file}"
+            rm -f "${body_file}"
+          }
+
+          api_get() {
+            api_request GET "$1"
+          }
+
+          api_post() {
+            api_request POST "$1" "$2"
           }
 
           api_get "user/tokens/verify" >/dev/null
@@ -401,7 +97,7 @@ jobs:
           DB_JSON="$(api_get "accounts/${ACCOUNT_ID}/d1/database?name=aitrace")"
           DB_ID="$(jq -r '.result[0].uuid // empty' <<<"${DB_JSON}")"
           if [[ -z "${DB_ID}" ]]; then
-            DB_JSON="$(curl --fail --silent --show-error               --request POST               --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"               --header "Content-Type: application/json"               --data '{"name":"aitrace"}'               "https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/d1/database")"
+            DB_JSON="$(api_post "accounts/${ACCOUNT_ID}/d1/database" '{"name":"aitrace"}')"
             DB_ID="$(jq -r '.result.uuid // empty' <<<"${DB_JSON}")"
           fi
           if [[ -z "${DB_ID}" ]]; then
@@ -410,7 +106,7 @@ jobs:
           fi
 
           if ! api_get "accounts/${ACCOUNT_ID}/r2/buckets/aitrace-media" >/dev/null 2>&1; then
-            curl --fail --silent --show-error               --request POST               --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"               --header "Content-Type: application/json"               --data '{"name":"aitrace-media"}'               "https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/r2/buckets" >/dev/null
+            api_post "accounts/${ACCOUNT_ID}/r2/buckets" '{"name":"aitrace-media"}' >/dev/null
           fi
 
           SUBDOMAIN_JSON="$(api_get "accounts/${ACCOUNT_ID}/workers/subdomain")"
@@ -429,7 +125,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          sed -i "s/replace-with-cloudflare-d1-id/${{ steps.cloudflare.outputs.db_id }}/"             backend/aitrace-cloudflare-backend/wrangler.toml
+          sed -i "s/replace-with-cloudflare-d1-id/${{ steps.cloudflare.outputs.db_id }}/" backend/aitrace-cloudflare-backend/wrangler.toml
 
       - name: Build frontend
         working-directory: web
@@ -448,6 +144,8 @@ jobs:
       - name: Configure Worker secrets
         working-directory: backend/aitrace-cloudflare-backend
         shell: bash
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ steps.cloudflare.outputs.account_id }}
         run: |
           set -euo pipefail
           APPLICATION_YML="../aitrace-java-backend/src/main/resources/application.yml"
@@ -458,23 +156,21 @@ jobs:
             echo "::error::Required Worker secrets could not be read from application.yml."
             exit 1
           fi
-          jq -n             --arg jwt "${JWT_SECRET}"             --arg client_id "${GITHUB_CLIENT_ID}"             --arg client_secret "${GITHUB_CLIENT_SECRET}"             '{JWT_SECRET:$jwt,GITHUB_CLIENT_ID:$client_id,GITHUB_CLIENT_SECRET:$client_secret}'             > /tmp/mwin-worker-secrets.json
+          jq -n --arg jwt "${JWT_SECRET}" --arg client_id "${GITHUB_CLIENT_ID}" --arg client_secret "${GITHUB_CLIENT_SECRET}" '{JWT_SECRET:$jwt,GITHUB_CLIENT_ID:$client_id,GITHUB_CLIENT_SECRET:$client_secret}' > /tmp/mwin-worker-secrets.json
           npx wrangler secret bulk /tmp/mwin-worker-secrets.json
           rm -f /tmp/mwin-worker-secrets.json
-        env:
-          CLOUDFLARE_ACCOUNT_ID: ${{ steps.cloudflare.outputs.account_id }}
 
       - name: Apply D1 migrations
         working-directory: backend/aitrace-cloudflare-backend
-        run: npx wrangler d1 migrations apply DB --remote
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ steps.cloudflare.outputs.account_id }}
+        run: npx wrangler d1 migrations apply DB --remote
 
       - name: Deploy frontend and backend
         working-directory: backend/aitrace-cloudflare-backend
-        run: npx wrangler deploy
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ steps.cloudflare.outputs.account_id }}
+        run: npx wrangler deploy
 
       - name: Verify frontend and backend
         shell: bash
@@ -482,8 +178,8 @@ jobs:
           APP_URL: ${{ steps.cloudflare.outputs.app_url }}
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error --retry 6 --retry-delay 5 "${APP_URL}/"             | grep -qi '<html'
-          BACKEND_RESPONSE="$(curl --fail --silent --show-error --retry 6 --retry-delay 5             "${APP_URL}/api/does-not-exist")"
+          curl --fail --silent --show-error --retry 6 --retry-delay 5 "${APP_URL}/" | grep -qi '<html'
+          BACKEND_RESPONSE="$(curl --fail --silent --show-error --retry 6 --retry-delay 5 "${APP_URL}/api/does-not-exist")"
           jq -e '.code == 404' <<<"${BACKEND_RESPONSE}" >/dev/null
           {
             echo "## Cloudflare deployment"
@@ -493,7 +189,3 @@ jobs:
             echo "- D1 database: aitrace"
             echo "- R2 bucket: aitrace-media"
           } >> "${GITHUB_STEP_SUMMARY}"
-
-# Initial production deployment trigger.
-
-# Triggered through a reviewed merge so GitHub emits the deployment event.
