@@ -83,6 +83,10 @@ jobs:
             api_request POST "$1" "$2"
           }
 
+          api_put() {
+            api_request PUT "$1" "$2"
+          }
+
           api_get "user/tokens/verify" >/dev/null
           ACCOUNT_ID="${CLOUDFLARE_ACCOUNT_ID:-}"
           if [[ -z "${ACCOUNT_ID}" ]]; then
@@ -105,7 +109,11 @@ jobs:
             exit 1
           fi
 
-          SUBDOMAIN_JSON="$(api_get "accounts/${ACCOUNT_ID}/workers/subdomain")"
+          if ! SUBDOMAIN_JSON="$(api_get "accounts/${ACCOUNT_ID}/workers/subdomain" 2>/dev/null)"; then
+            SUBDOMAIN_CANDIDATE="mwin-${ACCOUNT_ID:0:8}"
+            SUBDOMAIN_BODY="$(jq -n --arg subdomain "${SUBDOMAIN_CANDIDATE}" '{subdomain:$subdomain}')"
+            SUBDOMAIN_JSON="$(api_put "accounts/${ACCOUNT_ID}/workers/subdomain" "${SUBDOMAIN_BODY}")"
+          fi
           WORKERS_SUBDOMAIN="$(jq -r '.result.subdomain // empty' <<<"${SUBDOMAIN_JSON}")"
           if [[ -z "${WORKERS_SUBDOMAIN}" ]]; then
             echo "::error::The Cloudflare account does not have a workers.dev subdomain."
