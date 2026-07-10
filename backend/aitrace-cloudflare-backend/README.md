@@ -5,7 +5,9 @@ Spring service under `backend/aitrace-java-backend`.
 
 ## Runtime mapping
 
-- Spring controllers become Worker route handlers in `src/index.js`.
+- Hono owns Worker routing, path/query parsing, middleware, 404s, and errors in
+  `src/index.js`, `src/routes.js`, and `src/routes-v0.js`.
+- Spring controllers become focused Hono route handlers.
 - JPA repositories become D1 SQL helpers in `src/repositories.js`.
 - Java service behavior is implemented in `src/services.js`.
 - `llm-pricing.json` is copied from the Java backend and resolved by
