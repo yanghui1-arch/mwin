@@ -1,0 +1,12 @@
+name = "aitrace-cloudflare-backend"
+main = "src/index.ts"
+compatibility_date = "2026-07-09"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "aitrace"
+database_id = "replace-with-cloudflare-d1-id"
+
+[[r2_buckets]]
+binding = "MEDIA_BUCKET"
+bucket_name = "aitrace-media"
