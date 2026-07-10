@@ -1,6 +1,6 @@
-import { traceFromRow, type TraceRow } from './repository-mappers.js';
-import type { Trace } from './types.js';
-import { stringifyJson } from './utils.js';
+import { traceFromRow, type TraceRow } from './mappers.js';
+import type { Trace } from '../domain/types.js';
+import { stringifyJson } from '../lib/utils.js';
 
 export async function upsertTrace(db: D1Database, trace: Trace): Promise<void> {
   await db.prepare(`INSERT INTO trace (id, project_name, project_id, name, conversation_id, tags, input, output, error_info, start_time, last_update_timestamp)

@@ -1,4 +1,4 @@
-import type { ApiKey, User, UserAuth } from './types.js';
+import type { ApiKey, User, UserAuth } from '../domain/types.js';
 
 interface UserRow { id: string; email: string | null; username: string; avatar: string | null; register_time: string }
 interface AuthRow { user_uuid: string }

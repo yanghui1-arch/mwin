@@ -1,6 +1,6 @@
-import { stepFromRow, type StepRow } from './repository-mappers.js';
-import type { JsonObject, Step, StepMeta, TokenSnapshot } from './types.js';
-import { stringifyJson } from './utils.js';
+import { stepFromRow, type StepRow } from './mappers.js';
+import type { JsonObject, Step, StepMeta, TokenSnapshot } from '../domain/types.js';
+import { stringifyJson } from '../lib/utils.js';
 
 export async function upsertStep(db: D1Database, step: Step): Promise<void> {
   await db.prepare(`INSERT INTO step (id, name, trace_id, parent_step_id, type, tags, input, output, error_info, model, usage, project_name, project_id, start_time, end_time)

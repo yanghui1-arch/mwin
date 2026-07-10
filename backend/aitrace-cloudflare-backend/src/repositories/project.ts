@@ -1,5 +1,5 @@
-import { projectFromRow, type ProjectRow } from './repository-mappers.js';
-import type { NewProject, Project } from './types.js';
+import { projectFromRow, type ProjectRow } from './mappers.js';
+import type { NewProject, Project } from '../domain/types.js';
 
 export async function findProject(db: D1Database, userId: string, name: string): Promise<Project | null> {
   return projectFromRow(await db.prepare('SELECT * FROM project WHERE user_uuid = ? AND name = ?').bind(userId, name).first<ProjectRow>());

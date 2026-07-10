@@ -1,5 +1,5 @@
-import type { JsonObject, Project, Step, Trace, Usage } from './types.js';
-import { parseJson } from './utils.js';
+import type { JsonObject, Project, Step, Trace, Usage } from '../domain/types.js';
+import { parseJson } from '../lib/utils.js';
 
 export interface ProjectRow { id: number; user_uuid: string; name: string; description: string | null; strategy: string | null; avg_duration: number; cost: string; created_timestamp: string; last_update_timestamp: string }
 export interface TraceRow { id: string; project_name: string; project_id: number; name: string; conversation_id: string; tags: string; input: string | null; output: string | null; error_info: string | null; start_time: string; last_update_timestamp: string }

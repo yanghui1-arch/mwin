@@ -1,9 +1,9 @@
-import * as users from './user-repository.js';
-import * as projects from './project-repository.js';
-import * as traces from './trace-repository.js';
-import * as steps from './step-repository.js';
-import type { RepositoryPort } from './repository-port.js';
-import type { ApiKey, JsonObject, NewProject, Step, Trace, User, UserAuth } from './types.js';
+import * as users from './user.js';
+import * as projects from './project.js';
+import * as traces from './trace.js';
+import * as steps from './step.js';
+import type { RepositoryPort } from './port.js';
+import type { ApiKey, JsonObject, NewProject, Step, Trace, User, UserAuth } from '../domain/types.js';
 
 export class Repositories implements RepositoryPort {
   constructor(private readonly db: D1Database) {}

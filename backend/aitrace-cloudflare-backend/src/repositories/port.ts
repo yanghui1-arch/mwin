@@ -1,4 +1,4 @@
-import type { ApiKey, JsonObject, NewProject, Project, Step, StepMeta, TokenSnapshot, Trace, User, UserAuth } from './types.js';
+import type { ApiKey, JsonObject, NewProject, Project, Step, StepMeta, TokenSnapshot, Trace, User, UserAuth } from '../domain/types.js';
 
 export interface RepositoryPort {
   findUser(id: string): Promise<User | null>;
