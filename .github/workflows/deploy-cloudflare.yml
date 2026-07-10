@@ -1,26 +1,109 @@
-name: Deploy mwin to Cloudflare
+name: Cloudflare CI/CD
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/deploy-cloudflare.yml"
+      - "backend/aitrace-cloudflare-backend/**"
+      - "web/**"
   push:
     branches: [main]
     paths:
       - ".github/workflows/deploy-cloudflare.yml"
       - "backend/aitrace-cloudflare-backend/**"
-      - "backend/aitrace-java-backend/src/main/resources/application.yml"
       - "web/**"
   workflow_dispatch:
 
 permissions:
   contents: read
 
-concurrency:
-  group: mwin-cloudflare-production
-  cancel-in-progress: false
+env:
+  NODE_VERSION: "22"
+  MWIN_APP_URL: ${{ vars.MWIN_APP_URL || 'https://aitrace-cloudflare-backend.mwin-172f8144.workers.dev' }}
+  MWIN_GITHUB_CLIENT_ID: ${{ vars.MWIN_GITHUB_CLIENT_ID || 'Ov23liWyhyfoA5aDkDQx' }}
 
 jobs:
-  deploy:
+  cloudflare-backend-ci:
+    name: Cloudflare Backend CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install backend dependencies
+        working-directory: backend/aitrace-cloudflare-backend
+        run: npm install --no-audit --no-fund
+
+      - name: Type-check backend
+        working-directory: backend/aitrace-cloudflare-backend
+        run: npm run typecheck
+
+      - name: Run backend tests
+        working-directory: backend/aitrace-cloudflare-backend
+        run: npm test
+
+  web-ci:
+    name: Web CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install web dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Lint web
+        working-directory: web
+        run: npm run lint -- --max-warnings=0
+
+      - name: Build production web
+        working-directory: web
+        env:
+          VITE_API_BASE_URL: /api
+          VITE_GITHUB_CLIENT_ID: ${{ env.MWIN_GITHUB_CLIENT_ID }}
+          VITE_GITHUB_REDIRECT_URI: ${{ env.MWIN_APP_URL }}/auth/github/callback
+        run: npm run build
+
+      - name: Upload production web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mwin-web-${{ github.sha }}
+          path: web/dist
+          if-no-files-found: error
+          retention-days: 1
+
+  deploy-production:
+    name: Deploy Production
+    if: github.event_name != 'pull_request'
+    needs:
+      - cloudflare-backend-ci
+      - web-ci
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    concurrency:
+      group: mwin-cloudflare-production
+      cancel-in-progress: false
+    environment:
+      name: production
+      url: ${{ steps.cloudflare.outputs.app_url }}
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -32,9 +115,13 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
-          cache: npm
-          cache-dependency-path: web/package-lock.json
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Download tested web artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: mwin-web-${{ github.sha }}
+          path: web/dist
 
       - name: Resolve Cloudflare resources
         id: cloudflare
@@ -131,38 +218,15 @@ jobs:
           set -euo pipefail
           sed -i "s/replace-with-cloudflare-d1-id/${{ steps.cloudflare.outputs.db_id }}/" backend/aitrace-cloudflare-backend/wrangler.toml
 
-      - name: Build frontend
-        working-directory: web
-        env:
-          VITE_API_BASE_URL: /api
-          VITE_GITHUB_CLIENT_ID: Ov23liWyhyfoA5aDkDQx
-          VITE_GITHUB_REDIRECT_URI: ${{ steps.cloudflare.outputs.app_url }}/auth/github/callback
-        run: |
-          npm ci
-          npm run build
-
-      - name: Install Cloudflare backend dependencies
+      - name: Install deployment dependencies
         working-directory: backend/aitrace-cloudflare-backend
         run: npm install --no-audit --no-fund
 
-      - name: Configure Worker secrets
+      - name: Validate Worker bundle
         working-directory: backend/aitrace-cloudflare-backend
-        shell: bash
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ steps.cloudflare.outputs.account_id }}
-        run: |
-          set -euo pipefail
-          APPLICATION_YML="../aitrace-java-backend/src/main/resources/application.yml"
-          JWT_SECRET="$(sed -n 's/^  secret: "\(.*\)"/\1/p' "${APPLICATION_YML}" | head -n 1)"
-          GITHUB_CLIENT_ID="$(sed -n 's/^  client-id: //p' "${APPLICATION_YML}" | head -n 1)"
-          GITHUB_CLIENT_SECRET="$(sed -n 's/^  client-secret: //p' "${APPLICATION_YML}" | head -n 1)"
-          if [[ -z "${JWT_SECRET}" || -z "${GITHUB_CLIENT_ID}" || -z "${GITHUB_CLIENT_SECRET}" ]]; then
-            echo "::error::Required Worker secrets could not be read from application.yml."
-            exit 1
-          fi
-          jq -n --arg jwt "${JWT_SECRET}" --arg client_id "${GITHUB_CLIENT_ID}" --arg client_secret "${GITHUB_CLIENT_SECRET}" '{JWT_SECRET:$jwt,GITHUB_CLIENT_ID:$client_id,GITHUB_CLIENT_SECRET:$client_secret}' > /tmp/mwin-worker-secrets.json
-          npx wrangler secret bulk /tmp/mwin-worker-secrets.json
-          rm -f /tmp/mwin-worker-secrets.json
+        run: npx wrangler deploy --dry-run --outdir .wrangler/dry-run
 
       - name: Apply D1 migrations
         working-directory: backend/aitrace-cloudflare-backend
@@ -170,25 +234,34 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ steps.cloudflare.outputs.account_id }}
         run: npx wrangler d1 migrations apply DB --remote
 
-      - name: Deploy frontend and backend
+      - name: Deploy tested frontend and backend
         working-directory: backend/aitrace-cloudflare-backend
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ steps.cloudflare.outputs.account_id }}
         run: npx wrangler deploy
 
-      - name: Verify frontend and backend
+      - name: Verify production
         shell: bash
         env:
           APP_URL: ${{ steps.cloudflare.outputs.app_url }}
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error --retry 12 --retry-delay 5 --retry-all-errors "${APP_URL}/" | grep -qi '<html'
-          BACKEND_RESPONSE="$(curl --fail --silent --show-error --retry 12 --retry-delay 5 --retry-all-errors "${APP_URL}/api/does-not-exist")"
-          jq -e '.code == 404' <<<"${BACKEND_RESPONSE}" >/dev/null
+          CURL_RETRY=(--fail --silent --show-error --retry 12 --retry-delay 5 --retry-all-errors)
+
+          curl "${CURL_RETRY[@]}" "${APP_URL}/" | grep -qi '<html'
+
+          BACKEND_RESPONSE="$(curl "${CURL_RETRY[@]}" "${APP_URL}/api/does-not-exist")"
+          jq -e '.code == 404 and .data == null' <<<"${BACKEND_RESPONSE}" >/dev/null
+
+          TELEMETRY_RESPONSE="$(curl "${CURL_RETRY[@]}" --request POST --header "Content-Type: application/json" --header "Authorization: Bearer invalid-ci-smoke-key" --data '{}' "${APP_URL}/api/v0/log/trace")"
+          jq -e '.code == 500 and (.message | contains("Invalid AITrace API key"))' <<<"${TELEMETRY_RESPONSE}" >/dev/null
+
           {
-            echo "## Cloudflare deployment"
+            echo "## Production deployment"
             echo
             echo "- Application: ${APP_URL}/"
             echo "- API base URL: ${APP_URL}/api"
+            echo "- Commit: ${GITHUB_SHA}"
             echo "- D1 database: aitrace"
+            echo "- Checks: frontend HTML, API routing, telemetry authentication"
           } >> "${GITHUB_STEP_SUMMARY}"

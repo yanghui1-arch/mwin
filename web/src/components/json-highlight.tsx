@@ -19,7 +19,7 @@ export function LLMJsonHighlight({ jsonObject, className }: LLMJsonHighlightProp
         <div key={key} className="ml-4">
           <span className="foreground">"{key}"</span>
           <span className="foreground">: </span>
-          {renderValue(value, key)}
+          {renderValue(value)}
           {idx < arr.length - 1 && <span>,</span>}
         </div>
       ))}
@@ -28,8 +28,45 @@ export function LLMJsonHighlight({ jsonObject, className }: LLMJsonHighlightProp
   );
 }
 
-/* render json based on type(string, object or number) */
-function renderValue(value: unknown, keyName?: string): ReactElement {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function messageBackground(role: unknown): string {
+  switch (role) {
+    case "user":
+      return "bg-json-1";
+    case "assistant":
+      return "bg-json-2";
+    case "tool":
+      return "bg-json-3";
+    default:
+      return "bg-json-4";
+  }
+}
+
+function renderArrayItem(item: unknown): ReactElement {
+  if (!isRecord(item)) {
+    return <span>{String(item)}</span>;
+  }
+
+  const isLlmMessage =
+    "role" in item &&
+    ["content", "audio", "tool_calls"].some((key) => key in item);
+
+  if (!isLlmMessage) {
+    return <LLMJsonHighlight jsonObject={item} />;
+  }
+
+  return (
+    <div className={cn("rounded-md", messageBackground(item.role))}>
+      <LLMJsonHighlight jsonObject={item} />
+    </div>
+  );
+}
+
+/* Render JSON based on its runtime value type. */
+function renderValue(value: unknown): ReactElement {
   if (value === null) {
     return <span className="foreground">null</span>;
   }
@@ -38,32 +75,12 @@ function renderValue(value: unknown, keyName?: string): ReactElement {
     return (
       <span>
         [
-        {value.map((item, i) => (
-          <div key={i} className="ml-4">
-            {typeof item === "object" && item !== null ? (
-              // if item type is object and include role and one of `content`, `audio` or `tool_calls` (think it as llm parmeters)
-              "role" in item &&
-              ["content", "audio", "tool_calls"].some((k) => k in item) ? (
-                <div
-                  className={`rounded-md ${
-                    (item as any).role === "user"
-                      ? "bg-json-1"
-                      : (item as any).role === "assistant"
-                      ? "bg-json-2"
-                      : (item as any).role === "tool"
-                      ? "bg-json-3"
-                      : "bg-json-4"
-                  }`}
-                >
-                  <LLMJsonHighlight jsonObject={item as Record<string, unknown>} />
-                </div>
-              ) : (
-                <LLMJsonHighlight jsonObject={item as Record<string, unknown>} />
-              )
-            ) : (
-              <span>{String(item)}</span>
+        {value.map((item, index) => (
+          <div key={index} className="ml-4">
+            {renderArrayItem(item)}
+            {index < value.length - 1 && (
+              <span className="text-gray-400">,</span>
             )}
-            {i < value.length - 1 && <span className="text-gray-400">,</span>}
           </div>
         ))}
         ]
@@ -71,20 +88,13 @@ function renderValue(value: unknown, keyName?: string): ReactElement {
     );
   }
 
-  if (typeof value === "object") {
-    return <LLMJsonHighlight jsonObject={value as Record<string, unknown>} />;
+  if (isRecord(value)) {
+    return <LLMJsonHighlight jsonObject={value} />;
   }
 
   if (typeof value === "string") {
-    return <span>
-      "{value}"
-    </span>
+    return <span>"{value}"</span>;
   }
 
-  return (
-    <span
-    >
-      {String(value)}
-    </span>
-  );
+  return <span>{String(value)}</span>;
 }

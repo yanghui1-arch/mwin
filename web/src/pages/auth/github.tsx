@@ -29,11 +29,11 @@ export default function GitHubAuthPage() {
       .authenticate(githubCode)
       .then((res) => {
         const { code, message, data } = res.data;
-        console.log(code)
+        console.log(code);
         if (code === 200) {
           toast.success("Welcome to Mwin!");
           localStorage.setItem(MWIN_JWT, data.token);
-          setUser( {userName: data.userName, avatar: data.avatar} )
+          setUser({ userName: data.userName, avatar: data.avatar });
           setSearchParams({}, { replace: true });
           navigate("/projects", { replace: true });
         } else {
@@ -53,7 +53,8 @@ export default function GitHubAuthPage() {
           description: msg,
         });
       });
-  }, [searchParams, navigate, setSearchParams]);
+  }, [searchParams, navigate, setSearchParams, setUser]);
+
   return (
     <div className="h-screen flex items-center justify-center">
       <Label className="font-semibold">
