@@ -5,9 +5,9 @@ import type { RepositoryPort } from '../repositories/port.js';
 import type { JsonObject, LogRequest } from '../domain/types.js';
 
 export class Services {
-  readonly projectService: ProjectService;
-  readonly logService: LogService;
-  readonly overviewService: OverviewService;
+  private readonly projectService: ProjectService;
+  private readonly logService: LogService;
+  private readonly overviewService: OverviewService;
   constructor(readonly repositories: RepositoryPort) {
     this.projectService = new ProjectService(repositories);
     this.logService = new LogService(repositories, this.projectService);
@@ -18,7 +18,6 @@ export class Services {
   getCompleteApiKey(userId: string) { return this.projectService.getCompleteApiKey(userId); }
   userIdForApiKey(apiKey: string) { return this.projectService.userIdForApiKey(apiKey); }
   createProject(userId: string, request: JsonObject) { return this.projectService.createProject(userId, request); }
-  ensureProject(userId: string, projectName: string) { return this.projectService.ensureProject(userId, projectName); }
   listProjects(userId: string) { return this.projectService.listProjects(userId); }
   updateProject(userId: string, projectId: number, description: string) { return this.projectService.updateProject(userId, projectId, description); }
   deleteProject(userId: string, projectName: string) { return this.projectService.deleteProject(userId, projectName); }
