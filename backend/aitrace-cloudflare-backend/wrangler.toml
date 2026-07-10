@@ -10,3 +10,8 @@ database_id = "replace-with-cloudflare-d1-id"
 [[r2_buckets]]
 binding = "MEDIA_BUCKET"
 bucket_name = "aitrace-media"
+
+[assets]
+directory = "../../web/dist"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
