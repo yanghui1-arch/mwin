@@ -2,13 +2,14 @@ import { toDecimalString } from '../lib/decimal.js';
 import type { RepositoryPort } from '../repositories/port.js';
 import { projectTemplate, toProjectInfo } from './mappers.js';
 import type { JsonObject, Project } from '../domain/types.js';
-import { concealApiKey, newId, nowIso, pageCount, sha256Hex } from '../lib/utils.js';
+import { concealApiKey, newId, nowIso, pageCount } from '../lib/utils.js';
 
 export class ProjectService {
   constructor(private readonly repositories: RepositoryPort) {}
   /** Creates a new API key and stores it as the user's latest credential. */
   async generateAndStoreApiKey(userId: string): Promise<string> {
-    const apiKey = `mwin_${await sha256Hex(`${userId}:${newId()}:${Date.now()}`)}`;
+    const apiKey = `at-${newId().replace(/-/g, '')}`;
+    await this.repositories.deleteApiKeys(userId);
     await this.repositories.insertApiKey({ id: newId(), userId, key: apiKey, createdTime: nowIso() });
     return apiKey;
   }

@@ -13,6 +13,7 @@ export class Repositories implements RepositoryPort {
   createUser(user: User) { return users.createUser(this.db, user); }
   createUserAuth(auth: UserAuth) { return users.createUserAuth(this.db, auth); }
   insertApiKey(apiKey: ApiKey) { return users.insertApiKey(this.db, apiKey); }
+  deleteApiKeys(userId: string) { return users.deleteApiKeys(this.db, userId); }
   latestApiKey(userId: string) { return users.latestApiKey(this.db, userId); }
   userIdForApiKey(key: string) { return users.userIdForApiKey(this.db, key); }
   findProject(userId: string, name: string) { return projects.findProject(this.db, userId, name); }
@@ -27,12 +28,12 @@ export class Repositories implements RepositoryPort {
   findTrace(traceId: string) { return traces.findTrace(this.db, traceId); }
   countTraces(projectId: number) { return traces.countTraces(this.db, projectId); }
   listTraces(projectId: number, page: number, pageSize: number) { return traces.listTraces(this.db, projectId, page, pageSize); }
-  deleteTraces(traceIds: string[]) { return traces.deleteTraces(this.db, traceIds); }
+  deleteTracesForUser(userId: string, traceIds: string[]) { return traces.deleteTracesForUser(this.db, userId, traceIds); }
   upsertStep(step: Step) { return steps.upsertStep(this.db, step); }
   findStep(stepId: string) { return steps.findStep(this.db, stepId); }
   listSteps(projectId: number, page: number, pageSize: number) { return steps.listSteps(this.db, projectId, page, pageSize); }
-  listStepsByTrace(traceId: string) { return steps.listStepsByTrace(this.db, traceId); }
-  deleteSteps(stepIds: string[]) { return steps.deleteSteps(this.db, stepIds); }
+  listStepsByTraceForUser(userId: string, traceId: string) { return steps.listStepsByTraceForUser(this.db, userId, traceId); }
+  deleteStepsForUser(userId: string, stepIds: string[]) { return steps.deleteStepsForUser(this.db, userId, stepIds); }
   findStepMeta(stepId: string) { return steps.findStepMeta(this.db, stepId); }
   upsertStepMeta(stepId: string, metadata: JsonObject, cost: string) { return steps.upsertStepMeta(this.db, stepId, metadata, cost); }
   tokenSnapshots(projectIds: number[]) { return steps.tokenSnapshots(this.db, projectIds); }

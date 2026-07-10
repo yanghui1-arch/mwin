@@ -22,6 +22,9 @@ export async function insertApiKey(db: D1Database, apiKey: ApiKey): Promise<ApiK
   await db.prepare('INSERT INTO api_key (id, user_id, key, created_time) VALUES (?, ?, ?, ?)').bind(apiKey.id, apiKey.userId, apiKey.key, apiKey.createdTime).run();
   return apiKey;
 }
+export async function deleteApiKeys(db: D1Database, userId: string): Promise<void> {
+  await db.prepare('DELETE FROM api_key WHERE user_id = ?').bind(userId).run();
+}
 export async function latestApiKey(db: D1Database, userId: string): Promise<string | null> {
   return (await db.prepare('SELECT key FROM api_key WHERE user_id = ? ORDER BY created_time DESC LIMIT 1').bind(userId).first<{ key: string }>())?.key ?? null;
 }

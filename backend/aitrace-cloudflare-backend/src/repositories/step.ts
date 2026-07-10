@@ -20,13 +20,18 @@ export async function listSteps(db: D1Database, projectId: number, page: number,
   const { results } = await db.prepare('SELECT step.*, step_meta.cost FROM step LEFT JOIN step_meta ON step_meta.id = step.id WHERE project_id = ? ORDER BY start_time DESC LIMIT ? OFFSET ?').bind(projectId, pageSize, page * pageSize).all<StepRow>();
   return { total, data: results.map((row) => stepFromRow(row)!) };
 }
-export async function listStepsByTrace(db: D1Database, traceId: string): Promise<Step[]> {
-  const { results } = await db.prepare('SELECT step.*, step_meta.cost FROM step LEFT JOIN step_meta ON step_meta.id = step.id WHERE trace_id = ? ORDER BY start_time ASC').bind(traceId).all<StepRow>();
+export async function listStepsByTraceForUser(db: D1Database, userId: string, traceId: string): Promise<Step[]> {
+  const { results } = await db.prepare(`SELECT step.*, step_meta.cost FROM step LEFT JOIN step_meta ON step_meta.id = step.id
+    WHERE trace_id = ? AND project_id IN (SELECT id FROM project WHERE user_uuid = ?) ORDER BY start_time ASC`).bind(traceId, userId).all<StepRow>();
   return results.map((row) => stepFromRow(row)!);
 }
-export async function deleteSteps(db: D1Database, stepIds: string[]): Promise<string[]> {
-  for (const id of stepIds) await db.prepare('DELETE FROM step WHERE id = ?').bind(id).run();
-  return stepIds;
+export async function deleteStepsForUser(db: D1Database, userId: string, stepIds: string[]): Promise<string[]> {
+  const deleted: string[] = [];
+  for (const id of stepIds) {
+    const result = await db.prepare(`DELETE FROM step WHERE id = ? AND project_id IN (SELECT id FROM project WHERE user_uuid = ?)`).bind(id, userId).run();
+    if (result.meta.changes > 0) deleted.push(id);
+  }
+  return deleted;
 }
 export async function findStepMeta(db: D1Database, stepId: string): Promise<StepMeta | null> {
   return db.prepare('SELECT * FROM step_meta WHERE id = ?').bind(stepId).first<StepMeta>();

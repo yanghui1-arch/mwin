@@ -9,6 +9,9 @@ class MemoryRepositories {
   step: Step | null = null;
   meta: StepMeta | null = null;
   updatedCosts: string[] = [];
+  async findProjectById(userId: string, projectId: number): Promise<Project | null> {
+    return this.project.userId === userId && this.project.id === projectId ? this.project : null;
+  }
   async findStep(): Promise<Step | null> { return this.step; }
   async upsertStep(step: Step): Promise<void> { this.step = step; }
   async findStepMeta(): Promise<StepMeta | null> { return this.meta; }

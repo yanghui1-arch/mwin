@@ -7,6 +7,7 @@ import { mergeStep } from './mappers.js';
 import { durationMillis } from '../lib/utils.js';
 
 interface LogRepositories {
+  findProjectById(userId: string, projectId: number): Promise<Project | null>;
   findTrace(id: string): Promise<Trace | null>; upsertTrace(trace: Trace): Promise<void>; countTraces(projectId: number): Promise<number>;
   updateProjectAverageDuration(projectId: number, duration: number): Promise<void>; findStep(id: string): Promise<Step | null>;
   upsertStep(step: Step): Promise<void>; findStepMeta(id: string): Promise<StepMeta | null>;
@@ -23,6 +24,7 @@ export class LogService {
     const startTime = stringField(request.start_time ?? request.startTime, 'start time');
     const updated = stringField(request.last_update_timestamp ?? request.lastUpdateTimestamp, 'last update timestamp');
     const existing = await this.repositories.findTrace(traceId);
+    if (existing && !await this.repositories.findProjectById(userId, existing.projectId)) throw new Error('Trace is not owned by the authenticated user');
     await this.repositories.upsertTrace({ id: traceId, projectName, projectId: project.id,
       name: stringField(request.trace_name ?? request.traceName, 'trace name'),
       conversationId: stringField(request.conversation_id ?? request.conversationId, 'conversation id'), tags: request.tags ?? [],
@@ -38,7 +40,9 @@ export class LogService {
   async logStep(userId: string, request: LogRequest): Promise<string> {
     const project = await this.projectService.ensureProject(userId, stringField(request.project_name ?? request.projectName, 'project name'));
     const stepId = stringField(request.step_id ?? request.stepId, 'step id');
-    const step = mergeStep(await this.repositories.findStep(stepId), toIncomingStep(request, project));
+    const existing = await this.repositories.findStep(stepId);
+    if (existing && !await this.repositories.findProjectById(userId, existing.projectId)) throw new Error('Step is not owned by the authenticated user');
+    const step = mergeStep(existing, toIncomingStep(request, project));
     await this.repositories.upsertStep(step);
     const previousMeta = await this.repositories.findStepMeta(stepId);
     const previousCost = previousMeta?.cost ?? toDecimalString(0);
