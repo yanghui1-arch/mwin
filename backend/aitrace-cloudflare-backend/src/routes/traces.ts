@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import type { AppEnv } from '../domain/types.js';
 import { withUser } from '../lib/auth.js';
 import { success } from '../lib/response.js';
-import { requestJson } from '../lib/route-helpers.js';
+import { requestIdList, requestJson } from '../lib/route-helpers.js';
 
 const traces = new Hono<AppEnv>();
 
@@ -18,7 +18,7 @@ traces.post('/get_tracks', (c) => withUser(c.req.raw, c.env, async (userId) => {
   return success(await c.var.services.getTracks(userId, traceId));
 }));
 traces.post('/delete', (c) => withUser(c.req.raw, c.env, async (userId) => {
-  return success(await c.var.services.repositories.deleteTracesForUser(userId, await c.req.json<string[]>()));
+  return success(await c.var.services.repositories.deleteTracesForUser(userId, await requestIdList(c.req.raw)));
 }));
 
 export default traces;
