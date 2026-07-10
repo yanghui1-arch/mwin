@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createDatabase } from '../src/db/index.js';
 import { rotateApiKey } from '../src/repositories/user.js';
 import { upsertTraceForUser } from '../src/repositories/trace.js';
 import { upsertStepForUser } from '../src/repositories/step.js';
@@ -20,15 +21,15 @@ class RecordingDb {
 }
 
 test('key rotation is issued as one two-statement D1 transaction', async () => {
-  const db = new RecordingDb();
-  await rotateApiKey(db as unknown as D1Database, {
+  const rawDb = new RecordingDb();
+  await rotateApiKey(createDatabase(rawDb as unknown as D1Database), {
     id: 'key-1', userId: 'user-1', key: 'at-new', createdTime: '2026-07-10T00:00:00Z',
   });
 
-  assert.equal(db.batches.length, 1);
-  assert.equal(db.batches[0].length, 2);
-  assert.match(db.batches[0][0].sql, /^DELETE FROM api_key/);
-  assert.match(db.batches[0][1].sql, /^INSERT INTO api_key/);
+  assert.equal(rawDb.batches.length, 1);
+  assert.equal(rawDb.batches[0].length, 2);
+  assert.match(rawDb.batches[0][0].sql, /^DELETE FROM api_key/);
+  assert.match(rawDb.batches[0][1].sql, /^INSERT INTO api_key/);
 });
 
 test('trace and step telemetry mutations keep dependent writes in one batch', async () => {
