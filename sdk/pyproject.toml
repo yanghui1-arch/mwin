@@ -25,5 +25,5 @@ Homepage = "https://github.com/yanghui1-arch/mwin.git"
 mwin = "mwin.cli:cli"
 
 [tool.setuptools.packages.find]
-where = ['.']
+where = ['src']
 include = ['mwin*']

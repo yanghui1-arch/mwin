@@ -39,12 +39,12 @@ docker run -d --name aitrace-web --network aitrace -p 5173:80 -e BACKEND_HOST=ai
 ```
 ## Python-sdk
 Mwin python sdk need an api key. So you have to be sure that you deploys successfully. Then enter `http://localhost:5173/` to get your api key. <br/>
-[Click here to know how to use mwin python-sdk.](src/README.md)
+[Click here to know how to use mwin python-sdk.](sdk/README.md)
 
 # Development
 Mwin project package manager is uv. If you are a beginner uver, please click uv link: [uv official link](https://docs.astral.sh/uv/guides/projects/#creating-a-new-project)
 ```bash
-cd src
+cd sdk
 uv sync
 uv .venv/Script/activate
 ```

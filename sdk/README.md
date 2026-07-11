@@ -10,7 +10,7 @@ pip install mwin
 OR pip install from source.
 ```bash
 git clone https://github.com/yanghui1-arch/mwin.git
-cd src
+cd sdk
 pip install -e .
 ```
 Then you need to configure mwin through CLI.

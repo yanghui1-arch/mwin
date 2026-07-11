@@ -3,10 +3,10 @@ name: track-tests
 on:
   push:
     paths:
-      - 'src/mwin/**'
+      - 'sdk/**'
   pull_request:
     paths:
-      - 'src/mwin/**'
+      - 'sdk/**'
 
 jobs:
   test:
@@ -25,14 +25,14 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
           cache-dependency-path: |
-            src/pyproject.toml
-            src/uv.lock
+            sdk/pyproject.toml
+            sdk/uv.lock
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e .
           python -m pip install pytest
-        working-directory: src
+        working-directory: sdk
       - name: Run track tests
         run: python -m pytest test
-        working-directory: src
+        working-directory: sdk
