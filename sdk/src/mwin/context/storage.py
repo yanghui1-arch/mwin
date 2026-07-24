@@ -65,7 +65,7 @@ class AITraceStorageContext:
     def __init__(self):
         """Initialize AITraceStorageContext"""
         
-        self._trace: ContextVar[Trace] = ContextVar('current_trace', default=None)
+        self._trace: ContextVar[Trace | None] = ContextVar('current_trace', default=None)
         self._steps: ContextVar[Tuple[Step, ...]] = ContextVar('steps_calling_stack', default=tuple())
 
     def add_step(
@@ -110,7 +110,7 @@ class AITraceStorageContext:
             return None
         return steps[-1]
     
-    def set_trace(self, current_trace: Trace | None) -> Token[Trace]:
+    def set_trace(self, current_trace: Trace | None) -> Token[Trace | None]:
         """set the current trace
         
         Args:
@@ -121,6 +121,18 @@ class AITraceStorageContext:
         """
         
         return self._trace.set(current_trace)
+
+    def set_steps(
+        self,
+        steps: Tuple[Step, ...] = tuple(),
+    ) -> Token[Tuple[Step, ...]]:
+        """Set the step stack for the current trace scope.
+
+        The returned token restores the previous trace-local stack when a
+        nested trace exits.
+        """
+
+        return self._steps.set(steps)
     
     def pop_trace(self) -> Trace | None:
         """pop trace
@@ -143,7 +155,7 @@ class AITraceStorageContext:
         current_trace: Trace | None = self._trace.get()
         return current_trace
     
-    def reset_trace(self, token: Token):
+    def reset_trace(self, token: Token[Trace | None]):
         """Reset trace before enter .set_trace()
         
         Args:
@@ -151,6 +163,11 @@ class AITraceStorageContext:
         """
         
         self._trace.reset(token)
+
+    def reset_steps(self, token: Token[Tuple[Step, ...]]):
+        """Restore the step stack that was active before ``set_steps``."""
+
+        self._steps.reset(token)
 
 aitrace_storage_context = AITraceStorageContext()
 
