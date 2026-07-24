@@ -32,6 +32,7 @@ class Step(BaseModel):
 
 class Trace(BaseModel):
     id: str | UUID | int
+    parent_trace_id: str | UUID | int | None = None
     conversation_id: str | UUID
     name: str
     tags: List[str] = Field(default_factory=list)

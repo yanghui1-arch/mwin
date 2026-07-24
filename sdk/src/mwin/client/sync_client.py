@@ -154,7 +154,8 @@ class SyncClient:
         output: Dict[str, Any] | None,
         error_info: str | None,
         start_time: datetime,
-        last_update_timestamp: datetime
+        last_update_timestamp: datetime,
+        parent_trace_id: str | None,
     ):
         """Create a trace and log it in server."""
 
@@ -162,6 +163,7 @@ class SyncClient:
             project_name=self._project_name,
             trace_name=trace_name,
             trace_id=trace_id,
+            parent_trace_id=parent_trace_id,
             conversation_id=conversation_id,
             tags=tags,
             input=input,
