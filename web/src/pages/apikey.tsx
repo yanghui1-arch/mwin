@@ -13,6 +13,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function APIKeyPage() {
   const [copyCompleteApiKeyFlag, setCopyCompleteApiKeyFlag] =
@@ -21,7 +22,7 @@ export function APIKeyPage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
 
-  const { data: apikey } = useQuery({
+  const { data: apikey, isLoading: isApiKeyLoading } = useQuery({
     queryKey: ["apikey"],
     queryFn: async () => {
       const response = await http.get("/apikey/get");
@@ -29,7 +30,11 @@ export function APIKeyPage() {
     },
   });
 
-  const { data: completeApiKey = "", refetch: fetchCompleteApiKey } = useQuery({
+  const {
+    data: completeApiKey = "",
+    refetch: fetchCompleteApiKey,
+    isFetching: isCompleteApiKeyLoading,
+  } = useQuery({
     queryKey: ["completeApiKey"],
     queryFn: async () => {
       const response = await http.get("/apikey/get_complete_apikey");
@@ -38,7 +43,7 @@ export function APIKeyPage() {
     enabled: false,
   });
 
-  const { mutate: changeAnotherApiKey } = useMutation({
+  const { mutate: changeAnotherApiKey, isPending: isChangingApiKey } = useMutation({
     mutationFn: async () => {
       const response = await http.post("/apikey/change");
       return response.data.data;
@@ -49,8 +54,8 @@ export function APIKeyPage() {
   });
 
   const getCompleteApiKey = async () => {
-    await fetchCompleteApiKey();
     setCopyCompleteApiKeyFlag(false);
+    await fetchCompleteApiKey();
   };
 
   const copyCompleteApiKey = async () => {
@@ -65,9 +70,16 @@ export function APIKeyPage() {
     <div className="flex flex-col gap-4 px-4 lg:px-6">
       <h2 className="text-xl font-semibold">{t("main.apiKey.title")}</h2>
       <div className="flex gap-2 w-[50%]">
-        <div className="flex gap-2 h-9 items-center rounded-md border border-input bg-background px-3 text-sm w-[50%]">
+        <div
+          className="flex h-9 w-[50%] items-center gap-2 rounded-md border border-input bg-background px-3 text-sm"
+          aria-busy={isApiKeyLoading || isChangingApiKey}
+        >
           <IconKey />
-          <span className="text-muted-foreground truncate">{apikey}</span>
+          {isApiKeyLoading || isChangingApiKey ? (
+            <Skeleton className="h-4 flex-1" />
+          ) : (
+            <span className="text-muted-foreground truncate">{apikey}</span>
+          )}
         </div>
         <div className="flex flex-col gap-2">
           <Dialog>
@@ -80,13 +92,19 @@ export function APIKeyPage() {
               <DialogHeader>
                 <DialogTitle>{t("main.apiKey.dialogTitle")}</DialogTitle>
               </DialogHeader>
-              <div className="flex gap-2">
+              <div className="flex gap-2" aria-busy={isCompleteApiKeyLoading}>
                 <div className="flex gap-2 h-9 items-center rounded-md border border-input bg-background px-3 text-sm">
-                  <span className="text-muted-foreground truncate">
-                    {completeApiKey}
-                  </span>
+                  {isCompleteApiKeyLoading ? (
+                    <Skeleton className="h-4 w-64" />
+                  ) : (
+                    <span className="text-muted-foreground truncate">
+                      {completeApiKey}
+                    </span>
+                  )}
                 </div>
-                {copyCompleteApiKeyFlag == false ? (
+                {isCompleteApiKeyLoading ? (
+                  <Skeleton className="size-9" />
+                ) : copyCompleteApiKeyFlag == false ? (
                   <IconCopy
                     className="h-9 cursor-pointer"
                     stroke={1}
@@ -99,8 +117,16 @@ export function APIKeyPage() {
             </DialogContent>
           </Dialog>
 
-          <Button variant="outline" onClick={() => changeAnotherApiKey()}>
-            <Label>{t("main.apiKey.changeApiKey")}</Label>
+          <Button
+            variant="outline"
+            onClick={() => changeAnotherApiKey()}
+            disabled={isChangingApiKey}
+          >
+            {isChangingApiKey ? (
+              <Skeleton className="h-4 w-24" />
+            ) : (
+              <Label>{t("main.apiKey.changeApiKey")}</Label>
+            )}
           </Button>
         </div>
       </div>

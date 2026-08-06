@@ -59,6 +59,7 @@ type ProjectOption = {
 type ChartAreaInteractiveProps = {
   curve: OverviewTokenCurve | null
   loading: boolean
+  projectsLoading: boolean
   timeRange: TimeRange
   onTimeRangeChange: (value: TimeRange) => void
   projectOptions: ProjectOption[]
@@ -158,6 +159,7 @@ function OverviewChartTooltip({
 export function ChartAreaInteractive({
   curve,
   loading,
+  projectsLoading,
   timeRange,
   onTimeRangeChange,
   projectOptions,
@@ -274,29 +276,33 @@ export function ChartAreaInteractive({
                   </SelectGroup>
                 </SelectContent>
               </Select>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="justify-between">
-                    {selectedProjectLabel}
-                    <ChevronDown data-icon="inline-end" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>{t("overview.chart.projectFilter")}</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuGroup>
-                    {projectOptions.map((project) => (
-                      <DropdownMenuCheckboxItem
-                        key={project.projectId}
-                        checked={allProjectsSelected || selectedProjectIds.includes(project.projectId)}
-                        onCheckedChange={(checked) => toggleProject(project.projectId, checked === true)}
-                      >
-                        {project.projectName}
-                      </DropdownMenuCheckboxItem>
-                    ))}
-                  </DropdownMenuGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {projectsLoading ? (
+                <Skeleton className="h-8 w-36" />
+              ) : (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="justify-between">
+                      {selectedProjectLabel}
+                      <ChevronDown data-icon="inline-end" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>{t("overview.chart.projectFilter")}</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuGroup>
+                      {projectOptions.map((project) => (
+                        <DropdownMenuCheckboxItem
+                          key={project.projectId}
+                          checked={allProjectsSelected || selectedProjectIds.includes(project.projectId)}
+                          onCheckedChange={(checked) => toggleProject(project.projectId, checked === true)}
+                        >
+                          {project.projectName}
+                        </DropdownMenuCheckboxItem>
+                      ))}
+                    </DropdownMenuGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
           </CardAction>
         </div>

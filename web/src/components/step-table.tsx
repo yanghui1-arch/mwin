@@ -16,6 +16,7 @@ import type { CompletionUsage } from "openai/resources/completions.mjs";
 
 interface StepTableProps {
   table: Table<Step>;
+  isLoading?: boolean;
 }
 
 enum Display {
@@ -55,7 +56,7 @@ const toLLMTokenUsage = (usage: CompletionUsage | undefined, cost: number | unde
   };
 };
 
-export function StepTable({ table }: StepTableProps) {
+export function StepTable({ table, isLoading = false }: StepTableProps) {
   const [displayPanel, setDisplayPanel] = useState<Display>(
     Display.FunctionInput
   );
@@ -67,9 +68,9 @@ export function StepTable({ table }: StepTableProps) {
   };
 
   return (
-    <div className="container mx-auto py-2 space-y-4">
+    <div className="container mx-auto flex flex-col gap-4 py-2">
       <DataTableToolbar table={table} onDelete={onDelete} />
-      <DataTable table={table}>
+      <DataTable table={table} isLoading={isLoading}>
         <RowPanelContent<Step>>
           {(rowData) => {
             const tagColors = [

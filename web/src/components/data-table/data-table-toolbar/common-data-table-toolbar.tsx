@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 /**
  * @param table tanstack table
@@ -23,10 +25,12 @@ export function DataTableToolbar<TData>({
   const isFiltered = table.getState().columnFilters.length > 0;
   const isSelected = table.getSelectedRowModel().rows.length > 0;
   const { t } = useTranslation();
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const deleteRows = async () => {
     const idsToDelete: string[] = table.getSelectedRowModel().rows.map((row) => row.id);
     if (idsToDelete.length == 0) return ;
+    setIsDeleting(true);
     try {
       const count = await onDelete(idsToDelete);
       table.resetRowSelection();
@@ -34,12 +38,14 @@ export function DataTableToolbar<TData>({
       toast.success(t("dataTable.deleteSuccess", { count }));
     } catch (error) {
       console.error(error)
+    } finally {
+      setIsDeleting(false);
     }
   }
 
   return (
     <div className="flex items-center justify-between">
-      <div className="flex flex-1 items-center space-x-2">
+      <div className="flex flex-1 items-center gap-2">
         <Input
           placeholder={t("dataTable.filterProjects")}
           value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
@@ -65,8 +71,9 @@ export function DataTableToolbar<TData>({
             variant="ghost"
             onClick={deleteRows}
             className="h-8 px-2 lg:px-3"
+            disabled={isDeleting}
           >
-            <Trash />
+            {isDeleting ? <Skeleton className="size-4" /> : <Trash />}
           </Button>
         )}
         <DataTableViewOptions table={table} />

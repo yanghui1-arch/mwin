@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { MWIN_JWT } from "@/types/storage-const";
 import { useTranslation } from "react-i18next";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function LoginForm({
   className,
@@ -91,7 +92,11 @@ export function LoginForm({
                       fill="currentColor"
                     />
                   </svg>
-                  {isAuthenticating ? t("login.signingIn") : t("login.signInWithGithub")}
+                  {isAuthenticating ? (
+                    <Skeleton className="h-4 w-32" />
+                  ) : (
+                    t("login.signInWithGithub")
+                  )}
                 </Button>
                 <Button variant="outline" type="button">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">

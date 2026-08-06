@@ -27,7 +27,7 @@ import { useUser } from "./user-provider/use-user";
 import { useTranslation } from "react-i18next";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { user } = useUser();
+  const { user, isLoading } = useUser();
   const { t } = useTranslation();
 
   const data = {
@@ -105,9 +105,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
       <SidebarFooter>
         <NavUser
+          isLoading={isLoading}
           user={{
-            userName: user?.userName as string,
-            avatar: user?.avatar as string,
+            userName: user?.userName ?? "",
+            avatar: user?.avatar ?? "",
           }}
         />
       </SidebarFooter>

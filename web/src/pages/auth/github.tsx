@@ -1,11 +1,11 @@
 import { authApi } from "@/api/auth";
-import { Label } from "@/components/ui/label";
 import { useUser } from "@/components/user-provider/use-user";
 import { MWIN_JWT, GITHUB_CODE_FLAG } from "@/types/storage-const";
-import { LoaderCircleIcon } from "lucide-react";
 import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function GitHubAuthPage() {
   const navigate = useNavigate();
@@ -56,11 +56,18 @@ export default function GitHubAuthPage() {
   }, [searchParams, navigate, setSearchParams, setUser]);
 
   return (
-    <div className="h-screen flex items-center justify-center">
-      <Label className="font-semibold">
-        <LoaderCircleIcon className="animate-spin" />
-        Loading
-      </Label>
+    <div className="flex h-screen items-center justify-center px-4" aria-busy="true">
+      <Card className="w-full max-w-sm">
+        <CardHeader className="items-center">
+          <Skeleton className="size-12 rounded-full" />
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-4 w-56" />
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <Skeleton className="h-9 w-full" />
+          <Skeleton className="h-9 w-full" />
+        </CardContent>
+      </Card>
     </div>
   );
 }

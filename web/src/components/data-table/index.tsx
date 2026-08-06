@@ -17,6 +17,7 @@ import { DataTablePagination } from "@/components/data-table/data-table-paginati
 import { useNavigate, type NavigateFunction } from "react-router-dom";
 import { RowPanelContent } from "./data-table-row-panel";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import { Skeleton } from "../ui/skeleton";
 
 /**
  * DataTable general properties
@@ -32,12 +33,14 @@ interface DataTableProps<TData> {
   table: TanstackTable<TData>
   hasCreateProjectComponent?: boolean;
   isNavigate?: boolean;
+  isLoading?: boolean;
   children?: React.ReactNode;
 }
 
 export function DataTable<TData extends { name: string }>({
   table,
   isNavigate = false,
+  isLoading = false,
   children,
 }: DataTableProps<TData>) {
   const [clickRow, setClickRow] = useState<TData | null>(null);
@@ -102,7 +105,7 @@ export function DataTable<TData extends { name: string }>({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4" aria-busy={isLoading}>
       <div className="overflow-hidden rounded-md border">
         <Table>
           <TableHeader>
@@ -124,7 +127,19 @@ export function DataTable<TData extends { name: string }>({
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows.length ? (
+            {isLoading ? (
+              Array.from({ length: Math.min(table.getState().pagination.pageSize, 6) }).map((_, rowIndex) => (
+                <TableRow key={`skeleton-row-${rowIndex}`}>
+                  {table.getVisibleLeafColumns().map((column, columnIndex) => (
+                    <TableCell key={column.id} className="h-16">
+                      <Skeleton
+                        className={columnIndex === 0 ? "mx-auto size-4" : "mx-auto h-5 w-4/5 max-w-40"}
+                      />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
@@ -163,7 +178,7 @@ export function DataTable<TData extends { name: string }>({
           </TableBody>
         </Table>
       </div>
-      <DataTablePagination table={table} />
+      <DataTablePagination table={table} isLoading={isLoading} />
       <Dialog open={!!clickRow} onOpenChange={() => setClickRow(null)}>
         <DialogContent className="w-[50%] sm:max-w-none max-w-[90vw] md:max-w-240 max-h-[calc(100vh-2rem)] overflow-auto">
           <DialogHeader>
@@ -179,5 +194,4 @@ export function DataTable<TData extends { name: string }>({
     </div>
   );
 }
-
 

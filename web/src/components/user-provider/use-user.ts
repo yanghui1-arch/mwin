@@ -8,6 +8,7 @@ export interface User {
 type UserProviderState = {
   user: User | null,
   setUser: (user: User) => void,
+  isLoading: boolean,
 }
 
 export const userProviderContext = createContext<UserProviderState | null>(null);

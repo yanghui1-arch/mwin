@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { stepColumns, type Step } from "./step-columns";
@@ -14,7 +14,7 @@ import { type PaginationState} from "@tanstack/react-table";
 export default function ProjectDetailPage() {
   const { name } = useParams<{ name: string }>();
   const location = useLocation();
-  const projectDescription = location.state.description;
+  const projectDescription = location.state?.description ?? "";
   const { t } = useTranslation();
 
   const [navButtonType, setNavButtonType] = useState<
@@ -27,41 +27,59 @@ export default function ProjectDetailPage() {
   const [stepData, setStepData] = useState<Step[]>([]);
   const [pagination, setPagination] = useState<PaginationState>({pageIndex: 0, pageSize: 10})
   const [pageCount, setPageCount] = useState<number>(0);
+  const [stepLoading, setStepLoading] = useState(true);
   const [traceData, setTraceData] = useState<Trace[]>([]);
   const [tracePagination, setTracePagination] = useState<PaginationState>({pageIndex: 0, pageSize: 10})
   const [tracePageCount, setTracePageCount] = useState<number>(0);
+  const [traceLoading, setTraceLoading] = useState(true);
 
-  const refreshStepData = async () => {
-    const response = await http.get(
-      `/v0/step/${encodeURIComponent(name as string)}?page=${pagination.pageIndex}&pageSize=${pagination.pageSize}`
-    );
-    const responseData = response.data.data;
-    const data = responseData.data;
-    const newPageCount = responseData.pageCount;
-    setPageCount(newPageCount);
-    if (data.length === 0 && pagination.pageIndex > 0) {
-      const lastPage = Math.max(0, newPageCount - 1);
-      setPagination({ ...pagination, pageIndex: lastPage });
-      return;
+  const refreshStepData = useCallback(async () => {
+    setStepLoading(true);
+    try {
+      const response = await http.get(
+        `/v0/step/${encodeURIComponent(name as string)}?page=${pagination.pageIndex}&pageSize=${pagination.pageSize}`
+      );
+      const responseData = response.data.data;
+      const data = responseData.data;
+      const newPageCount = responseData.pageCount;
+      setPageCount(newPageCount);
+      if (data.length === 0 && pagination.pageIndex > 0) {
+        const lastPage = Math.max(0, newPageCount - 1);
+        setPagination((current) => ({ ...current, pageIndex: lastPage }));
+        return;
+      }
+      setStepData(data);
+    } catch (error) {
+      console.error("Failed to load steps:", error);
+      setStepData([]);
+    } finally {
+      setStepLoading(false);
     }
-    setStepData(data);
-  };
+  }, [name, pagination.pageIndex, pagination.pageSize]);
 
-  const refreshTraceData = async () => {
-    const response = await http.get(
-      `/v0/trace/${encodeURIComponent(name as string)}?page=${tracePagination.pageIndex}&pageSize=${tracePagination.pageSize}`
-    );
-    const responseData = response.data.data;
-    const data = responseData.data;
-    const newPageCount = responseData.pageCount;
-    setTracePageCount(newPageCount);
-    if (data.length === 0 && tracePagination.pageIndex > 0) {
-      const lastPage = Math.max(0, newPageCount - 1);
-      setTracePagination({ ...tracePagination, pageIndex: lastPage });
-      return;
+  const refreshTraceData = useCallback(async () => {
+    setTraceLoading(true);
+    try {
+      const response = await http.get(
+        `/v0/trace/${encodeURIComponent(name as string)}?page=${tracePagination.pageIndex}&pageSize=${tracePagination.pageSize}`
+      );
+      const responseData = response.data.data;
+      const data = responseData.data;
+      const newPageCount = responseData.pageCount;
+      setTracePageCount(newPageCount);
+      if (data.length === 0 && tracePagination.pageIndex > 0) {
+        const lastPage = Math.max(0, newPageCount - 1);
+        setTracePagination((current) => ({ ...current, pageIndex: lastPage }));
+        return;
+      }
+      setTraceData(data);
+    } catch (error) {
+      console.error("Failed to load traces:", error);
+      setTraceData([]);
+    } finally {
+      setTraceLoading(false);
     }
-    setTraceData(data);
-  };
+  }, [name, tracePagination.pageIndex, tracePagination.pageSize]);
 
   const { table: stepTable } = useManulPaginationDataTable({
     columns: stepColumns,
@@ -82,29 +100,12 @@ export default function ProjectDetailPage() {
   });
 
   useEffect(() => {
-    const loadStepDataOfProject = async () => {
-      const response = await http.get(
-        `/v0/step/${encodeURIComponent(name as string)}?page=${pagination.pageIndex}&pageSize=${pagination.pageSize}`
-      );
-      const responseData = response.data.data;
-      const data = responseData.data;
-      const pageCount = responseData.pageCount;
-      setStepData(data);
-      setPageCount(pageCount)
-    };
-    const loadTraceDataOfProject = async () => {
-      const response = await http.get(
-        `/v0/trace/${encodeURIComponent(name as string)}?page=${tracePagination.pageIndex}&pageSize=${tracePagination.pageSize}`
-      );
-      const responseData = response.data.data;
-      const data = responseData.data;
-      const pageCount = responseData.pageCount;
-      setTraceData(data);
-      setTracePageCount(pageCount)
-    };
-    loadStepDataOfProject();
-    loadTraceDataOfProject();
-  }, [pagination, name, tracePagination]);
+    void refreshStepData();
+  }, [refreshStepData]);
+
+  useEffect(() => {
+    void refreshTraceData();
+  }, [refreshTraceData]);
 
   return (
     <div className="flex flex-col gap-2 px-4 lg:px-6">
@@ -159,10 +160,10 @@ export default function ProjectDetailPage() {
       </div>
       <Separator />
       {navButtonType === "step" ? (
-        <StepTable table={stepTable} />
+        <StepTable table={stepTable} isLoading={stepLoading} />
       ) : navButtonType === "trace" ? (
         <div>
-          <TraceTable table={traceTable} />
+          <TraceTable table={traceTable} isLoading={traceLoading} />
         </div>
       ) : (
         t("track.unknown")

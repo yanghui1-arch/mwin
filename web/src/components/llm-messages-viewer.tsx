@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { AlertCircle, ChevronDown, ChevronRight, Code, FileText, ImageIcon } from "lucide-react";
+import { AlertCircle, ChevronDown, ChevronRight, Code, FileText } from "lucide-react";
 import { Button } from "./ui/button";
 import { Markdown } from "./markdown";
 import { cn } from "@/lib/utils";
 import http from "@/api/http";
+import { Skeleton } from "./ui/skeleton";
 import type {
   ChatCompletionContentPart,
   ChatCompletionContentPartRefusal,
@@ -247,8 +248,10 @@ function TrackedImage({ url }: { url: string }) {
   const uploadFailed = url.startsWith("mwin://media/");
   const [src, setSrc] = useState<string | null>(trackedMedia ? null : url);
   const [failed, setFailed] = useState(uploadFailed);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   useEffect(() => {
+    setImageLoaded(false);
     if (!trackedMedia) return;
 
     let active = true;
@@ -282,22 +285,26 @@ function TrackedImage({ url }: { url: string }) {
   }
 
   if (!src) {
-    return (
-      <div className="flex items-center gap-2 rounded-md border p-3 text-sm text-muted-foreground">
-        <ImageIcon className="h-4 w-4" />
-        Loading image...
-      </div>
-    );
+    return <Skeleton className="h-48 w-full max-w-xl" />;
   }
 
   return (
-    <a href={src} target="_blank" rel="noreferrer" className="block w-fit">
-      <img
-        src={src}
-        alt="LLM message input"
-        className="max-h-96 max-w-full rounded-md border object-contain"
-        onError={() => setFailed(true)}
-      />
-    </a>
+    <div aria-busy={!imageLoaded}>
+      {!imageLoaded && <Skeleton className="h-48 w-full max-w-xl" />}
+      <a
+        href={src}
+        target="_blank"
+        rel="noreferrer"
+        className={cn("w-fit", imageLoaded ? "block" : "hidden")}
+      >
+        <img
+          src={src}
+          alt="LLM message input"
+          className="max-h-96 max-w-full rounded-md border object-contain"
+          onLoad={() => setImageLoaded(true)}
+          onError={() => setFailed(true)}
+        />
+      </a>
+    </div>
   );
 }

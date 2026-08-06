@@ -1,6 +1,6 @@
 import { DataTable } from "@/components/data-table";
 import { projectColumns } from "./project-columns";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { projectApi } from "@/api/project";
 import { useDataTable } from "@/hooks/use-datatable";
 import { ProjectDataTableToolbar } from "@/components/data-table/data-table-toolbar/project-data-table-toolbar";
@@ -17,29 +17,39 @@ type Project = {
 
 export default function ProjectsPage() {
   const [project, setProject] = useState<Project[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { t } = useTranslation();
 
-  const getProjects = async () => {
-    const response = await projectApi.getAllProjects();
-    if (response.data.code == 200) {
-      const userProjects = response.data.data;
-      const projects: Project[] = userProjects.map((p) => ({
-        id: p.projectId.toString(),
-        name: p.projectName,
-        description: p.description,
-        cost: p.cost,
-        avgDuration: p.averageDuration,
-        lastUpdateTimestamp: p.lastUpdateTimestamp,
-      }));
-      setProject(projects);
-    } else if (response.data.code == 404) {
-      console.warn("No projects found.");
+  const getProjects = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const response = await projectApi.getAllProjects();
+      if (response.data.code == 200) {
+        const userProjects = response.data.data;
+        const projects: Project[] = userProjects.map((p) => ({
+          id: p.projectId.toString(),
+          name: p.projectName,
+          description: p.description,
+          cost: p.cost,
+          avgDuration: p.averageDuration,
+          lastUpdateTimestamp: p.lastUpdateTimestamp,
+        }));
+        setProject(projects);
+      } else if (response.data.code == 404) {
+        console.warn("No projects found.");
+        setProject([]);
+      }
+    } catch (error) {
+      console.error("Failed to load projects:", error);
       setProject([]);
+    } finally {
+      setIsLoading(false);
     }
-  };
-  useEffect(() => {
-    getProjects();
   }, []);
+
+  useEffect(() => {
+    void getProjects();
+  }, [getProjects]);
 
   const { table } = useDataTable({
     columns: projectColumns,
@@ -53,9 +63,9 @@ export default function ProjectsPage() {
       <p className="text-muted-foreground mt-1 text-sm">
         {t("main.projects.titleDescription")}
       </p>
-      <div className="container mx-auto py-5 space-y-4">
+      <div className="container mx-auto flex flex-col gap-4 py-5">
         <ProjectDataTableToolbar table={table} />
-        <DataTable table={table} isNavigate={true} />
+        <DataTable table={table} isNavigate={true} isLoading={isLoading} />
       </div>
     </div>
   );
