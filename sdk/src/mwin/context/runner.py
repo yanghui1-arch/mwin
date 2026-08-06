@@ -40,32 +40,82 @@ async def foo():
 ```
 """
 
-from contextlib import contextmanager, asynccontextmanager
-from contextvars import Token
+from collections.abc import AsyncGenerator, Generator
+from contextlib import asynccontextmanager, contextmanager
+from typing import Any
+
 from .storage import aitrace_storage_context
 from ..helper import args_helper
+from ..models.key_models import Trace
 
 @contextmanager
-def start_trace():
-    token: Token | None = None
-    if not aitrace_storage_context.get_current_trace():
-        trace = args_helper.create_new_trace()
-        token = aitrace_storage_context.set_trace(current_trace=trace)
+def start_trace(
+    name: str | None = None,
+    input: dict[str, Any] | None = None,
+    tags: list[str] | None = None,
+) -> Generator[Trace, None, None]:
+    """Start a new trace scope.
+
+    Every scope creates a trace. If another trace is active, the new trace is
+    its child and shares its conversation. Each trace also gets an independent
+    step stack so step parent relationships never cross trace boundaries.
+
+    Args:
+        name: Human-readable trace name.
+        input: Input associated with the complete trace scope.
+        tags: Tags associated with the trace.
+
+    Yields:
+        The trace created for this scope.
+    """
+
+    parent_trace = aitrace_storage_context.get_current_trace()
+    trace = args_helper.create_new_trace(
+        input=input,
+        name=name,
+        tags=tags,
+        conversation_id=(
+            parent_trace.conversation_id
+            if parent_trace is not None
+            else None
+        ),
+        parent_trace_id=(
+            parent_trace.id
+            if parent_trace is not None
+            else None
+        ),
+    )
+    trace_token = aitrace_storage_context.push_trace(trace=trace)
+    error_info: str | None = None
+
     try:
-        yield
+        yield trace
+    except BaseException as error:
+        error_info = str(error) or type(error).__name__
+        raise
     finally:
-        if token is not None:
-            aitrace_storage_context.reset_trace(token)
+        try:
+            aitrace_storage_context.complete_trace(error_info=error_info)
+        finally:
+            aitrace_storage_context.reset_trace(trace_token)
 
 
 @asynccontextmanager
-async def start_trace_async():
-    token: Token | None = None
-    if not aitrace_storage_context.get_current_trace():
-        trace = args_helper.create_new_trace()
-        token = aitrace_storage_context.set_trace(current_trace=trace)
-    try:
-        yield
-    finally:
-        if token is not None:
-            aitrace_storage_context.reset_trace(token)
+async def start_trace_async(
+    name: str | None = None,
+    input: dict[str, Any] | None = None,
+    tags: list[str] | None = None,
+) -> AsyncGenerator[Trace, None]:
+    """Start a new asynchronous trace scope.
+
+    Args:
+        name: Human-readable trace name.
+        input: Input associated with the complete trace scope.
+        tags: Tags associated with the trace.
+
+    Yields:
+        The trace created for this scope.
+    """
+
+    with start_trace(name=name, input=input, tags=tags) as trace:
+        yield trace

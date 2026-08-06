@@ -105,6 +105,7 @@ def create_new_trace(
     error_info: str | None = None,
     trace_id: str | UUID | int | None = None,
     conversation_id: str | UUID | int | None = None,
+    parent_trace_id: str | UUID | int | None = None,
     **kwargs
 ) -> Trace:
     """Create a new trace data
@@ -118,6 +119,7 @@ def create_new_trace(
         trace_id(str | UUID | int | None): trace id. Default to `None`. If it's None, it will be thought as a new trace and create a new id for the trace.
         conversation_id(str | UUID | int | None): conversation id which the trace belongs to. Default to `None`. If it's None, it will be thought as a new
                                                     conversation and create a new id for the new conversation.
+        parent_trace_id(str | UUID | int | None): parent trace id for a nested trace. Default to `None` for a root trace.
     
     Returns:
         Trace: trace creation
@@ -134,6 +136,7 @@ def create_new_trace(
 
     trace = Trace(
         id=trace_id,
+        parent_trace_id=parent_trace_id,
         conversation_id=conversation_id,
         name=name,
         tags=tags,

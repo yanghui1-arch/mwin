@@ -386,6 +386,7 @@ class BaseTracker(ABC):
             current_trace.error_info = error_info
 
         context.set_storage_trace(current_trace=current_trace)
+        context.add_storage_completed_step(current_step)
 
 
         client: sync_client.SyncClient = sync_client.get_cached_sync_client(
@@ -413,6 +414,11 @@ class BaseTracker(ABC):
         client.log_trace(
             trace_name=current_trace.name,
             trace_id=str(current_trace.id),
+            parent_trace_id=(
+                str(current_trace.parent_trace_id)
+                if current_trace.parent_trace_id is not None
+                else None
+            ),
             conversation_id=str(current_trace.conversation_id),
             tags=current_trace.tags,
             input=current_trace.input,

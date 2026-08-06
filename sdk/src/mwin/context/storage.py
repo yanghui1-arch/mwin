@@ -1,167 +1,224 @@
-from typing import Tuple
 from contextvars import ContextVar, Token
+from dataclasses import replace
 
-from ..models.key_models import Trace, Step
+from ..models.key_models import Step, Trace
+from .session import TraceSession, TraceTreeBuffer
+
+
+TraceSessionStack = tuple[TraceSession, ...]
+
 
 class AITraceStorageContext:
-    """AI trace storage context stores the step and trace.
-    This context can record a long calling stacks and stores them. The benefit is to easily visualize calling stacks and manage step or trace.
-
-    For example, there is a complex track functions that solve a very complex math problem using agent.
-
-    ```python
-    final_answer = None
-    complex_math_problem = "xxxxxx"
-    final_answer = solve(complex_math_problem, previous_problem_answer=final_answer)
-
-    print(final_answer)
-
-    @track
-    def solve(complex_math_problem, previous_problem_answer = None) -> str:
-
-        sub_funcs = split_sub_func(complex_math_problem)
-
-        if len(sub_funcs) == 1:
-            return previous_problem_answer
-
-        previous_func_solution = []
-        for sub_func in sub_funcs:
-            sub_func_solution = solve(
-                complex_math_problem=sub_func, 
-                previous_problem_answer=previous_func_solution
-            )
-            previous_func_solution.append(sub_func_solution)
-        
-        # agent solution logic
-        return agent_solve(complex_math_problem, previous_func_solution)
-
-    @track
-    def split_sub_func(complex_math_problem) -> list:
-        # split logic ...
-        ...
-    
-    @track
-    def agent_solve(complex_math_problem, previous_func_solution):
-        # agent solve logic ...
-        ...
-    ```
-    ID:                              1                           2                   3.1                 3.2             4     
-    Now execution process is solve(complex_math_problem) -> split_sub_func -> [solve(sub_func) -> split_sub_func] -> agent_solve 
-                                                                                ↑                       ↓
-                                                                                 -----------------------
-                                                                                        N times
-
-    AITraceStorageContext will store the steps of solve, split_sub_func and agent_solve again and again and finally store the trace.
-    ID 2 step is ID 1 step's child step. ID 3.2 is ID 3.1's child step. So the context step_stack will like as:
-    STEP STACK:
-        agent_solve
-        split_sub_func   -----
-                              |  N times
-        solve(sub_func)  -----
-        split_sub_func
-        solve(complex_math_problem)
-    """
+    """Store a task-local stack of trace sessions."""
 
     def __init__(self):
-        """Initialize AITraceStorageContext"""
-        
-        self._trace: ContextVar[Trace] = ContextVar('current_trace', default=None)
-        self._steps: ContextVar[Tuple[Step, ...]] = ContextVar('steps_calling_stack', default=tuple())
+        self._sessions: ContextVar[TraceSessionStack] = ContextVar(
+            "trace_sessions",
+            default=tuple(),
+        )
 
-    def add_step(
+    def push_trace(self, trace: Trace) -> Token[TraceSessionStack]:
+        """Push a new trace session, sharing its parent's tree buffer.
+
+        Args:
+            trace: Trace owned by the new session.
+
+        Returns:
+            Context token used to restore the previous session stack.
+        """
+
+        sessions = self._sessions.get()
+        tree_buffer = (
+            sessions[-1].tree_buffer
+            if sessions
+            else TraceTreeBuffer()
+        )
+        session = TraceSession.start(trace=trace, tree_buffer=tree_buffer)
+        return self._sessions.set(sessions + (session,))
+
+    def complete_trace(
         self,
-        new_step: Step,
-    ):
-        """add a new step into steps_calling_stack
-        
+        error_info: str | None = None,
+    ) -> TraceSession | None:
+        """Finalize the active trace session without removing its scope.
+
         Args:
-            new_step(Step): a new step.
+            error_info: Unhandled error captured while exiting the trace scope.
+
+        Returns:
+            Completed session, or ``None`` when no session is active.
         """
 
-        old_steps:Tuple = self._steps.get()
-        old_steps += (new_step, )
-        self._steps.set(old_steps)
-    
+        sessions = self._sessions.get()
+        if not sessions:
+            return None
+
+        completed_session = sessions[-1].complete(error_info=error_info)
+        self._sessions.set(sessions[:-1] + (completed_session,))
+        return completed_session
+
+    def get_current_session(self) -> TraceSession | None:
+        """Return the active trace session.
+
+        Returns:
+            Active session, or ``None`` when no trace scope exists.
+        """
+
+        sessions = self._sessions.get()
+        return sessions[-1] if sessions else None
+
+    def get_current_tree_buffer(self) -> TraceTreeBuffer | None:
+        """Return the root buffer shared by the active trace tree.
+
+        Returns:
+            Active root trace-tree buffer, or ``None`` when no session exists.
+        """
+
+        session = self.get_current_session()
+        return session.tree_buffer if session is not None else None
+
+    def add_step(self, new_step: Step) -> None:
+        """Push a step onto the active trace's local step stack.
+
+        Args:
+            new_step: Step entering the tracked calling stack.
+
+        Raises:
+            RuntimeError: If no trace session is active.
+        """
+
+        sessions = self._sessions.get()
+        if not sessions:
+            raise RuntimeError("Cannot add a step without an active trace session.")
+
+        current_session = sessions[-1]
+        current_session.tree_buffer.add_step(new_step)
+        self._sessions.set(
+            sessions[:-1] + (current_session.push_step(new_step),)
+        )
+
     def pop_step(self) -> Step | None:
-        """pop step stack to get the top step data and remove it
-        
+        """Pop the active trace's top step.
+
         Returns:
-            Step | None: top step. If no steps retrun None.
+            Removed step, or ``None`` when no step is active.
         """
 
-        steps = self._steps.get()
-        if len(steps) == 0:
+        sessions = self._sessions.get()
+        if not sessions:
             return None
 
-        top_step: Step = steps[-1]
-        self._steps.set(steps[:-1])
-        return top_step
-    
+        updated_session, step = sessions[-1].pop_step()
+        self._sessions.set(sessions[:-1] + (updated_session,))
+        return step
+
     def get_top_step(self) -> Step | None:
-        """get top step data
-        The function works as stack. So top step is just get the top and not remove the top data.
+        """Return the active trace's top step without removing it.
 
         Returns:
-            Step | None: top step data if self._steps has data else return None.
+            Active top step, or ``None`` when the step stack is empty.
         """
-        
-        steps = self._steps.get()
-        if len(steps) == 0:
+
+        session = self.get_current_session()
+        if session is None or not session.step_stack:
             return None
-        return steps[-1]
-    
-    def set_trace(self, current_trace: Trace | None) -> Token[Trace]:
-        """set the current trace
-        
+        return session.step_stack[-1]
+
+    def add_completed_step(self, step: Step) -> None:
+        """Add a finalized step to the active trace tree buffer.
+
         Args:
-            current_trace(Trace | None): current trace. It maybe a None type for no current trace.
+            step: Finalized step data.
+
+        Raises:
+            RuntimeError: If no trace session is active.
+        """
+
+        tree_buffer = self.get_current_tree_buffer()
+        if tree_buffer is None:
+            raise RuntimeError(
+                "Cannot record a completed step without an active trace session."
+            )
+        tree_buffer.complete_step(step)
+
+    def set_trace(self, current_trace: Trace | None) -> Token[TraceSessionStack]:
+        """Compatibility setter for callers outside ``start_trace``.
+
+        Updating the active trace keeps its session. Setting a different trace
+        starts a new standalone root session. ``start_trace`` uses
+        :meth:`push_trace` for hierarchical scopes.
+
+        Args:
+            current_trace: Trace to make active, or ``None`` to clear all
+                sessions.
 
         Returns:
-            a token which is used for .reset_trace()
+            Context token used to restore the previous session stack.
         """
-        
-        return self._trace.set(current_trace)
-    
+
+        sessions = self._sessions.get()
+        if current_trace is None:
+            return self._sessions.set(tuple())
+
+        if sessions and str(sessions[-1].trace.id) == str(current_trace.id):
+            current_session = sessions[-1]
+            current_session.tree_buffer.add_trace(current_trace)
+            updated_session = replace(current_session, trace=current_trace)
+            return self._sessions.set(sessions[:-1] + (updated_session,))
+
+        session = TraceSession.start(trace=current_trace)
+        return self._sessions.set((session,))
+
     def pop_trace(self) -> Trace | None:
-        """pop trace
-        
+        """Clear the current trace-session stack.
+
         Returns:
-            Trace | None: current trace. None means no trace now.
+            Previously active trace, or ``None`` when no session existed.
         """
 
-        trace = self._trace.get()
-        self._trace.set(None)
-        return trace
-    
+        session = self.get_current_session()
+        self._sessions.set(tuple())
+        return session.trace if session is not None else None
+
     def get_current_trace(self) -> Trace | None:
-        """get current trace data
-        
+        """Return the active trace data.
+
         Returns:
-            Trace | None: return current trace if has trace else return None
+            Active trace, or ``None`` when no session exists.
         """
 
-        current_trace: Trace | None = self._trace.get()
-        return current_trace
-    
-    def reset_trace(self, token: Token):
-        """Reset trace before enter .set_trace()
-        
+        session = self.get_current_session()
+        return session.trace if session is not None else None
+
+    def reset_trace(self, token: Token[TraceSessionStack]) -> None:
+        """Restore a previously captured session stack.
+
         Args:
-            token(Token): token returned by .set_trace()
+            token: Token returned by ``push_trace`` or ``set_trace``.
         """
-        
-        self._trace.reset(token)
+
+        self._sessions.reset(token)
+
+    def clear(self) -> None:
+        """Clear all trace sessions in the current context."""
+
+        self._sessions.set(tuple())
+
 
 aitrace_storage_context = AITraceStorageContext()
 
-"""
-Celery task is running in the thread. The contextvar is the same value.
-"""
+
 try:
     from celery.signals import task_prerun
 
     @task_prerun.connect
     def _clear_trace_on_celery_task(**kwargs):
-        aitrace_storage_context.set_trace(None)
+        """Clear inherited trace context before a Celery task starts.
+
+        Args:
+            **kwargs: Celery signal payload.
+        """
+
+        aitrace_storage_context.clear()
 except ImportError:
     pass

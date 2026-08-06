@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+### Refactor
+- Refactor SDK Trace context to support nested traces, parent-child relationships, and trace-local step stacks.
+- Track Trace and Step lifecycle state through `TraceSession` and `TraceTreeBuffer`, including completion and failure states.
+- Preserve root-trace compatibility while making `parent_trace_id` optional for direct `SyncClient.log_trace()` callers.
+
 ## 0.2.5
 ### Feature
 - Support tracking glm. - @yanghui1-arch [# b56628f](https://github.com/yanghui1-arch/mwin/commit/b56628f8409c93c8d89229a5a61a7466c1463dbf)

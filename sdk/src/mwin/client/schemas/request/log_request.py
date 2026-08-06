@@ -67,6 +67,7 @@ class LogTraceRequest(BaseModel):
     project_name: str
     trace_name: str
     trace_id: str
+    parent_trace_id: str | None = None
     conversation_id: str
     tags: List[str]
     input: Dict[str, Any] | None
@@ -78,8 +79,7 @@ class LogTraceRequest(BaseModel):
     @field_serializer('input', 'output')
     def serialize_any_field(self, value: Any):
         return serialize_helper.safe_serialize(value)
-    
+
     @field_serializer("start_time", "last_update_timestamp")
     def serialize_datetime(self, value: datetime):
         return value.strftime("%Y-%m-%d %H:%M:%S.%f")
-    
