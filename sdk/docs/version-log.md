@@ -1,6 +1,11 @@
 # Version log
 Every version updates, fixes and removings could be checked here.
 
+## 0.3.1 (Current)
+### Breaking Change
+- Refactor SDK Trace context to support nested traces, parent-child relationships, and trace-local step stacks.
+
+
 ## 0.2.6
 ### Break Change
 - Cloud server is not set localhost by default. - @yanghui1-arch [# 331f](https://github.com/yanghui1-arch/mwin/commit/331f2ec27ed23dfc75b00e2649ca05d567ebdced)
