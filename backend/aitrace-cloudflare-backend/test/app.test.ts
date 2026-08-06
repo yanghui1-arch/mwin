@@ -14,6 +14,7 @@ test('registers resource routers at the existing API paths', () => {
     'GET /api/auth/github/callback',
     'GET /api/auth/me',
     'GET /api/v0/overview/summary',
+    'GET /api/v0/overview/token-curve',
     'GET /api/v0/project/get_all_projects',
     'GET /api/v0/step/:projectName',
     'GET /api/v0/trace/:projectName',
