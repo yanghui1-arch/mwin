@@ -24,10 +24,11 @@ import { useForm } from "react-hook-form";
 import { projectApi } from "@/api/project";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ProjectRowActionsProps {
   project: Project;
-  onRefresh: () => void;
+  onRefresh: () => void | Promise<void>;
 }
 
 type UpdateParams = {
@@ -37,6 +38,7 @@ type UpdateParams = {
 export function ProjectRowActions({ project, onRefresh }: ProjectRowActionsProps) {
   const [openEdit, setOpenEdit] = useState(false);
   const [openDelete, setOpenDelete] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { t } = useTranslation();
   const form = useForm<UpdateParams>({
     defaultValues: {
@@ -55,7 +57,7 @@ export function ProjectRowActions({ project, onRefresh }: ProjectRowActionsProps
         toast.error(response.data.message)
       }
       setOpenEdit(false)
-      onRefresh();
+      await onRefresh();
     } catch (e){
       console.error("UNKNOWN ERROR: " + e)
       toast.error(t("projectRowAction.unknownError"))
@@ -65,11 +67,16 @@ export function ProjectRowActions({ project, onRefresh }: ProjectRowActionsProps
   };
 
   const deleteProject = async (projectName: string) => {
-    const response = await projectApi.deleteProject({projectName});
-    setOpenDelete(false);
-    if (response.data.code == 200) {
-      await onRefresh();
-      toast.success(response.data.data);
+    setIsDeleting(true);
+    try {
+      const response = await projectApi.deleteProject({projectName});
+      setOpenDelete(false);
+      if (response.data.code == 200) {
+        await onRefresh();
+        toast.success(response.data.data);
+      }
+    } finally {
+      setIsDeleting(false);
     }
   }
 
@@ -127,8 +134,12 @@ export function ProjectRowActions({ project, onRefresh }: ProjectRowActionsProps
               </div>
               <DialogFooter>
                 <Button type="button" onClick={() => setOpenEdit(false)}>{t("projectRowAction.close")}</Button>
-                <Button type="submit" variant="destructive">
-                  {t("projectRowAction.update")}
+                <Button type="submit" variant="destructive" disabled={form.formState.isSubmitting}>
+                  {form.formState.isSubmitting ? (
+                    <Skeleton className="h-4 w-14" />
+                  ) : (
+                    t("projectRowAction.update")
+                  )}
                 </Button>
               </DialogFooter>
             </div>
@@ -152,8 +163,13 @@ export function ProjectRowActions({ project, onRefresh }: ProjectRowActionsProps
             <Button
               variant="destructive"
               onClick={() => deleteProject(project.name)}
+              disabled={isDeleting}
             >
-              {t("projectRowAction.delete")}
+              {isDeleting ? (
+                <Skeleton className="h-4 w-14" />
+              ) : (
+                t("projectRowAction.delete")
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

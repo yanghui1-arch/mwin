@@ -9,6 +9,7 @@ type UserProviderProps = {
 
 export function UserProvider({ children }: UserProviderProps) {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const isAtJwtExpired = (atJwt: string) => {
     const payload = JSON.parse(atob(atJwt.split('.')[1]));
@@ -18,22 +19,39 @@ export function UserProvider({ children }: UserProviderProps) {
 
   useEffect(() => {
     const token = localStorage.getItem(MWIN_JWT);
-    if (token && !isAtJwtExpired(token)) {
+    let hasValidToken = false;
+    try {
+      hasValidToken = Boolean(token && !isAtJwtExpired(token));
+    } catch (error) {
+      console.error("Failed to read authentication token:", error);
+    }
+
+    if (token && hasValidToken) {
       const getUserFromJwt = async () => {
-        const response = await authApi.me();
-        const code = response.data.code;
-        if (code === 200) {
-          setUser( {userName: response.data.data.userName, avatar: response.data.data.avatar} );
-        } else {
-          console.error(response.data.message);
+        try {
+          const response = await authApi.me();
+          const code = response.data.code;
+          if (code === 200) {
+            setUser({ userName: response.data.data.userName, avatar: response.data.data.avatar });
+          } else {
+            console.error(response.data.message);
+          }
+        } catch (error) {
+          console.error("Failed to load the current user:", error);
+          setUser(null);
+        } finally {
+          setIsLoading(false);
         }
       }
-      getUserFromJwt();
+      void getUserFromJwt();
+      return;
     }
+
+    setIsLoading(false);
   }, [])
 
   return (
-    <userProviderContext.Provider value={{ user, setUser }}>
+    <userProviderContext.Provider value={{ user, setUser, isLoading }}>
       {children}
     </userProviderContext.Provider>
   );

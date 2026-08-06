@@ -23,6 +23,7 @@ export default function OverviewPage() {
   const [projects, setProjects] = useState<ProjectOption[]>([])
   const [summaryLoading, setSummaryLoading] = useState(true)
   const [curveLoading, setCurveLoading] = useState(true)
+  const [projectsLoading, setProjectsLoading] = useState(true)
   const [timeRange, setTimeRange] = useState<TimeRange>("30d")
   const [selectedProjectIds, setSelectedProjectIds] = useState<number[]>([])
 
@@ -60,6 +61,11 @@ export default function OverviewPage() {
       .catch(() => {
         if (active) {
           setProjects([])
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setProjectsLoading(false)
         }
       })
 
@@ -108,6 +114,7 @@ export default function OverviewPage() {
         <ChartAreaInteractive
           curve={curve}
           loading={curveLoading}
+          projectsLoading={projectsLoading}
           timeRange={timeRange}
           onTimeRangeChange={setTimeRange}
           projectOptions={projectOptions}

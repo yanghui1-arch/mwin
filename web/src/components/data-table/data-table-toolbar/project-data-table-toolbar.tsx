@@ -19,6 +19,7 @@ import { projectApi } from "@/api/project";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ProjectDataTableToolbarProps<TData> {
   table: Table<TData>;
@@ -44,7 +45,7 @@ export function ProjectDataTableToolbar<TData>({
       console.log("request body" + JSON.stringify(data));
       const response = await projectApi.createNewProject(data);
       if (response.data.code == 200) {
-        table.options.meta?.onRefresh?.();
+        await table.options.meta?.onRefresh?.();
         setOpenCreateProjectDialog(false);
         form.reset();
         toast.success(t("main.projects.toolbar.congratsCreate", { name: projectName }))
@@ -70,7 +71,7 @@ export function ProjectDataTableToolbar<TData>({
 
   return (
     <div className="flex items-center justify-between">
-      <div className="flex flex-1 items-center space-x-2">
+      <div className="flex flex-1 items-center gap-2">
         <Input
           placeholder={t("main.projects.toolbar.filterProjects")}
           value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
@@ -138,8 +139,12 @@ export function ProjectDataTableToolbar<TData>({
                       {t("common.cancel")}
                     </Button>
                   </DialogClose>
-                  <Button type="submit" variant="secondary">
-                    {t("common.create")}
+                  <Button type="submit" variant="secondary" disabled={form.formState.isSubmitting}>
+                    {form.formState.isSubmitting ? (
+                      <Skeleton className="h-4 w-14" />
+                    ) : (
+                      t("common.create")
+                    )}
                   </Button>
                 </DialogFooter>
               </div>
