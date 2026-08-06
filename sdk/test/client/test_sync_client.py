@@ -8,8 +8,11 @@ import pytest
 from mwin.client.sync_client import SyncClient
 
 
-@pytest.mark.parametrize("parent_trace_id", [str(uuid4()), None])
-def test_log_trace_sends_parent_trace_id(parent_trace_id):
+@pytest.mark.parametrize(
+    ("parent_trace_id", "pass_parent_trace_id"),
+    [(str(uuid4()), True), (None, True), (None, False)],
+)
+def test_log_trace_sends_parent_trace_id(parent_trace_id, pass_parent_trace_id):
     captured_json = None
 
     def handle_request(request: httpx.Request) -> httpx.Response:
@@ -29,6 +32,9 @@ def test_log_trace_sends_parent_trace_id(parent_trace_id):
     )
 
     try:
+        trace_kwargs = {
+            "parent_trace_id": parent_trace_id,
+        } if pass_parent_trace_id else {}
         client.log_trace(
             trace_name="child-trace",
             trace_id=str(uuid4()),
@@ -39,7 +45,7 @@ def test_log_trace_sends_parent_trace_id(parent_trace_id):
             error_info=None,
             start_time=datetime(2026, 7, 24, 10, 0, 0),
             last_update_timestamp=datetime(2026, 7, 24, 10, 0, 1),
-            parent_trace_id=parent_trace_id,
+            **trace_kwargs,
         )
     finally:
         client._client.close()

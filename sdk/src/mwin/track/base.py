@@ -386,6 +386,7 @@ class BaseTracker(ABC):
             current_trace.error_info = error_info
 
         context.set_storage_trace(current_trace=current_trace)
+        context.add_storage_completed_step(current_step)
 
 
         client: sync_client.SyncClient = sync_client.get_cached_sync_client(

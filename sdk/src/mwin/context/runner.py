@@ -59,6 +59,14 @@ def start_trace(
     Every scope creates a trace. If another trace is active, the new trace is
     its child and shares its conversation. Each trace also gets an independent
     step stack so step parent relationships never cross trace boundaries.
+
+    Args:
+        name: Human-readable trace name.
+        input: Input associated with the complete trace scope.
+        tags: Tags associated with the trace.
+
+    Yields:
+        The trace created for this scope.
     """
 
     parent_trace = aitrace_storage_context.get_current_trace()
@@ -77,14 +85,17 @@ def start_trace(
             else None
         ),
     )
-    trace_token = aitrace_storage_context.set_trace(current_trace=trace)
-    steps_token = aitrace_storage_context.set_steps()
+    trace_token = aitrace_storage_context.push_trace(trace=trace)
+    error_info: str | None = None
 
     try:
         yield trace
+    except BaseException as error:
+        error_info = str(error) or type(error).__name__
+        raise
     finally:
         try:
-            aitrace_storage_context.reset_steps(steps_token)
+            aitrace_storage_context.complete_trace(error_info=error_info)
         finally:
             aitrace_storage_context.reset_trace(trace_token)
 
@@ -95,7 +106,16 @@ async def start_trace_async(
     input: dict[str, Any] | None = None,
     tags: list[str] | None = None,
 ) -> AsyncGenerator[Trace, None]:
-    """Async context-manager variant of :func:`start_trace`."""
+    """Start a new asynchronous trace scope.
+
+    Args:
+        name: Human-readable trace name.
+        input: Input associated with the complete trace scope.
+        tags: Tags associated with the trace.
+
+    Yields:
+        The trace created for this scope.
+    """
 
     with start_trace(name=name, input=input, tags=tags) as trace:
         yield trace

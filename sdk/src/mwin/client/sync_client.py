@@ -155,7 +155,7 @@ class SyncClient:
         error_info: str | None,
         start_time: datetime,
         last_update_timestamp: datetime,
-        parent_trace_id: str | None,
+        parent_trace_id: str | None = None,
     ):
         """Create a trace and log it in server."""
 
