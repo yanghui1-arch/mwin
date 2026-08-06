@@ -147,9 +147,10 @@ export async function findStepMetaForUser(db: AppDatabase, userId: string, stepI
 export async function tokenSnapshots(db: AppDatabase, projectIds: number[]): Promise<TokenSnapshot[]> {
   if (!projectIds.length) return [];
   const rows = await db.select({
+    projectId: stepTable.projectId,
     startTime: stepTable.startTime,
     usage: stepTable.usage,
   }).from(stepTable)
     .where(and(inArray(stepTable.projectId, projectIds), isNotNull(stepTable.usage))).all();
-  return rows.map((row) => ({ startTime: row.startTime, usage: row.usage! }));
+  return rows.map((row) => ({ projectId: row.projectId, startTime: row.startTime, usage: row.usage! }));
 }

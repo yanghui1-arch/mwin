@@ -95,4 +95,4 @@ export interface User { id: string; username: string; email: string | null; avat
 export interface UserAuth { id: string; userId: string; authType: string; identifier: string; createdAt: string }
 export interface ApiKey { id: string; userId: string; key: string; createdTime: string }
 export interface StepMeta { id: string; metadata: string; cost: string }
-export interface TokenSnapshot { start_time?: string; startTime?: string; usage: string | Usage }
+export interface TokenSnapshot { projectId?: number; start_time?: string; startTime?: string; usage: string | Usage }

@@ -42,5 +42,9 @@ export class Services {
   getTracks(userId: string, traceId: string) { return this.repositories.listStepsByTraceForUser(userId, traceId); }
   /** Builds the dashboard token-usage summary. */
   getSummary(userId: string, today?: Date) { return this.overviewService.getSummary(userId, today); }
+  /** Builds the selected dashboard projects' token-usage curve. */
+  getTokenCurve(userId: string, windowHours: number, projectIds: number[], today?: Date) {
+    return this.overviewService.getTokenCurve(userId, windowHours, projectIds, today);
+  }
 }
 export { buildSummary, percentageChange };
