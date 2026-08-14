@@ -1,6 +1,7 @@
 import asyncio
 
-from mwin import MwinTraceMiddleware, context
+from mwin import context
+from mwin.integrations import MwinTraceMiddleware
 
 
 class CapturingExporter:
