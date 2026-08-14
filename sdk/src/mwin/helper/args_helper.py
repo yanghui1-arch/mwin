@@ -38,7 +38,8 @@ def create_new_step(
 ) -> Step:
     """create a new step data
     If not pass a parent step id, context will try to get the top step and make the top step id as new step parent id.
-    If not give a trace id, context will try to get the current trace if current trace exists this step's trace id is its id. Otherwise generate a new one.
+    If no trace ID is provided, the active Trace ID is used. A standalone
+    Step keeps ``trace_id=None``.
 
     Args:
         input(Any | None): input of module. Default to `None`. None means it's logging output.
@@ -51,9 +52,9 @@ def create_new_step(
         usage(int | None): llm token usage. Default to `None`.
         error_info(str | None): error information while occuring errors. Default to `None`.
         step_id(str | UUID | int | None): step id offered by caller. Default to `None`. If it's None, create a new uuid7 for step.
-        trace_id(str | UUID | int | None): trace id which the step belongs to. Default to `None`. If it's None, the step
-                                            will be thought as belongs to a new trace and AITrace will create a new uuid7 for the
-                                            new trace.
+        trace_id(str | UUID | int | None): Trace ID which the step belongs to.
+            When omitted, the active Trace ID is used. It remains ``None``
+            when no Trace scope is active.
         parent_step_id(str | UUID | int | None): parent step id of this step data. Default to `None`.
 
     Returns:
@@ -64,7 +65,7 @@ def create_new_step(
         step_id = id_helper.generate_id()
     if trace_id is None:
         current_trace = context.get_storage_current_trace_data()
-        trace_id = current_trace.id if current_trace else id_helper.generate_id()
+        trace_id = current_trace.id if current_trace else None
         
     if name is None:
         name = type.value

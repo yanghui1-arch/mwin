@@ -14,7 +14,7 @@ class LogStepRequest(BaseModel):
     step_id: str
     """Step id"""
 
-    trace_id: str
+    trace_id: str | None
     """This step's trace"""
 
     parent_step_id: str | None
@@ -63,6 +63,7 @@ class LogStepRequest(BaseModel):
             return None
         return value.strftime("%Y-%m-%d %H:%M:%S.%f")
 
+
 class LogTraceRequest(BaseModel):
     project_name: str
     trace_name: str
@@ -83,3 +84,8 @@ class LogTraceRequest(BaseModel):
     @field_serializer("start_time", "last_update_timestamp")
     def serialize_datetime(self, value: datetime):
         return value.strftime("%Y-%m-%d %H:%M:%S.%f")
+
+
+class LogTraceTreeRequest(BaseModel):
+    traces: tuple[LogTraceRequest, ...]
+    steps: tuple[LogStepRequest, ...]

@@ -43,3 +43,23 @@ def test_trace_tree_buffer_keeps_parent_step_before_child(fake_client):
             "child_step",
         ]
         assert tree_buffer.steps[1].parent_step_id == tree_buffer.steps[0].id
+
+
+def test_outermost_trace_exports_an_independent_snapshot(fake_client):
+    @track(tags=["unit"])
+    def child_step():
+        return "original"
+
+    with start_trace(name="request"):
+        tree_buffer = context.get_storage_current_trace_tree_buffer()
+        child_step()
+
+    assert tree_buffer is not None
+    assert len(fake_client.snapshots) == 1
+    snapshot = fake_client.snapshots[0]
+
+    tree_buffer.steps[0].output["func_output"] = "mutated"
+
+    assert snapshot.steps[0].output == {
+        "func_output": "original"
+    }

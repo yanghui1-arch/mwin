@@ -1,52 +1,56 @@
-"""Trace scope is defined by start_trace and start_trace_async.
-
-Memory leak and unexpected step's trace caused by `@track` appears without start_trace or start_trace_async.
-In `@track` it doesn't release reference of `current_trace` in context. It causes memory leak.<br/>
-Meanwhile setting `current_trace` contextvar in a thread doesn't make sense expecailly for those reusable threads.
-
-
-@track can work but still has potential memory leak in a small backend, scripts, asyncio event loop without start_trace and start_trace_async.
-If not use start_trace and start_trace_async, caller must follow a strict rule that no `current_trace` in context before thread submit work.
-For example in a fastapi project and use thread executor not default one. To follow above strict rule, it is a must thing to do that
-use `contextvars.copy_context()` and make sure no `current_trace` in the current context.
-```python
-@router.post("/foo")
-async def foo():
-    loop = asyncio.get_running_loop()
-    pool_executor = ThreadPoolExecutor(max_workers=10)
-    ctx = contextvars.copy_context()
-    loop.run_in_executor(pool_executor, ctx.run, run_agent)
-```
-
-It works well at beginning of project but not recommend it for developer. it's very complex and difficult to maintain.
-Please use following demo to develop with mwin. It's more safe, easier and more controllable.
-
-```python
-from mwin import track
-from mwin.runner import start_trace
-@track()
-def call_openai() -> Dict:
-    ...
-
-@track(step_type="tool")
-def execute_bash(*args, **kwargs)
-    ...
-
-@router.post("/foo")
-async def foo():
-    with start_trace():
-        parsed_result = call_openai()
-        bash_res = execute_bash(**parsed_result)
-```
-"""
+"""Trace scopes and their lifecycle management."""
 
 from collections.abc import AsyncGenerator, Generator
 from contextlib import asynccontextmanager, contextmanager
+from datetime import datetime
 from typing import Any
 
 from .storage import aitrace_storage_context
 from ..helper import args_helper
-from ..models.key_models import Trace
+from .. import exporter
+from ..logger import logger
+from ..models.key_models import Step, Trace
+
+
+def complete_step(
+    step: Step,
+    project_name: str | None,
+    trace_output: dict[str, Any] | None,
+    error_info: str | None,
+) -> None:
+    """Complete a tracked Step in or outside a Trace scope.
+
+    A Step inside a Trace is added to its TraceTreeBuffer. A standalone Step
+    is snapshotted and queued for background export without creating a Trace.
+
+    Args:
+        step: Completed Step model.
+        project_name: Project associated with the Step.
+        trace_output: Function output used to update an active Trace.
+        error_info: Function error used to update an active Trace.
+    """
+
+    current_trace = aitrace_storage_context.get_current_trace()
+    if current_trace is None:
+        snapshot = exporter.StepSnapshot.create(
+            project_name=project_name,
+            step=step,
+        )
+        exporter.get_exporter().enqueue(snapshot)
+        return
+
+    current_trace.last_update_timestamp = datetime.now()
+    if error_info is None:
+        current_trace.output = trace_output
+    else:
+        current_trace.output = None
+        current_trace.error_info = error_info
+
+    tree_buffer = aitrace_storage_context.get_current_tree_buffer()
+    if tree_buffer is not None:
+        tree_buffer.set_project_name(project_name)
+    aitrace_storage_context.add_completed_step(step)
+
 
 @contextmanager
 def start_trace(
@@ -70,6 +74,7 @@ def start_trace(
     """
 
     parent_trace = aitrace_storage_context.get_current_trace()
+    is_root_trace = parent_trace is None
     trace = args_helper.create_new_trace(
         input=input,
         name=name,
@@ -95,7 +100,23 @@ def start_trace(
         raise
     finally:
         try:
-            aitrace_storage_context.complete_trace(error_info=error_info)
+            completed_session = aitrace_storage_context.complete_trace(
+                error_info=error_info
+            )
+            if is_root_trace and completed_session is not None:
+                try:
+                    tree_buffer = completed_session.tree_buffer
+                    snapshot = exporter.TraceTreeSnapshot.create(
+                        project_name=tree_buffer.project_name,
+                        traces=tree_buffer.traces,
+                        steps=tree_buffer.steps,
+                    )
+                    exporter.get_exporter().enqueue(snapshot)
+                except Exception:
+                    logger.warning(
+                        "Mwin could not enqueue a completed trace tree",
+                        exc_info=True,
+                    )
         finally:
             aitrace_storage_context.reset_trace(trace_token)
 

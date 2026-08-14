@@ -1,5 +1,4 @@
 import inspect
-from datetime import datetime
 from types import TracebackType
 from typing import Any, Dict, List
 from typing_extensions import Self, override
@@ -18,6 +17,7 @@ from ...helper import inspect_helper
 from ...helper.llm import openai_helper, openai_multimodal_helper
 from ...client import SyncClient, get_cached_sync_client
 from ...logger import logger
+from ..enrichment import enrich_step
 
 raw_async_openai_create = resources.chat.completions.AsyncCompletions.create
 
@@ -55,9 +55,14 @@ def patch_async_openai_chat_completions():
         )
 
         client: SyncClient = get_cached_sync_client(project_name=tracker_options.project_name)
-        async_openai_inputs = openai_multimodal_helper.prepare_chat_completion_inputs_for_logging(
-            inputs=async_openai_inputs,
-            upload_image=client.upload_media,
+        # WARNING: Inline Base64 images trigger the synchronous upload_media()
+        # call below and therefore block the current asyncio event loop.
+        # TODO: Add an asynchronous media client and use it here.
+        async_openai_inputs = (
+            openai_multimodal_helper.prepare_chat_completion_inputs_for_logging(
+                inputs=async_openai_inputs,
+                upload_image=client.upload_media,
+            )
         )
 
         if isinstance(resp, AsyncStream):
@@ -70,27 +75,13 @@ def patch_async_openai_chat_completions():
 
         # get model from openai inputs
         model = async_openai_inputs.get('model', step.model)
-        tags = step.tags
-        if model is not None:
-            tags += [model]
-
-        # log
-        client.log_step(
-            step_name=step.name,
-            step_id=step.id,
-            trace_id=step.trace_id,
-            parent_step_id=step.parent_step_id,
-            step_type=step.type,
-            tags=tags,
-            input={"llm_inputs": async_openai_inputs},
-            output={"llm_outputs": patch_std_output(resp)},
-            error_info=step.error_info,
+        enrich_step(
+            step=step,
+            llm_inputs=async_openai_inputs,
+            llm_outputs=patch_std_output(resp),
             model=model,
             usage=resp.usage,
-            start_time=step.start_time,
-            end_time=datetime.now(),
-            description=tracker_options.description,
-            llm_provider=tracker_options.llm_provider,
+            tracker_options=tracker_options,
         )
 
         return resp
@@ -136,23 +127,13 @@ class ProxyAsyncStream(AsyncStream):
                 content=llm_output,
                 tool_calls=llm_tool_calls_output,
             )
-            client: SyncClient = get_cached_sync_client(project_name=self.tracker_options.project_name)
-            client.log_step(
-                step_name=self.step.name,
-                step_id=self.step.id,
-                trace_id=self.step.trace_id,
-                parent_step_id=self.step.parent_step_id,
-                step_type=self.step.type,
-                tags=self.tags,
-                input={"llm_inputs": self.inputs},
-                output={"llm_outputs": patch_stream_response.model_dump(exclude_none=True)},
-                error_info=self.step.error_info,
+            enrich_step(
+                step=self.step,
+                llm_inputs=self.inputs,
+                llm_outputs=patch_stream_response.model_dump(exclude_none=True),
                 model=self.model,
                 usage=llm_usage,
-                start_time=self.step.start_time,
-                end_time=datetime.now(),
-                description=self.tracker_options.description,
-                llm_provider=self.tracker_options.llm_provider,
+                tracker_options=self.tracker_options,
             )
         return chat_completion_chunk
 
@@ -173,23 +154,13 @@ class ProxyAsyncStream(AsyncStream):
                     content=llm_output,
                     tool_calls=llm_tool_calls_output,
                 )
-                client: SyncClient = get_cached_sync_client(project_name=self.tracker_options.project_name)
-                client.log_step(
-                    step_name=self.step.name,
-                    step_id=self.step.id,
-                    trace_id=self.step.trace_id,
-                    parent_step_id=self.step.parent_step_id,
-                    step_type=self.step.type,
-                    tags=self.tags,
-                    input={"llm_inputs": self.inputs},
-                    output={"llm_outputs": patch_stream_response.model_dump(exclude_none=True)},
-                    error_info=self.step.error_info,
+                enrich_step(
+                    step=self.step,
+                    llm_inputs=self.inputs,
+                    llm_outputs=patch_stream_response.model_dump(exclude_none=True),
                     model=self.model,
                     usage=llm_usage,
-                    start_time=self.step.start_time,
-                    end_time=datetime.now(),
-                    description=self.tracker_options.description,
-                    llm_provider=self.tracker_options.llm_provider,
+                    tracker_options=self.tracker_options,
                 )
             yield chunk
 

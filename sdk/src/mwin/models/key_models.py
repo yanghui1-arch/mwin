@@ -8,7 +8,7 @@ from ..helper import serialize_helper
 class Step(BaseModel):
     name: str
     id: str | UUID
-    trace_id: str | UUID
+    trace_id: str | UUID | None = None
     parent_step_id: str | UUID | None = None
     type: Literal["general", "llm", "retrieve", "tool"] = "general"
     tags: List[str] = Field(default_factory=list)
@@ -17,6 +17,8 @@ class Step(BaseModel):
     error_info: str | None = None
     model: str | None = None
     usage: CompletionUsage | None = None
+    description: str | None = None
+    llm_provider: str = "auto"
     start_time: datetime = Field(default_factory=datetime.now)
     end_time: datetime | None = None
 

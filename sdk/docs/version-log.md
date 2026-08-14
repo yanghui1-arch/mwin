@@ -5,6 +5,11 @@ Every version updates, fixes and removings could be checked here.
 ### Breaking Change
 - Refactor SDK Trace context to support nested traces, parent-child relationships, and trace-local step stacks.
 
+### Feature
+- Export complete trace trees and standalone Steps through one background telemetry exporter per Python worker process.
+- Keep bare `@track` Steps independent with `trace_id=None`; only explicit or framework-managed Trace scopes create Trace records.
+- Add opt-in ASGI HTTP root trace instrumentation.
+
 
 ## 0.2.6
 ### Break Change

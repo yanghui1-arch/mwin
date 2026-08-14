@@ -1,14 +1,4 @@
-"""Use monkey patch to track openai completions more elegant.
-The design transfers sdk complexity to the server complexity.
-It's difficult to identify when the `openai.Stream` would be consumed.
-In the function whenever `openai.Stream` is consumed and `ChatCompletions` is created AITrace will post it as a step to enrich
-existing step, whose id is the same as the patched step. If there is no such step in the server, it will create a new one step
-to store.
-The benefit of design is split the function IO and LLM IO.
-"""
-
 import inspect
-from datetime import datetime
 from types import TracebackType
 from typing import Any, List, Dict
 from typing_extensions import override
@@ -25,6 +15,7 @@ from ...helper.llm import openai_helper, openai_multimodal_helper
 from ...context.func_context import current_function_name_context
 from ...client import get_cached_sync_client, SyncClient
 from ...logger import logger
+from ..enrichment import enrich_step
 
 
 raw_openai_create = resources.chat.completions.Completions.create
@@ -82,26 +73,13 @@ def patch_openai_chat_completions():
 
         # No stream calling openai
         model = openai_inputs.get('model', step.model)
-        tags = step.tags
-        if model is not None:
-            tags += [model]
-
-        client.log_step(
-            step_name=step.name,
-            step_id=step.id,
-            trace_id=step.trace_id,
-            parent_step_id=step.parent_step_id,
-            step_type=step.type,
-            tags=tags,
-            input={"llm_inputs": openai_inputs},
-            output={"llm_outputs": patch_std_output(resp)},
-            error_info=step.error_info,
+        enrich_step(
+            step=step,
+            llm_inputs=openai_inputs,
+            llm_outputs=patch_std_output(resp),
             model=model,
             usage=resp.usage,
-            start_time=step.start_time,
-            end_time=datetime.now(),
-            description=tracker_options.description,
-            llm_provider=tracker_options.llm_provider,
+            tracker_options=tracker_options,
         )
 
         return resp
@@ -152,23 +130,13 @@ class ProxyStream(Stream):
                 content=llm_output,
                 tool_calls=llm_tool_calls_output,
             )
-            client: SyncClient = get_cached_sync_client(project_name=self.tracker_options.project_name)
-            client.log_step(
-                step_name=self.step.name,
-                step_id=self.step.id,
-                trace_id=self.step.trace_id,
-                parent_step_id=self.step.parent_step_id,
-                step_type=self.step.type,
-                tags=self.tags,
-                input={"llm_inputs": self.inputs},
-                output={"llm_outputs": patch_stream_response.model_dump(exclude_none=True)},
-                error_info=self.step.error_info,
+            enrich_step(
+                step=self.step,
+                llm_inputs=self.inputs,
+                llm_outputs=patch_stream_response.model_dump(exclude_none=True),
                 model=self.model,
                 usage=llm_usage,
-                start_time=self.step.start_time,
-                end_time=datetime.now(),
-                description=self.tracker_options.description,
-                llm_provider=self.tracker_options.llm_provider,
+                tracker_options=self.tracker_options,
             )
         return chunk
 
@@ -191,23 +159,13 @@ class ProxyStream(Stream):
                     content=llm_output,
                     tool_calls=llm_tool_calls_output,
                 )
-                client: SyncClient = get_cached_sync_client(project_name=self.tracker_options.project_name)
-                client.log_step(
-                    step_name=self.step.name,
-                    step_id=self.step.id,
-                    trace_id=self.step.trace_id,
-                    parent_step_id=self.step.parent_step_id,
-                    step_type=self.step.type,
-                    tags=self.tags,
-                    input={"llm_inputs": self.inputs},
-                    output={"llm_outputs": patch_stream_response.model_dump(exclude_none=True)},
-                    error_info=self.step.error_info,
+                enrich_step(
+                    step=self.step,
+                    llm_inputs=self.inputs,
+                    llm_outputs=patch_stream_response.model_dump(exclude_none=True),
                     model=self.model,
                     usage=llm_usage,
-                    start_time=self.step.start_time,
-                    end_time=datetime.now(),
-                    description=self.tracker_options.description,
-                    llm_provider=self.tracker_options.llm_provider,
+                    tracker_options=self.tracker_options,
                 )
                 
             yield chunk
