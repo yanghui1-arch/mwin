@@ -5,6 +5,7 @@ import { servicesMiddleware } from './middleware/services.js';
 import apiKeys from './routes/api-keys.js';
 import auth from './routes/auth.js';
 import logs from './routes/logs.js';
+import media from './routes/media.js';
 import overview from './routes/overview.js';
 import projects from './routes/projects.js';
 import steps from './routes/steps.js';
@@ -19,6 +20,7 @@ export function createApp() {
   app.route('/api/apikey', apiKeys);
   app.route('/api/v0/project', projects);
   app.route('/api/v0/log', logs);
+  app.route('/api/v0/media', media);
   app.route('/api/v0/trace', traces);
   app.route('/api/v0/step', steps);
   app.route('/api/v0/overview', overview);

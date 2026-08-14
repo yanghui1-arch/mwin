@@ -46,6 +46,7 @@ export const projects = sqliteTable('project', {
 
 export const traces = sqliteTable('trace', {
   id: text('id').primaryKey(),
+  parentTraceId: text('parent_trace_id'),
   projectName: text('project_name').notNull(),
   projectId: integer('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
@@ -58,12 +59,13 @@ export const traces = sqliteTable('trace', {
   lastUpdateTimestamp: text('last_update_timestamp').notNull(),
 }, (table) => [
   index('idx_trace_project').on(table.projectId),
+  index('idx_trace_parent').on(table.parentTraceId),
 ]);
 
 export const steps = sqliteTable('step', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
-  traceId: text('trace_id').notNull(),
+  traceId: text('trace_id'),
   parentStepId: text('parent_step_id'),
   type: text('type').notNull(),
   tags: text('tags').notNull(),

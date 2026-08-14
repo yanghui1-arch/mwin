@@ -19,6 +19,8 @@ public class LogTraceRequest {
     @NotNull
     private String traceId;
 
+    private String parentTraceId;
+
     @NotNull
     private String traceName;
 

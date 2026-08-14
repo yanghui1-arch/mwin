@@ -154,6 +154,24 @@ class LogStepRequestDeserializationTest {
         assertNull(req.getLlmProvider());
     }
 
+    @Test
+    void deserialize_withoutTraceId_createsStandaloneStepRequest() throws Exception {
+        String json = """
+            {
+                "project_name": "p1",
+                "step_name": "s1",
+                "step_id": "00000000-0000-0000-0000-000000000001",
+                "step_type": "general",
+                "tags": [],
+                "start_time": "2024-01-01 10:00:00"
+            }
+            """;
+
+        LogStepRequest req = mapper.readValue(json, LogStepRequest.class);
+
+        assertNull(req.getTraceId());
+    }
+
     // ── llm_provider present but usage absent → Jackson constraint violation ──
 
     @Test

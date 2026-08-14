@@ -28,7 +28,6 @@ public class LogStepRequest {
     @NotNull
     private String stepId;
 
-    @NotNull
     private String traceId;
 
     private String parentStepId;

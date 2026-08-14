@@ -18,6 +18,9 @@ public class TraceFactory {
     public Trace createTrace(LogTraceRequest logTraceRequest, @NotNull Long projectId) {
         return Trace.builder()
             .id(UUID.fromString(logTraceRequest.getTraceId()))
+            .parentTraceId(logTraceRequest.getParentTraceId() == null
+                ? null
+                : UUID.fromString(logTraceRequest.getParentTraceId()))
             .projectName(logTraceRequest.getProjectName())
             .projectId(projectId)
             .name(logTraceRequest.getTraceName())

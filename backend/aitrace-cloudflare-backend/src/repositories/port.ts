@@ -1,4 +1,4 @@
-import type { ApiKey, JsonObject, NewProject, Project, Step, StepMeta, TokenSnapshot, Trace, User, UserAuth } from '../domain/types.js';
+import type { ApiKey, BatchStepWrite, JsonObject, MediaAsset, NewProject, Project, Step, StepMeta, TokenSnapshot, Trace, User, UserAuth } from '../domain/types.js';
 
 /** Persistence operations required by the application services. */
 export interface RepositoryPort {
@@ -20,6 +20,7 @@ export interface RepositoryPort {
   deleteProject(userId: string, name: string): Promise<void>;
 
   upsertTraceForUser(userId: string, trace: Trace): Promise<void>;
+  upsertBatchForUser(userId: string, traces: Trace[], steps: BatchStepWrite[], projectIds: number[]): Promise<void>;
   findTrace(traceId: string): Promise<Trace | null>;
   countTraces(projectId: number): Promise<number>;
   listTraces(projectId: number, page: number, pageSize: number): Promise<{ total: number; data: Trace[] }>;
@@ -32,4 +33,7 @@ export interface RepositoryPort {
   deleteStepsForUser(userId: string, stepIds: string[]): Promise<string[]>;
   findStepMetaForUser(userId: string, stepId: string): Promise<StepMeta | null>;
   tokenSnapshots(projectIds: number[]): Promise<TokenSnapshot[]>;
+
+  createMediaAsset(asset: MediaAsset): Promise<MediaAsset>;
+  findMediaAssetForUser(userId: string, mediaId: string): Promise<MediaAsset | null>;
 }

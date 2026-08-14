@@ -2,3 +2,7 @@
 .idea
 # VS code
 .vscode
+# Claude
+.claude
+# Agents md
+.agents

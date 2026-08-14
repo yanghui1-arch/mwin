@@ -72,6 +72,7 @@ public class TraceController {
             List<GetTraceVO> getTraceVOs = traces.stream()
                 .map(trace -> GetTraceVO.builder()
                     .id(trace.getId())
+                    .parentTraceId(trace.getParentTraceId())
                     .name(trace.getName())
                     .tags(trace.getTags())
                     .input(trace.getInput())

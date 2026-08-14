@@ -31,6 +31,16 @@ R2 stores optional media binaries, while their metadata is persisted in D1.
 - `MEDIA_BUCKET`: optional R2 bucket for `/api/v0/media/upload`.
 - `JWT_SECRET`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`: Worker secrets.
 
+To enable the SDK image endpoints, create an R2 bucket and bind it as
+`MEDIA_BUCKET`; without that binding the media routes return a configuration
+error while all other API routes remain available.
+
+```toml
+[[r2_buckets]]
+binding = "MEDIA_BUCKET"
+bucket_name = "aitrace-media"
+```
+
 ## Database workflow
 
 Existing `migrations/` files remain the production migration history used by

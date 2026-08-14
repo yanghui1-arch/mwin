@@ -35,6 +35,7 @@ function projectAggregateStatement(db: D1Database, userId: string): D1PreparedSt
 function toTrace(row: typeof traceTable.$inferSelect): Trace {
   return {
     id: row.id,
+    parentTraceId: row.parentTraceId,
     projectName: row.projectName,
     projectId: row.projectId,
     name: row.name,
@@ -54,13 +55,13 @@ function toTrace(row: typeof traceTable.$inferSelect): Trace {
  */
 export async function upsertTraceForUser(db: D1Database, userId: string, trace: Trace): Promise<void> {
   const results = await db.batch([
-    db.prepare(`INSERT INTO trace (id, project_name, project_id, name, conversation_id, tags, input, output, error_info, start_time, last_update_timestamp)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET project_name = excluded.project_name,
+    db.prepare(`INSERT INTO trace (id, parent_trace_id, project_name, project_id, name, conversation_id, tags, input, output, error_info, start_time, last_update_timestamp)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET parent_trace_id = excluded.parent_trace_id, project_name = excluded.project_name,
       project_id = excluded.project_id, name = excluded.name, conversation_id = excluded.conversation_id, tags = excluded.tags,
       input = excluded.input, output = excluded.output, error_info = excluded.error_info, start_time = excluded.start_time,
       last_update_timestamp = excluded.last_update_timestamp
       WHERE trace.project_id IN (SELECT id FROM project WHERE user_uuid = ?)`)
-      .bind(trace.id, trace.projectName, trace.projectId, trace.name, trace.conversationId, stringifyJson(trace.tags), stringifyJson(trace.input), stringifyJson(trace.output), trace.errorInfo, trace.startTime, trace.lastUpdateTimestamp, userId),
+      .bind(trace.id, trace.parentTraceId, trace.projectName, trace.projectId, trace.name, trace.conversationId, stringifyJson(trace.tags), stringifyJson(trace.input), stringifyJson(trace.output), trace.errorInfo, trace.startTime, trace.lastUpdateTimestamp, userId),
     db.prepare(`UPDATE project SET
       avg_duration = COALESCE((
         SELECT CAST(AVG((julianday(trace.last_update_timestamp) - julianday(trace.start_time)) * 86400000) AS INTEGER)

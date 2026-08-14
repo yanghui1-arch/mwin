@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -27,7 +28,9 @@ import java.util.UUID;
  * @since 2025-10-24
  */
 @Entity
-@Table(name = "trace")
+@Table(name = "trace", indexes = {
+    @Index(name = "idx_trace_parent", columnList = "parent_trace_id")
+})
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -35,6 +38,9 @@ import java.util.UUID;
 public class Trace {
     @Id
     private UUID id;
+
+    @Column(name = "parent_trace_id")
+    private UUID parentTraceId;
 
     @NotBlank
     @Column(name = "project_name")
