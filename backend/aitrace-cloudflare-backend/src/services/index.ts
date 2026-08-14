@@ -1,18 +1,21 @@
 import { LogService } from './log.js';
 import { OverviewService, buildSummary, percentageChange } from './overview.js';
 import { ProjectService } from './project.js';
+import { MediaService } from './media.js';
 import type { RepositoryPort } from '../repositories/port.js';
-import type { JsonObject, LogRequest } from '../domain/types.js';
+import type { JsonObject, LogRequest, LogTraceTreeRequest } from '../domain/types.js';
 
 /** Request-scoped facade exposing the business operations used by route handlers. */
 export class Services {
   private readonly projectService: ProjectService;
   private readonly logService: LogService;
   private readonly overviewService: OverviewService;
-  constructor(readonly repositories: RepositoryPort) {
+  private readonly mediaService: MediaService;
+  constructor(readonly repositories: RepositoryPort, mediaBucket?: R2Bucket) {
     this.projectService = new ProjectService(repositories);
     this.logService = new LogService(repositories, this.projectService);
     this.overviewService = new OverviewService(repositories);
+    this.mediaService = new MediaService(repositories, mediaBucket);
   }
   /** Rotates the user's telemetry credential. */
   generateAndStoreApiKey(userId: string) { return this.projectService.generateAndStoreApiKey(userId); }
@@ -38,6 +41,8 @@ export class Services {
   logTrace(userId: string, request: LogRequest) { return this.logService.logTrace(userId, request); }
   /** Records telemetry and billing data for one step. */
   logStep(userId: string, request: LogRequest) { return this.logService.logStep(userId, request); }
+  /** Records one complete trace-tree snapshot atomically. */
+  logTraceTree(userId: string, request: LogTraceTreeRequest) { return this.logService.logTraceTree(userId, request); }
   /** Lists the steps belonging to a trace in execution order. */
   getTracks(userId: string, traceId: string) { return this.repositories.listStepsByTraceForUser(userId, traceId); }
   /** Builds the dashboard token-usage summary. */
@@ -46,5 +51,9 @@ export class Services {
   getTokenCurve(userId: string, windowHours: number, projectIds: number[], today?: Date) {
     return this.overviewService.getTokenCurve(userId, windowHours, projectIds, today);
   }
+  /** Stores an image uploaded by the SDK. */
+  storeImage(userId: string, projectName: string, file: File) { return this.mediaService.storeImage(userId, projectName, file); }
+  /** Reads a dashboard user's tracked image. */
+  loadImage(userId: string, mediaId: string) { return this.mediaService.loadImage(userId, mediaId); }
 }
 export { buildSummary, percentageChange };

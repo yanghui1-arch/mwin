@@ -16,6 +16,7 @@ class MemoryRepositories {
     this.writtenCosts.push(cost);
   }
   async upsertTraceForUser(): Promise<void> {}
+  async upsertBatchForUser(): Promise<void> {}
 }
 
 test('logStep supplies only the latest step cost to the atomic repository mutation', async () => {
@@ -33,4 +34,18 @@ test('logStep supplies only the latest step cost to the atomic repository mutati
   await service.logStep('user-1', { ...request, usage: { prompt_tokens: 2000, completion_tokens: 1000 } });
 
   assert.deepEqual(repositories.writtenCosts, ['0.0002699980', '0.0003085680']);
+});
+
+test('logStep accepts a standalone step without a trace id', async () => {
+  const repositories = new MemoryRepositories();
+  const project: Project = { id: 1, userId: 'user-1', name: 'demo', description: null, strategy: null,
+    averageDuration: 0, cost: '0.0000000000', createdTimestamp: '', lastUpdateTimestamp: '' };
+  const service = new LogService(repositories, { ensureProject: async () => project });
+
+  await service.logStep('user-1', {
+    project_name: 'demo', step_id: 'step-standalone', step_name: 'call', trace_id: null, step_type: 'general', tags: [],
+    input: { value: 'a' }, output: { value: 'b' }, start_time: '2026-07-09T00:00:00Z',
+  });
+
+  assert.equal(repositories.step?.traceId, null);
 });

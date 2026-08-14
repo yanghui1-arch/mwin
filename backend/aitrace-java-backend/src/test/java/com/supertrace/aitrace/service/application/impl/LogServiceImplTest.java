@@ -6,6 +6,8 @@ import com.supertrace.aitrace.domain.core.step.metadata.StepMeta;
 import com.supertrace.aitrace.domain.core.usage.LLMUsage;
 import com.supertrace.aitrace.dto.step.LogStepRequest;
 import com.supertrace.aitrace.dto.trace.LogTraceRequest;
+import com.supertrace.aitrace.dto.log.LogTraceTreeRequest;
+import com.supertrace.aitrace.dto.log.LogTraceTreeResponse;
 import com.supertrace.aitrace.repository.ProjectRepository;
 import com.supertrace.aitrace.service.domain.ProjectService;
 import com.supertrace.aitrace.service.domain.StepMetaService;
@@ -15,6 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -372,5 +375,37 @@ class LogServiceImplTest {
         service.logTrace(userId, req);
 
         verify(projectRepository).updateAverageDuration(10L, 5000);
+    }
+
+    @Test
+    void logTraceTree_preservesTraceOrderAndUpdatesProjectAggregatesOnce() {
+        LogTraceRequest parent = buildTraceRequest("test-project", T_START, T_3S);
+        LogTraceRequest child = buildTraceRequest("test-project", T_START, T_5S);
+        child.setParentTraceId(parent.getTraceId());
+        LogStepRequest step = buildStepRequest("test-project");
+        UUID stepId = UUID.fromString(step.getStepId());
+
+        LogTraceTreeRequest request = new LogTraceTreeRequest();
+        request.setTraces(List.of(parent, child));
+        request.setSteps(List.of(step));
+
+        when(projectRepository.findProjectsByName("test-project")).thenReturn(List.of(existingProject));
+        when(traceService.countByProjectId(10L)).thenReturn(0L);
+        when(traceService.findById(any())).thenReturn(Optional.empty());
+        when(stepService.logStep(userId, step, 10L)).thenReturn(stepId);
+        when(stepMetaService.findCostsByStepIds(any())).thenReturn(Map.of());
+        when(stepMetaService.addStepMeta(any(), any(), any(), any(), any()))
+            .thenReturn(StepMeta.builder().id(stepId).cost(new BigDecimal("2.5")).build());
+
+        LogTraceTreeResponse response = service.logTraceTree(userId, request);
+
+        assertEquals(2, response.traces());
+        assertEquals(1, response.steps());
+
+        ArgumentCaptor<LogTraceRequest> traceCaptor = ArgumentCaptor.forClass(LogTraceRequest.class);
+        verify(traceService, times(2)).createTrace(traceCaptor.capture(), eq(10L));
+        assertEquals(List.of(parent, child), traceCaptor.getAllValues());
+        verify(projectRepository, times(1)).updateAverageDuration(10L, 4000);
+        verify(projectRepository, times(1)).updateCost(10L, new BigDecimal("2.5"));
     }
 }

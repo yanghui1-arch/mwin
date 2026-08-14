@@ -5,7 +5,7 @@ from openai.types.completion_usage import CompletionUsage
 from openai.types.chat import ChatCompletion, chat_completion
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk, Choice, ChoiceDelta
 
-from mwin import track
+from mwin import start_trace, track
 from mwin.models import LLMProvider
 
 
@@ -105,7 +105,7 @@ def test_track_openai_chat_completions_logs_llm_step(fake_client, monkeypatch):
     assert "temperature" not in llm_inputs
 
     llm_output = llm_steps[0]["output"]["llm_outputs"]
-    assert llm_output.content == "ok"
+    assert llm_output["content"] == "ok"
 
 
 def test_track_openai_chat_completions_stream_logs_llm_step(fake_client, monkeypatch):
@@ -128,8 +128,9 @@ def test_track_openai_chat_completions_stream_logs_llm_step(fake_client, monkeyp
                 stream=True,
             )
 
-        stream = call_llm_stream()
-        list(stream)
+        with start_trace():
+            stream = call_llm_stream()
+            list(stream)
     finally:
         resources.chat.completions.Completions.create = original_create
         resources.chat.completions.AsyncCompletions.create = original_async_create

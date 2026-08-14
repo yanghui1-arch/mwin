@@ -12,6 +12,7 @@ interface TraceOutput {
 
 export type Trace = {
   id: string;
+  parentTraceId: string | null;
   name: string;
   tags: string[];
   input?: Record<string, unknown>;

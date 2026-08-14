@@ -10,10 +10,11 @@ import functools
 from .options import TrackerOptions
 from .. import context
 from ..context.func_context import current_function_name_context
-from ..models.key_models import Step, Trace
+from ..models.key_models import Step
 from ..models.common import LLMProvider
 from ..helper import args_helper, inspect_helper, exception_helper
-from ..client import sync_client
+from ..helper.llm import provider_helper
+from ..logger import logger
 from ..patches.llm_patch_config import set_llm_patch_config, reset_llm_patch_config
 
 
@@ -44,8 +45,9 @@ class BaseTracker(ABC):
         description: str | None = None,
     ) -> Callable:
         """track step decorator
-        Track step in calling modules. If use decorator to track step, the step and the trace id will be always a whole new ones.
-        In other words, you cannot set the step id and its belonging trace id. It's recommended to be used in a simple demo.
+        Track a function as a Step. Outside ``start_trace()``, the Step is
+        exported independently with ``trace_id=None``. Inside a Trace scope,
+        it belongs to that Trace.
 
         Args:
             func_name(str | Callable | None): caller can set it they want to name with 'str' type. If caller doesn't set, it will be `Callable`.
@@ -133,40 +135,43 @@ class BaseTracker(ABC):
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs) -> Any:
-            result = None
-            func_exception: Exception | None = None
-            error_info: str | None = None
-            patched_token: Token | None =  None
-
-            # before track
-            patched_token = self._before_calling_function(
+            start_arguments = self._prepare_start_arguments(
                 func=func,
                 tracker_options=tracker_options,
                 args=args,
                 kwargs=kwargs,
             )
 
+            result = None
+            func_exception: Exception | None = None
+            error_info: str | None = None
+            patched_token = self._before_calling_function(
+                func=func,
+                tracker_options=tracker_options,
+                start_arguments=start_arguments,
+            )
+            token = current_function_name_context.set(func.__name__)
             try:
-                token = current_function_name_context.set(func.__name__)
                 result = func(*args, **kwargs)
-            except Exception as e:
-                error_info = str(e)
-                error_info = exception_helper.collect_exception(error_info)
-                func_exception = e
+            except Exception as error:
+                error_info = exception_helper.collect_exception(str(error))
+                func_exception = error
             finally:
-                # after track
-                self._after_calling_function(
-                    func=func,
-                    output=result,
-                    error_info=error_info,
-                    tracker_options=tracker_options,
-                    patched_token=patched_token,
-                )
-                current_function_name_context.reset(token)
-                if func_exception is not None:
-                    raise func_exception
-                else:
-                    return result
+                try:
+                    self._after_calling_function(
+                        func=func,
+                        output=result,
+                        error_info=error_info,
+                        tracker_options=tracker_options,
+                    )
+                finally:
+                    current_function_name_context.reset(token)
+                    if patched_token is not None:
+                        reset_llm_patch_config(token=patched_token)
+
+            if func_exception is not None:
+                raise func_exception
+            return result
 
         return wrapper
 
@@ -185,94 +190,103 @@ class BaseTracker(ABC):
 
         @functools.wraps(func)
         async def wrapper(*args, **kwargs) -> Any:
-            result = None
-            func_exception: Exception | None = None
-            error_info: str | None = None
-            patched_token: Token | None = None
-
-            # before track
-            patched_token = self._before_calling_function(
+            start_arguments = self._prepare_start_arguments(
                 func=func,
                 tracker_options=tracker_options,
                 args=args,
                 kwargs=kwargs,
             )
 
+            result = None
+            func_exception: Exception | None = None
+            error_info: str | None = None
+            patched_token = self._before_calling_function(
+                func=func,
+                tracker_options=tracker_options,
+                start_arguments=start_arguments,
+            )
+            token = current_function_name_context.set(func.__name__)
             try:
-                token = current_function_name_context.set(func.__name__)
                 result = await func(*args, **kwargs)
-            except Exception as e:
-                error_info = str(e)
-                error_info = exception_helper.collect_exception(error_info)
-                func_exception = e
+            except Exception as error:
+                error_info = exception_helper.collect_exception(str(error))
+                func_exception = error
             finally:
-                # after track
-                self._after_calling_function(
-                    func=func,
-                    output=result,
-                    error_info=error_info,
-                    tracker_options=tracker_options,
-                    patched_token=patched_token
-                )
-                current_function_name_context.reset(token)
-                if func_exception is not None:
-                    raise func_exception
-                else:
-                    return result
+                try:
+                    self._after_calling_function(
+                        func=func,
+                        output=result,
+                        error_info=error_info,
+                        tracker_options=tracker_options,
+                    )
+                finally:
+                    current_function_name_context.reset(token)
+                    if patched_token is not None:
+                        reset_llm_patch_config(token=patched_token)
+
+            if func_exception is not None:
+                raise func_exception
+            return result
 
         return wrapper
 
-    def _before_calling_function(
+    def _prepare_start_arguments(
         self,
-        func:Callable,
+        func: Callable,
         tracker_options: TrackerOptions,
-        args:Tuple,
-        kwargs:Dict[str, Any]
-    ) -> Token | None:
-        """ Prepare and store input into storage context before calling function.
-        Create a new step and patch llm method.
+        args: Tuple,
+        kwargs: Dict[str, Any],
+    ) -> args_helper.StartArguments:
+        """Parse tracked function arguments with a safe fallback.
 
         Args:
-            func(Callable): func
-            tracker_options(TrackerOptions): tracker options
-            args(Tuple): passing func arguments. If no arguments, the dictionary is empty.
-            kwargs(Dict[str, Any]): passing func keywords arguements. If no keywords arguments, the dictionary is empty.
+            func: Tracked function.
+            tracker_options: Configuration for the tracked function.
+            args: Positional arguments passed to the function.
+            kwargs: Keyword arguments passed to the function.
 
         Returns:
-            A patch token or None if track_options not point out provider.
+            Parsed inputs and metadata used to create the Step.
         """
 
-        patch_token = None
-
         try:
-            start_arguments:args_helper.StartArguments = self.start_inputs_args_preprocess(
+            return self.start_inputs_args_preprocess(
                 func=func,
                 tracker_options=tracker_options,
                 args=args,
-                kwargs=kwargs
+                kwargs=kwargs,
             )
-
         except Exception as exception:
-            print(str(exception))
-
-            start_arguments = args_helper.StartArguments(
+            logger.warning(
+                "Mwin could not parse tracked function inputs",
+                exc_info=True,
+            )
+            return args_helper.StartArguments(
                 func_name=inspect_helper.get_call_name(func=func, args=args),
                 tags=tracker_options.tags,
             )
 
-        tracker_options.func_name = start_arguments.func_name
+    def _before_calling_function(
+        self,
+        func: Callable,
+        tracker_options: TrackerOptions,
+        start_arguments: args_helper.StartArguments,
+    ) -> Token | None:
+        """Create and register a Step before calling the tracked function.
 
-        current_trace = context.get_storage_current_trace_data()
-        if not current_trace:
-            current_trace = args_helper.create_new_trace(
-                input=start_arguments.input,
-                name=tracker_options.trace_name,
-                tags=tracker_options.tags,
-            )
-        elif current_trace.input is None:
-            # Capture the first function's input. The input is `{}`` means input of the fist step is nothing.
-            current_trace.input = start_arguments.input
-        context.set_storage_trace(current_trace=current_trace)
+        Args:
+            func: Tracked function.
+            tracker_options: Configuration for the tracked function.
+            start_arguments: Parsed function inputs and metadata.
+
+        Returns:
+            Patch context token, or ``None`` when no provider patch context is
+            required.
+        """
+
+        patch_token = None
+
+        tracker_options.func_name = start_arguments.func_name
 
         new_step: Step = args_helper.create_new_step(
             input=start_arguments.input,
@@ -310,7 +324,6 @@ class BaseTracker(ABC):
         output: Any,
         error_info: str | None,
         tracker_options: TrackerOptions,
-        patched_token: Token | None,
     ):
         """ Prepare and log output after track function
         Log step, trace and then restore llm patched token which guarantees step-in and step-out.
@@ -320,7 +333,6 @@ class BaseTracker(ABC):
             output(Any): output from decorated function.
             error_info(str | None): error information during executing decorated function.
             tracker_options(TrackerOption): tracker options.
-            patched_token(token | None): llm patched token to reset.
         """
 
         try:
@@ -355,83 +367,31 @@ class BaseTracker(ABC):
         # update current step
         # TODO: improve update and try to encapsulate it
         func_inputs = current_step.input
-        current_step.input = {'func_inputs': func_inputs}
+        if not (
+            isinstance(func_inputs, dict)
+            and "func_inputs" in func_inputs
+        ):
+            current_step.input = {'func_inputs': func_inputs}
 
         # Until executing here
         if current_step.output is None:
             current_step.output = {}
-        current_step.output['func_output'] = end_args.output.get('func_output', '<Error happens while accessing function inputs>')
+        current_step.output['func_output'] = end_args.output.get('func_output', '<Error happens while accessing function output>')
 
         current_step.error_info = end_args.error_info
+        current_step.description = tracker_options.description
+        current_step.llm_provider = provider_helper.resolve_llm_provider(
+            tracker_options.llm_provider,
+            current_step.model,
+        ).value
         current_step.end_time = datetime.now()
 
-        # update trace
-        if not context.get_storage_current_trace_data():
-            current_trace = args_helper.create_new_trace(
-                name=tracker_options.trace_name,
-                tags=tracker_options.tags,
-            )
-            context.set_storage_trace(current_trace=current_trace)
-
-        current_trace: Trace = context.get_storage_current_trace_data()
-        # refresh trace update timestamp
-        current_trace.last_update_timestamp = datetime.now()
-
-        # TODO: improve current trace final output
-        # The easist way to record current trace output. But it's not for the final output just every step output.
-        if error_info is None:
-            current_trace.output = end_args.output
-        else:
-            current_trace.output = None
-            current_trace.error_info = error_info
-
-        context.set_storage_trace(current_trace=current_trace)
-        context.add_storage_completed_step(current_step)
-
-
-        client: sync_client.SyncClient = sync_client.get_cached_sync_client(
-            project_name=tracker_options.project_name
+        context.complete_step(
+            step=current_step,
+            project_name=tracker_options.project_name,
+            trace_output=end_args.output,
+            error_info=error_info,
         )
-
-        client.log_step(
-            step_name=current_step.name,
-            step_id=str(current_step.id),
-            trace_id=str(current_step.trace_id),
-            parent_step_id=str(current_step.parent_step_id),
-            step_type=current_step.type,
-            tags=current_step.tags,
-            input=current_step.input,
-            output=current_step.output,
-            error_info=current_step.error_info,
-            model=current_step.model,
-            usage=current_step.usage,
-            start_time=current_step.start_time,
-            end_time=current_step.end_time,
-            description=tracker_options.description,
-            llm_provider=tracker_options.llm_provider,
-        )
-
-        client.log_trace(
-            trace_name=current_trace.name,
-            trace_id=str(current_trace.id),
-            parent_trace_id=(
-                str(current_trace.parent_trace_id)
-                if current_trace.parent_trace_id is not None
-                else None
-            ),
-            conversation_id=str(current_trace.conversation_id),
-            tags=current_trace.tags,
-            input=current_trace.input,
-            output=current_trace.output,
-            error_info=current_trace.error_info,
-            start_time=current_trace.start_time,
-            last_update_timestamp=current_trace.last_update_timestamp,
-        )
-
-
-        # Reset llm patch config.
-        if patched_token is not None:
-            reset_llm_patch_config(token=patched_token)
 
     @abstractmethod
     def start_inputs_args_preprocess(

@@ -2,8 +2,8 @@ import type { JsonObject, Project, Step, Trace, Usage } from '../domain/types.js
 import { parseJson } from '../lib/utils.js';
 
 export interface ProjectRow { id: number; user_uuid: string; name: string; description: string | null; strategy: string | null; avg_duration: number; cost: string; created_timestamp: string; last_update_timestamp: string }
-export interface TraceRow { id: string; project_name: string; project_id: number; name: string; conversation_id: string; tags: string; input: string | null; output: string | null; error_info: string | null; start_time: string; last_update_timestamp: string }
-export interface StepRow { id: string; parent_step_id: string | null; name: string; trace_id: string; type: string; tags: string; input: string | null; output: string | null; error_info: string | null; model: string | null; usage: string | null; project_name: string; project_id: number; start_time: string; end_time: string | null; cost?: string | null }
+export interface TraceRow { id: string; parent_trace_id: string | null; project_name: string; project_id: number; name: string; conversation_id: string; tags: string; input: string | null; output: string | null; error_info: string | null; start_time: string; last_update_timestamp: string }
+export interface StepRow { id: string; parent_step_id: string | null; name: string; trace_id: string | null; type: string; tags: string; input: string | null; output: string | null; error_info: string | null; model: string | null; usage: string | null; project_name: string; project_id: number; start_time: string; end_time: string | null; cost?: string | null }
 
 /** Converts a D1 project row to the domain naming convention. */
 export function projectFromRow(row: ProjectRow | null): Project | null {
@@ -15,7 +15,7 @@ export function projectFromRow(row: ProjectRow | null): Project | null {
 /** Converts a D1 trace row and parses its JSON columns. */
 export function traceFromRow(row: TraceRow | null): Trace | null {
   if (!row) return null;
-  return { id: row.id, projectName: row.project_name, projectId: row.project_id, name: row.name,
+  return { id: row.id, parentTraceId: row.parent_trace_id, projectName: row.project_name, projectId: row.project_id, name: row.name,
     conversationId: row.conversation_id, tags: parseJson<string[]>(row.tags, []), input: parseJson<JsonObject>(row.input),
     output: parseJson<JsonObject>(row.output), errorInfo: row.error_info, startTime: row.start_time, lastUpdateTimestamp: row.last_update_timestamp };
 }

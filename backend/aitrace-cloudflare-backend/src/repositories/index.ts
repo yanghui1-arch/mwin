@@ -4,8 +4,10 @@ import * as users from './user.js';
 import * as projects from './project.js';
 import * as traces from './trace.js';
 import * as steps from './step.js';
+import * as media from './media.js';
+import * as batches from './batch.js';
 import type { RepositoryPort } from './port.js';
-import type { ApiKey, JsonObject, NewProject, Step, Trace, User, UserAuth } from '../domain/types.js';
+import type { ApiKey, BatchStepWrite, JsonObject, MediaAsset, NewProject, Step, Trace, User, UserAuth } from '../domain/types.js';
 
 export class Repositories implements RepositoryPort {
   private readonly db: AppDatabase;
@@ -38,6 +40,9 @@ export class Repositories implements RepositoryPort {
   deleteProject(userId: string, name: string) { return projects.deleteProject(this.db, userId, name); }
 
   upsertTraceForUser(userId: string, trace: Trace) { return traces.upsertTraceForUser(this.rawDb, userId, trace); }
+  upsertBatchForUser(userId: string, traceItems: Trace[], stepItems: BatchStepWrite[], projectIds: number[]) {
+    return batches.upsertBatchForUser(this.rawDb, userId, traceItems, stepItems, projectIds);
+  }
   findTrace(traceId: string) { return traces.findTrace(this.db, traceId); }
   countTraces(projectId: number) { return traces.countTraces(this.db, projectId); }
   listTraces(projectId: number, page: number, pageSize: number) {
@@ -64,4 +69,9 @@ export class Repositories implements RepositoryPort {
     return steps.findStepMetaForUser(this.db, userId, stepId);
   }
   tokenSnapshots(projectIds: number[]) { return steps.tokenSnapshots(this.db, projectIds); }
+
+  createMediaAsset(asset: MediaAsset) { return media.createMediaAsset(this.db, asset); }
+  findMediaAssetForUser(userId: string, mediaId: string) {
+    return media.findMediaAssetForUser(this.db, userId, mediaId);
+  }
 }

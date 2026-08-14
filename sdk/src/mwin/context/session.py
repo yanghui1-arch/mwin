@@ -1,4 +1,3 @@
-from _thread import RLock
 from dataclasses import dataclass, field, replace
 from datetime import datetime
 from typing import Literal
@@ -32,8 +31,7 @@ class TraceTreeBuffer:
     """Collect data and lifecycle state for one complete trace tree.
 
     Trace and step records are keyed by their string-normalized IDs. Keeping
-    each model beside its status makes registration and lifecycle transitions
-    atomic under the same lock and prevents separate maps from drifting apart.
+    each model beside its status prevents separate maps from drifting apart.
     """
 
     _trace_records: dict[str, _TraceRecord] = field(
@@ -48,7 +46,8 @@ class TraceTreeBuffer:
     )
     """Step records the key is the step id"""
 
-    _lock: RLock = field(default_factory=RLock, init=False, repr=False)
+    _project_name: str | None = field(default=None, init=False, repr=False)
+
 
     @property
     def traces(self) -> tuple[Trace, ...]:
@@ -58,8 +57,7 @@ class TraceTreeBuffer:
             Traces registered in this tree buffer.
         """
 
-        with self._lock:
-            return tuple(record.trace for record in self._trace_records.values())
+        return tuple(record.trace for record in self._trace_records.values())
 
     @property
     def steps(self) -> tuple[Step, ...]:
@@ -69,8 +67,11 @@ class TraceTreeBuffer:
             Steps registered in this tree buffer.
         """
 
-        with self._lock:
-            return tuple(record.step for record in self._step_records.values())
+        return tuple(record.step for record in self._step_records.values())
+
+    @property
+    def project_name(self) -> str | None:
+        return self._project_name
 
     @property
     def is_complete(self) -> bool:
@@ -80,16 +81,15 @@ class TraceTreeBuffer:
             ``True`` when the complete trace tree is ready for export.
         """
 
-        with self._lock:
-            traces_complete = bool(self._trace_records) and all(
-                record.status != "active"
-                for record in self._trace_records.values()
-            )
-            steps_complete = all(
-                record.status == "completed"
-                for record in self._step_records.values()
-            )
-            return traces_complete and steps_complete
+        traces_complete = bool(self._trace_records) and all(
+            record.status != "active"
+            for record in self._trace_records.values()
+        )
+        steps_complete = all(
+            record.status == "completed"
+            for record in self._step_records.values()
+        )
+        return traces_complete and steps_complete
 
     def add_trace(self, trace: Trace) -> None:
         """Register or update a trace without changing its original order.
@@ -99,12 +99,11 @@ class TraceTreeBuffer:
         """
 
         trace_id = str(trace.id)
-        with self._lock:
-            record = self._trace_records.get(trace_id)
-            if record is None:
-                self._trace_records[trace_id] = _TraceRecord(trace=trace)
-            else:
-                record.trace = trace
+        record = self._trace_records.get(trace_id)
+        if record is None:
+            self._trace_records[trace_id] = _TraceRecord(trace=trace)
+        else:
+            record.trace = trace
 
     def add_step(self, step: Step) -> None:
         """Register or update a step without changing its original order.
@@ -114,12 +113,11 @@ class TraceTreeBuffer:
         """
 
         step_id = str(step.id)
-        with self._lock:
-            record = self._step_records.get(step_id)
-            if record is None:
-                self._step_records[step_id] = _StepRecord(step=step)
-            else:
-                record.step = step
+        record = self._step_records.get(step_id)
+        if record is None:
+            self._step_records[step_id] = _StepRecord(step=step)
+        else:
+            record.step = step
 
     def complete_step(self, step: Step) -> None:
         """Update and mark a registered step as completed.
@@ -129,16 +127,15 @@ class TraceTreeBuffer:
         """
 
         step_id = str(step.id)
-        with self._lock:
-            record = self._step_records.get(step_id)
-            if record is None:
-                self._step_records[step_id] = _StepRecord(
-                    step=step,
-                    status="completed",
-                )
-            else:
-                record.step = step
-                record.status = "completed"
+        record = self._step_records.get(step_id)
+        if record is None:
+            self._step_records[step_id] = _StepRecord(
+                step=step,
+                status="completed",
+            )
+        else:
+            record.step = step
+            record.status = "completed"
 
     def complete_trace(
         self,
@@ -153,16 +150,23 @@ class TraceTreeBuffer:
         """
 
         trace_id = str(trace.id)
-        with self._lock:
-            record = self._trace_records.get(trace_id)
-            if record is None:
-                self._trace_records[trace_id] = _TraceRecord(
-                    trace=trace,
-                    status=status,
-                )
-            else:
-                record.trace = trace
-                record.status = status
+        record = self._trace_records.get(trace_id)
+        if record is None:
+            self._trace_records[trace_id] = _TraceRecord(
+                trace=trace,
+                status=status,
+            )
+        else:
+            record.trace = trace
+            record.status = status
+
+    def set_project_name(self, project_name: str | None) -> None:
+        """Remember the project selected by the first tracked step."""
+
+        if project_name is None:
+            return
+        if self._project_name is None:
+            self._project_name = project_name
 
     def get_trace_status(
         self,
@@ -177,9 +181,8 @@ class TraceTreeBuffer:
             Current trace status, or ``None`` when the trace is not registered.
         """
 
-        with self._lock:
-            record = self._trace_records.get(str(trace_id))
-            return record.status if record is not None else None
+        record = self._trace_records.get(str(trace_id))
+        return record.status if record is not None else None
 
     def get_step_status(
         self,
@@ -194,9 +197,8 @@ class TraceTreeBuffer:
             Current step status, or ``None`` when the step is not registered.
         """
 
-        with self._lock:
-            record = self._step_records.get(str(step_id))
-            return record.status if record is not None else None
+        record = self._step_records.get(str(step_id))
+        return record.status if record is not None else None
 
 
 @dataclass(frozen=True, slots=True)

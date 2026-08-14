@@ -2,7 +2,7 @@ import asyncio
 
 import pytest
 
-from mwin import context, track
+from mwin import context, start_trace, track
 
 
 @track(tags=["unit"], step_type="general", model="demo-model")
@@ -23,7 +23,7 @@ def test_track_sync(fake_client):
 
     assert result == 3
     assert len(fake_client.steps) == 1
-    assert len(fake_client.traces) == 1
+    assert len(fake_client.traces) == 0
 
     step = fake_client.steps[0]
     assert step["step_name"] == "add"
@@ -33,9 +33,7 @@ def test_track_sync(fake_client):
     assert step["step_type"] == "general"
     assert step["model"] == "demo-model"
     assert step["description"] == "Add numbers."
-
-    trace = fake_client.traces[0]
-    assert trace["output"] == {"func_output": 3}
+    assert step["trace_id"] is None
 
 
 def test_track_inner_func_input_with_kwargs(fake_client):
@@ -52,9 +50,7 @@ def test_track_inner_func_input_with_kwargs(fake_client):
 
     assert result == -1
     assert len(fake_client.steps) == 1
-    assert len(fake_client.traces) == 1
-
-    print(fake_client.steps)
+    assert len(fake_client.traces) == 0
 
     step = fake_client.steps[0]
     assert step["step_name"] == "test_track_inner_func_input_with_kwargs.sub"
@@ -64,9 +60,7 @@ def test_track_inner_func_input_with_kwargs(fake_client):
     assert step["step_type"] == "general"
     assert step["model"] == "demo-model"
     assert step["description"] == "Sub numbers."
-
-    trace = fake_client.traces[0]
-    assert trace["output"] == {"func_output": -1}
+    assert step["trace_id"] is None
 
 
 def test_track_inner_func_without_args(fake_client):
@@ -104,15 +98,13 @@ def test_track_exception_is_logged_and_raised(fake_client):
         boom()
 
     assert len(fake_client.steps) == 1
-    assert len(fake_client.traces) == 1
+    assert len(fake_client.traces) == 0
 
     step = fake_client.steps[0]
     assert step["error_info"] == "boom"
     assert step["output"]["func_output"] is None
 
-    trace = fake_client.traces[0]
-    assert trace["error_info"] == "boom"
-    assert trace["output"] is None
+    assert step["trace_id"] is None
 
 
 def test_track_async_records_output(fake_client):
@@ -126,12 +118,13 @@ def test_track_async_records_output(fake_client):
 
     assert result == "ok"
     assert len(fake_client.steps) == 1
-    assert len(fake_client.traces) == 1
+    assert len(fake_client.traces) == 0
+    assert fake_client.steps[0]["trace_id"] is None
     assert fake_client.steps[0]["output"]["func_output"] == "ok"
 
 
-def test_two_requests_have_different_traces(fake_client):
-    """Two separate HTTP requests should produce two different traces."""
+def test_separate_standalone_calls_do_not_create_traces(fake_client):
+    """Separate bare calls produce standalone Steps without Traces."""
 
     @track(tags=["unit"])
     def handle_request(value):
@@ -148,33 +141,23 @@ def test_two_requests_have_different_traces(fake_client):
     # Second request
     handle_request("second")
 
-    assert len(fake_client.traces) == 2
+    assert len(fake_client.traces) == 0
     assert len(fake_client.steps) == 2
+    assert fake_client.steps[0]["trace_id"] is None
+    assert fake_client.steps[1]["trace_id"] is None
 
 
-    # Two traces should have different trace IDs
-    assert fake_client.traces[0]["trace_id"] != fake_client.traces[1]["trace_id"]
-
-    # Each step should reference its own trace
-    assert fake_client.steps[0]["trace_id"] == fake_client.traces[0]["trace_id"]
-    assert fake_client.steps[1]["trace_id"] == fake_client.traces[1]["trace_id"]
-
-
-def test_sequential_track_calls_share_trace(fake_client):
-    """Sequential @track calls from an untracked parent share one trace.
-
-    This is the core design: one execution chain = one trace.
-    All @track functions within the same chain (thread context)
-    belong to the same interaction.
-    """
+def test_sequential_track_calls_share_explicit_root_trace(fake_client):
+    """Sequential calls inside one root scope share its trace."""
 
     @track(tags=["unit"])
     def step(value):
         return value
 
-    step("first")
-    step("second")
-    step("third")
+    with start_trace():
+        step("first")
+        step("second")
+        step("third")
 
     assert len(fake_client.steps) == 3
 
@@ -184,27 +167,49 @@ def test_sequential_track_calls_share_trace(fake_client):
     assert fake_client.steps[2]["trace_id"] == trace_id
 
 
-def test_trace_input_keeps_first_function_input(fake_client):
-    """Trace input should be frozen from the first tracked function call."""
+def test_sequential_bare_calls_remain_standalone(fake_client):
+    """Sequential bare calls do not introduce a Trace lifecycle."""
     @track(tags=["unit"])
     def step(value):
         return value
-    payload = {"value": "first"}
     step(["hello", "second"])
-
-    payload["value"] = "second"
     step(["hello", "second", "third"])
 
-    assert len(fake_client.traces) == 2
-    print(fake_client.traces)
-    assert fake_client.traces[0]["input"] == {"value": ["hello", "second"]}
-    assert fake_client.traces[1]["input"] == {"value": ["hello", "second"]}
+    assert len(fake_client.traces) == 0
+    assert [item["trace_id"] for item in fake_client.steps] == [None, None]
 
 
-def test_threadpool_executor_isolates_traces_with_copy_context(fake_client):
+def test_nested_bare_calls_share_step_parent_without_creating_trace(fake_client):
+    """Standalone nested Steps keep call structure without Trace semantics."""
+
+    @track(tags=["unit"])
+    def child():
+        return "child"
+
+    @track(tags=["unit"])
+    def parent():
+        return child()
+
+    assert parent() == "child"
+
+    child_step = next(
+        step for step in fake_client.steps
+        if step["step_name"].endswith(".child")
+    )
+    parent_step = next(
+        step for step in fake_client.steps
+        if step["step_name"].endswith(".parent")
+    )
+    assert child_step["parent_step_id"] == parent_step["step_id"]
+    assert child_step["trace_id"] is None
+    assert parent_step["trace_id"] is None
+    assert fake_client.traces == []
+
+
+def test_threadpool_executor_exports_standalone_steps(fake_client):
     """ThreadPoolExecutor reuses threads. Using copy_context().run()
     when submitting ensures each task gets an isolated context,
-    so different tasks get different traces.
+    so each task can maintain an independent Step stack.
     """
     import contextvars
     from concurrent.futures import ThreadPoolExecutor
@@ -220,4 +225,6 @@ def test_threadpool_executor_isolates_traces_with_copy_context(fake_client):
         pool.submit(ctx2.run, handle).result()
 
     assert len(fake_client.steps) == 2
-    assert fake_client.steps[0]["trace_id"] != fake_client.steps[1]["trace_id"]
+    assert len(fake_client.traces) == 0
+    assert fake_client.steps[0]["trace_id"] is None
+    assert fake_client.steps[1]["trace_id"] is None

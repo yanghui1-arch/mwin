@@ -1,10 +1,11 @@
 from .storage import aitrace_storage_context
-from .runner import start_trace, start_trace_async
+from .runner import complete_step, start_trace, start_trace_async
 from .session import TraceSession, TraceTreeBuffer
 
 __all__ = [
     "start_trace",
     "start_trace_async",
+    "complete_step",
     "TraceSession",
     "TraceTreeBuffer",
     "add_storage_step",
@@ -16,6 +17,7 @@ __all__ = [
     "get_storage_current_trace_data",
     "get_storage_current_trace_session",
     "get_storage_current_trace_tree_buffer",
+    "complete_storage_trace",
 ]
 
 add_storage_step = aitrace_storage_context.add_step
@@ -30,3 +32,4 @@ get_storage_current_trace_session = aitrace_storage_context.get_current_session
 get_storage_current_trace_tree_buffer = (
     aitrace_storage_context.get_current_tree_buffer
 )
+complete_storage_trace = aitrace_storage_context.complete_trace

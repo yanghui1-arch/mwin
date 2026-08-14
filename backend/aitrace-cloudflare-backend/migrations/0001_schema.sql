@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS trace (
 CREATE TABLE IF NOT EXISTS step (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
-  trace_id TEXT NOT NULL,
+  trace_id TEXT,
   parent_step_id TEXT,
   type TEXT NOT NULL,
   tags TEXT NOT NULL,

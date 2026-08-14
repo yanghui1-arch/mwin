@@ -86,6 +86,16 @@ class StepFactoryTest {
     }
 
     @Test
+    void createStep_nullTraceId_createsStandaloneStep() {
+        LogStepRequest req = buildRequest(null);
+        req.setTraceId(null);
+
+        Step step = factory.createStep(req, 1L);
+
+        assertNull(step.getTraceId());
+    }
+
+    @Test
     void createStep_differentProjectIds_areAssignedCorrectly() {
         LogStepRequest req = buildRequest(null);
 

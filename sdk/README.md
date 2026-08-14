@@ -30,7 +30,7 @@ Then you just follow the instructions to configure mwin.
 It needs an Mwin API key. You can get the apikey after logging `http://localhost:5173`.
 Finally use `@track` to track your llm input and output.
 
-## The simplest Demo
+## Quick Start
 ```python
 from mwin import track
 from openai import OpenAI
@@ -89,63 +89,74 @@ with start_trace():
     run_agent()
 ```
 
-# Using mwin with Thread Pools
-**If you are using `with start_trace()` or `async with start_trace_async()` Skip this part.**
+# Using mwin in production
+
+Wrap each submitted unit of work in an explicit root trace. Nested `@track`
+calls then share that trace and the root scope freezes exactly one snapshot.
 
 
-When your program uses `ThreadPoolExecutor`, `multiprocessing.pool.ThreadPool`, or similar thread pools, and you wouldn't like to use `start_trace()` and `start_trace_async()` you have to be aware of how mwin traces work with thread reuse.
-
-The correct solution is to use `contextvars.copy_context()`. Wrap your submitted task with `copy_context().run()` to give each task an isolated context. The trace is probably record unexpectedly without `contextvars.copy_context()`.
-```python
-import contextvars
-from concurrent.futures import ThreadPoolExecutor
-
-executor = ThreadPoolExecutor(max_workers=10)
-
-# Without fix — trace leaks between tasks on the same thread
-executor.submit(run_agent)
-
-# With fix — each task gets a clean, isolated context
-ctx = contextvars.copy_context()
-executor.submit(ctx.run, run_agent)
-```
-
-`ctx.run(run_agent)` creates a context sandbox: all `ContextVar` operations inside it go to `ctx`, not to the thread's persistent context. When `ctx.run()` returns, `ctx` is garbage collected along with its trace.
-
-### Example: FastAPI with ThreadPoolExecutor
+## Basic usage
+Track the complete trace of agent or LLM explictly.
+Assume you have a `question-answer agent` and it goes through three steps.
+You want to track what it does in the whole trace and improve it in the later.
+You can use mwin like this.
 
 ```python
-import asyncio
-import contextvars
-from concurrent.futures import ThreadPoolExecutor
+from mwin import start_trace
 
-executor = ThreadPoolExecutor(max_workers=10)
+@track()
+def QA_agent_run(*args):
+    agent_step_1()
+    agent_step_2()
+    agent_step_3()
 
-@app.post("/chat")
-async def chat_handler(request: Request):
-    loop = asyncio.get_running_loop()
-
-    def run_agent():
-        agent_step_1()   # @track — creates trace, shares it
-        agent_step_2()   # @track — reuses same trace
-        agent_step_3()   # @track — reuses same trace
-
-    ctx = contextvars.copy_context()
-    loop.run_in_executor(executor, ctx.run, run_agent)
+def run(*args):
+    with start_trace(name="QA-Agent-work-trace"):
+        QA_agent_run(args)
 ```
 
-### Conditions you have to notice
+## Adavanced usage
 
-| Scenario | Action needed |
-|---|---|
-| scripts | None |
-| Celery tasks | None (auto-handled) |
-| fastapi using async not sync| None |
-| `threading.Thread` | None |
-| `ThreadPoolExecutor` | Use `copy_context().run()` |
-| `asyncio.loop.run_in_executor` | Use `copy_context().run()` |
-| `multiprocessing.pool.ThreadPool` | Use `copy_context().run()` |
-| `ProcessPoolExecutor` | None (separate processes) |
+If you are developing application with `FastAPI` and it's hassle for every routes with `start_trace`.
+You can use `MwinTraceMiddleware`. Then you don't need to write `start_trace` in every request.
+```python
+from fastapi import FastAPI
+from mwin.integrations import MwinTraceMiddleware
+
+app = FastAPI()
+app.add_middleware(MwinTraceMiddleware)
+```
+
+Sometimes one trace is very long and developers want to split it into several sub-traces. It's also ok with mwin.
+Here is a simple production line inspection workflow. mwin will create three traces. The root trace is `production-line-inspection` and two sub-traces are attatched to the root trace.
+```python
+from mwin import track
+
+@track()
+def incoming_quality_control(*args):
+    pass
+
+@track()
+def first_article_inspection(*args):
+    pass
+
+@track()
+def automated_optical_inspection(*args):
+    pass
+
+@track()
+def production_line_inspection(*args, **kwargs):
+    with start_trace(name="product-inspection"):
+        incoming_quality_control(args)
+        first_article_inspection(args)
+    
+    with start_trace(name="online-inspection"):
+        automated_optical_inspection(args)
+
+def run(*args, **kwargs):
+    with start_trace(name="production-line-inspection"):
+        production_line_inspection(args, kwargs)
+```
 
 # Development
 Mwin project package manager is uv. If you are a beginner uver, please click uv link: [uv official link](https://docs.astral.sh/uv/guides/projects/#creating-a-new-project)

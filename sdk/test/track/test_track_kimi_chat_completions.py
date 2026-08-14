@@ -5,7 +5,7 @@ from openai.types.completion_usage import CompletionUsage
 from openai.types.chat import ChatCompletion, chat_completion
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk, Choice, ChoiceDelta
 
-from mwin import track
+from mwin import start_trace, track
 from mwin.models import LLMProvider
 
 
@@ -93,7 +93,7 @@ def test_track_kimi_chat_completions_logs_llm_step(fake_client, monkeypatch):
     assert llm_inputs["messages"][0]["content"] == "hi kimi"
 
     llm_output = llm_steps[0]["output"]["llm_outputs"]
-    assert llm_output.content == "ok"
+    assert llm_output["content"] == "ok"
 
     assert llm_steps[0]["llm_provider"] == LLMProvider.KIMI
 
@@ -118,8 +118,9 @@ def test_track_kimi_chat_completions_stream_logs_llm_step(fake_client, monkeypat
                 stream=True,
             )
 
-        stream = call_kimi_stream()
-        list(stream)
+        with start_trace():
+            stream = call_kimi_stream()
+            list(stream)
     finally:
         resources.chat.completions.Completions.create = original_create
         resources.chat.completions.AsyncCompletions.create = original_async_create

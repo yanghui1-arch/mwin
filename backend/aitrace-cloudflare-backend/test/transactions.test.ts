@@ -4,6 +4,7 @@ import { createDatabase } from '../src/db/index.js';
 import { rotateApiKey } from '../src/repositories/user.js';
 import { upsertTraceForUser } from '../src/repositories/trace.js';
 import { upsertStepForUser } from '../src/repositories/step.js';
+import { upsertBatchForUser } from '../src/repositories/batch.js';
 
 interface RecordedStatement { sql: string; values: unknown[] }
 
@@ -35,7 +36,7 @@ test('key rotation is issued as one two-statement D1 transaction', async () => {
 test('trace and step telemetry mutations keep dependent writes in one batch', async () => {
   const db = new RecordingDb();
   await upsertTraceForUser(db as unknown as D1Database, 'user-1', {
-    id: 'trace-1', projectName: 'demo', projectId: 1, name: 'trace', conversationId: 'conversation',
+    id: 'trace-1', parentTraceId: null, projectName: 'demo', projectId: 1, name: 'trace', conversationId: 'conversation',
     tags: [], input: null, output: null, errorInfo: null, startTime: '2026-07-10T00:00:00Z',
     lastUpdateTimestamp: '2026-07-10T00:00:01Z',
   });
@@ -50,4 +51,38 @@ test('trace and step telemetry mutations keep dependent writes in one batch', as
   assert.equal(db.batches[1].length, 3);
   assert.match(db.batches[1][1].sql, /^UPDATE project SET/);
   assert.match(db.batches[1][2].sql, /^INSERT INTO step_meta/);
+});
+
+test('trace-tree batch writes preserve trace order and rebuild aggregates once', async () => {
+  const db = new RecordingDb();
+  const traceBase = {
+    projectName: 'demo', projectId: 1, name: 'trace', conversationId: 'conversation',
+    tags: [], input: null, output: null, errorInfo: null, startTime: '2026-07-10T00:00:00Z',
+    lastUpdateTimestamp: '2026-07-10T00:00:01Z',
+  };
+  await upsertBatchForUser(
+    db as unknown as D1Database,
+    'user-1',
+    [
+      { ...traceBase, id: 'parent', parentTraceId: null },
+      { ...traceBase, id: 'child', parentTraceId: 'parent' },
+    ],
+    [{
+      step: {
+        id: 'step-1', name: 'step', traceId: 'child', parentStepId: null, type: 'llm', tags: [],
+        input: null, output: null, errorInfo: null, model: 'gpt-5.5', usage: null,
+        projectName: 'demo', projectId: 1, startTime: '2026-07-10T00:00:00Z',
+        endTime: '2026-07-10T00:00:01Z',
+      },
+      metadata: { description: null },
+      cost: '0.0000000000',
+    }],
+    [1],
+  );
+
+  assert.equal(db.batches.length, 1);
+  assert.equal(db.batches[0].length, 5);
+  assert.equal(db.batches[0][0].values[0], 'parent');
+  assert.equal(db.batches[0][1].values[0], 'child');
+  assert.equal(db.batches[0].filter((statement) => /^UPDATE project SET/.test(statement.sql)).length, 1);
 });

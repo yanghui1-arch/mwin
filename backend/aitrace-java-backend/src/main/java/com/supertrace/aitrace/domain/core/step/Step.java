@@ -33,7 +33,6 @@ public class Step {
     @NotNull
     private String name;
 
-    @NotNull
     @Column(name = "trace_id")
     private UUID traceId;
 

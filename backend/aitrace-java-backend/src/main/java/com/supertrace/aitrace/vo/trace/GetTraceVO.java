@@ -15,6 +15,8 @@ import java.util.UUID;
 public class GetTraceVO {
     private UUID id;
 
+    private UUID parentTraceId;
+
     @NotNull
     private String name;
 

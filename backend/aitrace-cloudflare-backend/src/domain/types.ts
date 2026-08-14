@@ -38,6 +38,7 @@ export type NewProject = Omit<Project, 'id'>;
 
 export interface Trace {
   id: string;
+  parentTraceId: string | null;
   projectName: string;
   projectId: number;
   name: string;
@@ -54,7 +55,7 @@ export interface Step {
   id: string;
   parentStepId: string | null;
   name: string;
-  traceId: string;
+  traceId: string | null;
   type: string;
   tags: string[];
   input: JsonObject | null;
@@ -71,8 +72,9 @@ export interface Step {
 
 export interface LogRequest extends JsonObject {
   project_name?: string; projectName?: string;
-  trace_id?: string; traceId?: string;
+  trace_id?: string | null; traceId?: string | null;
   trace_name?: string; traceName?: string;
+  parent_trace_id?: string; parentTraceId?: string;
   conversation_id?: string; conversationId?: string;
   step_id?: string; stepId?: string;
   step_name?: string; stepName?: string;
@@ -91,8 +93,28 @@ export interface LogRequest extends JsonObject {
   description?: string;
 }
 
+export interface LogTraceTreeRequest extends JsonObject {
+  traces: LogRequest[];
+  steps: LogRequest[];
+}
+
+export interface BatchStepWrite {
+  step: Step;
+  metadata: JsonObject;
+  cost: string;
+}
+
 export interface User { id: string; username: string; email: string | null; avatar: string | null; registerTime: string }
 export interface UserAuth { id: string; userId: string; authType: string; identifier: string; createdAt: string }
 export interface ApiKey { id: string; userId: string; key: string; createdTime: string }
 export interface StepMeta { id: string; metadata: string; cost: string }
 export interface TokenSnapshot { projectId?: number; start_time?: string; startTime?: string; usage: string | Usage }
+export interface MediaAsset {
+  id: string;
+  projectId: number;
+  userId: string;
+  storageKey: string;
+  mimeType: string;
+  sizeBytes: number;
+  createdTime: string;
+}

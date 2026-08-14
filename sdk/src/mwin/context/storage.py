@@ -6,6 +6,7 @@ from .session import TraceSession, TraceTreeBuffer
 
 
 TraceSessionStack = tuple[TraceSession, ...]
+StandaloneStepStack = tuple[Step, ...]
 
 
 class AITraceStorageContext:
@@ -14,6 +15,10 @@ class AITraceStorageContext:
     def __init__(self):
         self._sessions: ContextVar[TraceSessionStack] = ContextVar(
             "trace_sessions",
+            default=tuple(),
+        )
+        self._standalone_steps: ContextVar[StandaloneStepStack] = ContextVar(
+            "standalone_steps",
             default=tuple(),
         )
 
@@ -83,13 +88,15 @@ class AITraceStorageContext:
         Args:
             new_step: Step entering the tracked calling stack.
 
-        Raises:
-            RuntimeError: If no trace session is active.
+        When no Trace session is active, the Step is stored in the standalone
+        Step stack instead.
         """
 
         sessions = self._sessions.get()
         if not sessions:
-            raise RuntimeError("Cannot add a step without an active trace session.")
+            standalone_steps = self._standalone_steps.get()
+            self._standalone_steps.set(standalone_steps + (new_step,))
+            return
 
         current_session = sessions[-1]
         current_session.tree_buffer.add_step(new_step)
@@ -106,7 +113,11 @@ class AITraceStorageContext:
 
         sessions = self._sessions.get()
         if not sessions:
-            return None
+            standalone_steps = self._standalone_steps.get()
+            if not standalone_steps:
+                return None
+            self._standalone_steps.set(standalone_steps[:-1])
+            return standalone_steps[-1]
 
         updated_session, step = sessions[-1].pop_step()
         self._sessions.set(sessions[:-1] + (updated_session,))
@@ -120,7 +131,10 @@ class AITraceStorageContext:
         """
 
         session = self.get_current_session()
-        if session is None or not session.step_stack:
+        if session is None:
+            standalone_steps = self._standalone_steps.get()
+            return standalone_steps[-1] if standalone_steps else None
+        if not session.step_stack:
             return None
         return session.step_stack[-1]
 
@@ -200,25 +214,10 @@ class AITraceStorageContext:
         self._sessions.reset(token)
 
     def clear(self) -> None:
-        """Clear all trace sessions in the current context."""
+        """Clear all Trace sessions and standalone Steps in this context."""
 
         self._sessions.set(tuple())
+        self._standalone_steps.set(tuple())
 
 
 aitrace_storage_context = AITraceStorageContext()
-
-
-try:
-    from celery.signals import task_prerun
-
-    @task_prerun.connect
-    def _clear_trace_on_celery_task(**kwargs):
-        """Clear inherited trace context before a Celery task starts.
-
-        Args:
-            **kwargs: Celery signal payload.
-        """
-
-        aitrace_storage_context.clear()
-except ImportError:
-    pass
