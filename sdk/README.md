@@ -123,7 +123,7 @@ You can use `MwinTraceMiddleware`. Then you don't need to write `start_trace` in
 from fastapi import FastAPI
 from mwin.integrations import MwinTraceMiddleware
 
-app = FastAPI
+app = FastAPI()
 app.add_middleware(MwinTraceMiddleware)
 ```
 
