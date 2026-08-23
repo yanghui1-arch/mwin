@@ -2,22 +2,14 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { ArrowDown, ArrowUp, List } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import i18n from "@/i18n";
-
-interface TraceOutput {
-  llm_outputs: Record<string, unknown>;
-  func_output: Record<string, unknown>;
-}
 
 export type Trace = {
   id: string;
   parentTraceId: string | null;
   name: string;
   tags: string[];
-  input?: Record<string, unknown>;
-  output?: TraceOutput;
-  errorInfo?: string;
+  errorInfo: string | null;
   startTime: string;
   lastUpdateTimestamp: string;
 };
@@ -71,48 +63,6 @@ export const traceColumns: ColumnDef<Trace>[] = [
     cell: ({ row }) => {
       return (
         <div className="w-40 truncate justify-center">{row.original.id}</div>
-      );
-    },
-  },
-  {
-    accessorKey: "input",
-    header: () => (
-      <div className="w-full flex justify-center">
-        <span className="font-semibold">{i18n.t("track.columns.input")}</span>
-      </div>
-    ),
-    cell: ({ row }) => {
-      const traceInput = row.original.input;
-
-      return (
-        <div className="flex gap-2 justify-center">
-          <ScrollArea className="h-20 w-58 rounded-md p-4 ">
-            <pre className="text-sm font-mono whitespace-pre-wrap wrap-break-words text-left">
-              <code>{JSON.stringify(traceInput, null, 2)}</code>
-            </pre>
-          </ScrollArea>
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "output",
-    header: () => (
-      <div className="w-full flex justify-center">
-        <span className="font-semibold">{i18n.t("track.columns.output")}</span>
-      </div>
-    ),
-    cell: ({ row }) => {
-      const traceOutput = row.original.output;
-
-      return (
-        <div className="flex gap-2 justify-center">
-          <ScrollArea className="h-20 w-58 rounded-md p-4 ">
-            <pre className="text-sm font-mono whitespace-pre-wrap wrap-break-words text-left">
-              <code>{JSON.stringify(traceOutput, null, 2)}</code>
-            </pre>
-          </ScrollArea>
-        </div>
       );
     },
   },

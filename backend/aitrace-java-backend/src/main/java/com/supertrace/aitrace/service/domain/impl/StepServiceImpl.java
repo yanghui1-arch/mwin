@@ -1,10 +1,15 @@
 package com.supertrace.aitrace.service.domain.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.supertrace.aitrace.domain.core.step.Step;
 import com.supertrace.aitrace.dto.step.LogStepRequest;
 import com.supertrace.aitrace.factory.StepFactory;
 import com.supertrace.aitrace.repository.StepRepository;
 import com.supertrace.aitrace.service.domain.StepService;
+import com.supertrace.aitrace.service.application.model.StepSummary;
+import com.supertrace.aitrace.service.storage.S3CompatibleObjectService;
+import com.supertrace.aitrace.service.storage.model.StepPayload;
+import com.supertrace.aitrace.service.storage.model.StoredPayload;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -22,10 +27,11 @@ public class StepServiceImpl implements StepService {
 
     private final StepRepository stepRepository;
     private final StepFactory stepFactory;
+    private final S3CompatibleObjectService s3CompatibleObjectService;
+    private final ObjectMapper objectMapper;
 
     /**
-     * Validate request and persist step.
-     * Two conditions to call this function. One is general another is llm calling.
+     * Persist one completed Step snapshot.
      *
      * @param userId user uuid
      * @param logStepRequest log step request
@@ -35,48 +41,48 @@ public class StepServiceImpl implements StepService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public UUID logStep(@NotNull UUID userId, @NotNull LogStepRequest logStepRequest, @NotNull Long projectId) {
-        Step newStep;
-
-        // 1. merge or create step
         UUID stepId = UUID.fromString(logStepRequest.getStepId());
-        Optional<Step> dbStep = stepRepository.findById(stepId);
-        if (dbStep.isPresent()) {
-            // enrich tags, output, model and usage
-            Step step = dbStep.get();
-            newStep = step.enrich(
-                logStepRequest.getTags(),
-                logStepRequest.getInput(),
-                logStepRequest.getOutput(),
-                logStepRequest.getModel(),
-                logStepRequest.getUsage()
-            );
-        } else {
-            // Create a new step belongs to project. Create a new project without project in database.
-            newStep = stepFactory.createStep(logStepRequest, projectId);
-        }
-
-        // 2. save step
+        StepPayload payload = new StepPayload(
+            objectMapper.valueToTree(logStepRequest.getInput()),
+            objectMapper.valueToTree(logStepRequest.getOutput())
+        );
+        String payloadObjectKey = s3CompatibleObjectService.storeStepPayload(
+            stepId,
+            payload
+        );
+        Step newStep = stepFactory.createStep(logStepRequest, projectId, payloadObjectKey);
         stepRepository.saveAndFlush(newStep);
-
-        // 3. return step id
         return newStep.getId();
     }
 
     @Override
-    public Page<Step> findStepsByProjectId(Long projectId, int page, int pageSize) {
+    public Page<StepSummary> findStepSummariesByProjectId(Long projectId, int page, int pageSize) {
         Pageable pageable = PageRequest.of(page, pageSize);
-        return this.stepRepository.findStepsByProjectId(projectId, pageable);
+        return this.stepRepository.findByProjectId(projectId, pageable);
     }
 
     @Override
-    public Page<Step> findStepsByProjectId(Long projectId, int page, int pageSize, Sort sort) {
+    public Page<StepSummary> findStepSummariesByProjectId(Long projectId, int page, int pageSize, Sort sort) {
         Pageable pageable = PageRequest.of(page, pageSize, sort);
-        return this.stepRepository.findStepsByProjectId(projectId, pageable);
+        return this.stepRepository.findByProjectId(projectId, pageable);
     }
 
     @Override
-    public List<Step> findStepsByTraceId(@NotNull UUID traceId) {
-        return this.stepRepository.findStepsByTraceId(traceId);
+    public List<StepSummary> findStepSummariesByTraceId(@NotNull UUID userId, @NotNull UUID traceId) {
+        return this.stepRepository.findStepSummariesByTraceIdForUser(traceId, userId);
+    }
+
+    @Override
+    public List<UUID> findStepIdsByTraceId(@NotNull UUID traceId) {
+        return this.stepRepository.findStepIdsByTraceId(traceId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public StoredPayload getOwnedStepPayload(UUID userId, UUID stepId) {
+        Step step = this.stepRepository.findByIdForUser(stepId, userId)
+            .orElseThrow(() -> new RuntimeException("Step not found"));
+        return s3CompatibleObjectService.loadStepPayload(step.getPayloadObjectKey()).toStoredPayload();
     }
 
     @Override

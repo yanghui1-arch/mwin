@@ -1,6 +1,6 @@
-import type { InputData, OutputData } from "@/pages/projects/track/step-columns"
 import http from "./http"
 import type { CompletionUsage } from "openai/resources/completions.mjs"
+import type { TracePayload } from "./payload"
 
 type Response<T> = {
     code: number,
@@ -14,21 +14,26 @@ type DeleteTracesParams = {
 
 export type Track = {
   id: string;
-  parent_step_id: string
+  parent_step_id: string | null
   name: string;
-  type: "customized" | "llm_response" | "retrieve" | "tool";
-  input: InputData;
-  output: OutputData;
+  type: "general" | "llm" | "retrieve" | "tool";
   tags: Array<string>;
-  error_info?: string;
-  model?: string;
-  usage?: CompletionUsage;
-  cost?: number;
+  error_info: string | null;
+  model: string | null;
+  usage: CompletionUsage | null;
+  cost: number | null;
   start_time: string;
-  end_time: string;
+  end_time: string | null;
 };
 
 export const traceApi = {
+
+    getPayload(traceId: string) {
+        return http.get<Response<TracePayload>>(
+            `/v0/trace/${encodeURIComponent(traceId)}/payload`,
+            { timeout: 30000 },
+        )
+    },
 
     deleteTraces({ deleteIds }: DeleteTracesParams) {
         return http.post<Response<string[]>>(

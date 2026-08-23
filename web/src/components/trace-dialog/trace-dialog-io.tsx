@@ -1,19 +1,29 @@
-import type { Trace } from "@/pages/projects/track/trace-columns";
 import { LLMJsonCard } from "../llm-json-card";
 import { FunctionIOCard } from "../fn-io-card";
 import { useTranslation } from "react-i18next";
+import type { TracePayload } from "@/api/payload";
 
 interface TraceDialogIOPanelProps {
-  data: Trace;
+  payload: TracePayload | null;
+  payloadError: string | null;
+  errorInfo?: string | null;
 }
 
-export function TraceDialogIOPanel({ data }: TraceDialogIOPanelProps) {
+export function TraceDialogIOPanel({
+  payload,
+  payloadError,
+  errorInfo,
+}: TraceDialogIOPanelProps) {
+  if (payloadError) {
+    return <LLMJsonCard errorInfo={payloadError} />;
+  }
+
   return (
     <div className="flex flex-col gap-4">
-      <TraceDialogInputPanel input={data.input} />
+      <TraceDialogInputPanel input={payload?.input ?? undefined} />
       <TraceDialogOutputPanel
-        output={data.output?.func_output}
-        errorInfo={data.errorInfo}
+        output={payload?.output?.func_output}
+        errorInfo={errorInfo}
       />
     </div>
   );
@@ -29,8 +39,8 @@ function TraceDialogInputPanel({ input }: TraceDialogInputProps) {
 }
 
 interface TraceDialogOutputProps {
-  output?: Record<string, unknown> | string;
-  errorInfo?: string;
+  output?: unknown;
+  errorInfo?: string | null;
 }
 
 function TraceDialogOutputPanel({ output, errorInfo }: TraceDialogOutputProps) {

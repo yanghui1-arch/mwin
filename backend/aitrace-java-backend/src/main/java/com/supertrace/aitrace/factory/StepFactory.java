@@ -15,7 +15,7 @@ public class StepFactory {
      * @param request log step request DTO
      * @return step domain
      */
-    public Step createStep(LogStepRequest request, Long projectId) {
+    public Step createStep(LogStepRequest request, Long projectId, String payloadObjectKey) {
         return Step.builder()
             .id(UUID.fromString(request.getStepId()))
             .name(request.getStepName())
@@ -27,8 +27,7 @@ public class StepFactory {
                 .orElse(null))
             .type(request.getStepType())
             .tags(request.getTags())
-            .input(request.getInput())
-            .output(request.getOutput())
+            .payloadObjectKey(payloadObjectKey)
             .errorInfo(request.getErrorInfo())
             .model(request.getModel())
             .usage(request.getUsage())

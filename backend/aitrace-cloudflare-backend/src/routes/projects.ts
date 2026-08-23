@@ -1,14 +1,14 @@
 import { Hono } from 'hono';
 import type { AppEnv } from '../domain/types.js';
 import { withUser } from '../lib/auth.js';
-import { json, success } from '../lib/response.js';
+import { notFound, success } from '../lib/response.js';
 import { requestJson } from '../lib/route-helpers.js';
 
 const projects = new Hono<AppEnv>();
 
 projects.get('/get_all_projects', (c) => withUser(c.req.raw, c.env, async (userId) => {
   const result = await c.var.services.listProjects(userId);
-  return result.length ? success(result) : json({ code: 404, message: 'Not found projects', data: null });
+  return result.length ? success(result) : notFound('Not found projects');
 }));
 projects.post('/create_new_project', (c) => withUser(c.req.raw, c.env, async (userId) => {
   const project = await c.var.services.createProject(userId, await requestJson(c.req.raw));

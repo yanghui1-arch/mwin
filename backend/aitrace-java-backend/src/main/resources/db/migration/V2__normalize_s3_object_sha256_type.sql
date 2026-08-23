@@ -1,0 +1,2 @@
+ALTER TABLE s3_compatible_object
+    ALTER COLUMN sha256 TYPE VARCHAR(64);

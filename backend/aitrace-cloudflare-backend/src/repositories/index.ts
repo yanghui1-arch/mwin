@@ -6,8 +6,9 @@ import * as traces from './trace.js';
 import * as steps from './step.js';
 import * as media from './media.js';
 import * as batches from './batch.js';
+import * as s3Objects from './s3-compatible-object.js';
 import type { RepositoryPort } from './port.js';
-import type { ApiKey, BatchStepWrite, JsonObject, MediaAsset, NewProject, Step, Trace, User, UserAuth } from '../domain/types.js';
+import type { ApiKey, BatchStepWrite, BatchTraceWrite, JsonObject, MediaAsset, NewProject, S3CompatibleObject, Step, Trace, User, UserAuth } from '../domain/types.js';
 
 export class Repositories implements RepositoryPort {
   private readonly db: AppDatabase;
@@ -39,11 +40,12 @@ export class Repositories implements RepositoryPort {
   }
   deleteProject(userId: string, name: string) { return projects.deleteProject(this.db, userId, name); }
 
-  upsertTraceForUser(userId: string, trace: Trace) { return traces.upsertTraceForUser(this.rawDb, userId, trace); }
-  upsertBatchForUser(userId: string, traceItems: Trace[], stepItems: BatchStepWrite[], projectIds: number[]) {
+  upsertTraceForUser(userId: string, trace: Trace, payloadObject: S3CompatibleObject) { return traces.upsertTraceForUser(this.rawDb, userId, trace, payloadObject); }
+  upsertBatchForUser(userId: string, traceItems: BatchTraceWrite[], stepItems: BatchStepWrite[], projectIds: number[]) {
     return batches.upsertBatchForUser(this.rawDb, userId, traceItems, stepItems, projectIds);
   }
   findTrace(traceId: string) { return traces.findTrace(this.db, traceId); }
+  findTraceForUser(userId: string, traceId: string) { return traces.findTraceForUser(this.db, userId, traceId); }
   countTraces(projectId: number) { return traces.countTraces(this.db, projectId); }
   listTraces(projectId: number, page: number, pageSize: number) {
     return traces.listTraces(this.db, projectId, page, pageSize);
@@ -52,8 +54,8 @@ export class Repositories implements RepositoryPort {
     return traces.deleteTracesForUser(this.rawDb, userId, traceIds);
   }
 
-  upsertStepForUser(userId: string, step: Step, metadata: JsonObject, cost: string) {
-    return steps.upsertStepForUser(this.rawDb, userId, step, metadata, cost);
+  upsertStepForUser(userId: string, step: Step, payloadObject: S3CompatibleObject, metadata: JsonObject, cost: string) {
+    return steps.upsertStepForUser(this.rawDb, userId, step, payloadObject, metadata, cost);
   }
   findStepForUser(userId: string, stepId: string) { return steps.findStepForUser(this.db, userId, stepId); }
   listSteps(projectId: number, page: number, pageSize: number) {
@@ -69,6 +71,7 @@ export class Repositories implements RepositoryPort {
     return steps.findStepMetaForUser(this.db, userId, stepId);
   }
   tokenSnapshots(projectIds: number[]) { return steps.tokenSnapshots(this.db, projectIds); }
+  findS3CompatibleObject(objectKey: string) { return s3Objects.findS3CompatibleObject(this.db, objectKey); }
 
   createMediaAsset(asset: MediaAsset) { return media.createMediaAsset(this.db, asset); }
   findMediaAssetForUser(userId: string, mediaId: string) {

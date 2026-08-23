@@ -8,8 +8,50 @@ interface GitHubUser { id: number; name: string | null; login: string; email: st
 interface GitHubToken { access_token: string }
 
 /** Parses JSON request bodies and treats non-JSON bodies as empty objects. */
-export async function requestJson<T extends JsonObject = JsonObject>(request: Request): Promise<T> {
-  return request.headers.get('content-type')?.includes('application/json') ? request.json<T>() : {} as T;
+export async function requestJson<T extends JsonObject = JsonObject>(
+  request: Request,
+  maxBytes?: number,
+): Promise<T> {
+  if (!request.headers.get('content-type')?.includes('application/json')) return {} as T;
+  if (maxBytes === undefined) return request.json<T>();
+
+  const contentLength = Number(request.headers.get('content-length'));
+  if (Number.isFinite(contentLength) && contentLength > maxBytes) {
+    throw new Error(`JSON request exceeds the configured limit of ${maxBytes} bytes`);
+  }
+  const raw = await readBodyLimited(request.body, maxBytes);
+  return JSON.parse(new TextDecoder().decode(raw)) as T;
+}
+
+async function readBodyLimited(
+  stream: ReadableStream<Uint8Array> | null,
+  limit: number,
+): Promise<Uint8Array> {
+  if (!stream) throw new Error('Missing JSON request body');
+  const reader = stream.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > limit) {
+        await reader.cancel();
+        throw new Error(`JSON request exceeds the configured limit of ${limit} bytes`);
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const result = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    result.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return result;
 }
 
 /** Parses an identifier list with a D1-safe bound-parameter limit. */

@@ -12,7 +12,7 @@ import {
 } from "@xyflow/react";
 import { TraceProcessNode } from "./trace-process-node";
 import dagre from "dagre";
-import { useState, useMemo, Fragment, useCallback, useEffect } from "react";
+import { useState, useMemo, Fragment, useCallback, useEffect, useRef } from "react";
 import { Button } from "../ui/button";
 import { Label } from "../ui/label";
 import { LLMJsonCard } from "../llm-json-card";
@@ -20,16 +20,19 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../ui/sheet";
 import { FunctionIOCard } from "../fn-io-card";
 import { TraceIONode } from "./trace-process-io-node";
 import type { Track } from "@/api/trace";
+import { stepApi } from "@/api/step";
+import type { JsonValue, StepPayload } from "@/api/payload";
 import { useTranslation } from "react-i18next";
 import { ChevronDown, ChevronRight, Workflow } from "lucide-react";
 import { ScrollArea } from "../ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "../ui/skeleton";
 
 interface TraceDialogProcessPanelProps {
   input?: Record<string, unknown> | undefined;
   tracks: Track[];
-  output?: Record<string, unknown> | string | undefined;
-  errorInfo?: string;
+  output?: JsonValue;
+  errorInfo?: string | null;
 }
 
 const nodeTypes = {
@@ -55,7 +58,7 @@ const TRACK_TYPE_META: Record<
   Track["type"],
   { label: string; dotClassName: string; badgeClassName: string }
 > = {
-  llm_response: {
+  llm: {
     label: "LLM",
     dotClassName: "bg-blue-500",
     badgeClassName: "bg-blue-500/10 text-blue-700",
@@ -70,7 +73,7 @@ const TRACK_TYPE_META: Record<
     dotClassName: "bg-emerald-500",
     badgeClassName: "bg-emerald-500/10 text-emerald-700",
   },
-  customized: {
+  general: {
     label: "General",
     dotClassName: "bg-violet-500",
     badgeClassName: "bg-violet-500/10 text-violet-700",
@@ -95,8 +98,8 @@ function formatTrackTime(value: string): string {
 function buildFlowGraph(
   levelTracks: Track[],
   inputData: Record<string, unknown> | undefined,
-  outputData: Record<string, unknown> | string | undefined,
-  errorInfo: string | undefined,
+  outputData: JsonValue | undefined,
+  errorInfo: string | null | undefined,
   childrenMap: Map<string, Track[]>,
   trackById: Map<string, Track>,
   scopeName?: string,
@@ -111,8 +114,8 @@ function buildFlowGraph(
   });
   dagreGraph.setDefaultEdgeLabel(() => ({}));
 
-  const hasInput = !!inputData;
-  const hasOutput = !!outputData || !!errorInfo;
+  const hasInput = inputData !== undefined && inputData !== null;
+  const hasOutput = (outputData !== undefined && outputData !== null) || !!errorInfo;
 
   if (hasInput) {
     dagreGraph.setNode("input", { width: NODE_WIDTH, height: NODE_HEIGHT });
@@ -248,7 +251,7 @@ function buildFlowGraph(
     const pos = dagreGraph.node(nodeId);
 
     const durationMs =
-      new Date(track.end_time).getTime() -
+      new Date(track.end_time ?? track.start_time).getTime() -
       new Date(track.start_time).getTime();
     const durationLabel =
       durationMs < 1000
@@ -264,10 +267,6 @@ function buildFlowGraph(
         trackType: track.type,
         hasPrev: hasIncoming.has(nodeId),
         hasNext: hasOutgoing.has(nodeId),
-        llm_inputs: track.input.llm_inputs,
-        llm_outputs: track.output.llm_outputs,
-        fn_inputs: track.input.func_inputs,
-        fn_output: track.output.func_output,
         errorInfo: track.error_info,
         durationLabel,
         isRecursive: isRecursive(track),
@@ -318,12 +317,43 @@ export function TraceDialogProcessPanel({
   );
   const [activeTrackId, setActiveTrackId] = useState<string | null>(null);
   const [focusNodeId, setFocusNodeId] = useState<string | null>(null);
+  const [trackPayloads, setTrackPayloads] = useState<Record<string, StepPayload>>({});
+  const [loadingTrackIds, setLoadingTrackIds] = useState<Set<string>>(new Set());
+  const [trackPayloadErrors, setTrackPayloadErrors] = useState<Record<string, string>>({});
+  const trackPayloadsRef = useRef<Record<string, StepPayload>>({});
+  const loadingTrackIdsRef = useRef<Set<string>>(new Set());
   const [flowInstance, setFlowInstance] = useState<
     ReactFlowInstance<Node, Edge> | null
   >(null);
 
   const currentScope =
     scopeStack.length > 0 ? scopeStack[scopeStack.length - 1] : null;
+
+  const loadTrackPayload = useCallback(async (trackId: string) => {
+    if (trackPayloadsRef.current[trackId] || loadingTrackIdsRef.current.has(trackId)) return;
+    loadingTrackIdsRef.current.add(trackId);
+    setLoadingTrackIds((current) => new Set(current).add(trackId));
+    setTrackPayloadErrors((current) => {
+      const next = { ...current };
+      delete next[trackId];
+      return next;
+    });
+    try {
+      const response = await stepApi.getPayload(trackId);
+      trackPayloadsRef.current[trackId] = response.data.data;
+      setTrackPayloads((current) => ({ ...current, [trackId]: response.data.data }));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to load Step payload";
+      setTrackPayloadErrors((current) => ({ ...current, [trackId]: message }));
+    } finally {
+      loadingTrackIdsRef.current.delete(trackId);
+      setLoadingTrackIds((current) => {
+        const next = new Set(current);
+        next.delete(trackId);
+        return next;
+      });
+    }
+  }, []);
 
   // Lookup maps from all tracks
   const trackById = useMemo(() => {
@@ -367,26 +397,23 @@ export function TraceDialogProcessPanel({
   // IO data for current level
   const levelInput = useMemo<Record<string, unknown> | undefined>(() => {
     if (!currentScope) return input;
-    const track = trackById.get(currentScope.trackId);
-    return track?.input.func_inputs as Record<string, unknown> | undefined;
-  }, [currentScope, trackById, input]);
+    return trackPayloads[currentScope.trackId]?.input?.func_inputs;
+  }, [currentScope, trackPayloads, input]);
 
-  const levelOutput = useMemo<
-    Record<string, unknown> | string | undefined
-  >(() => {
+  const levelOutput = useMemo<JsonValue | undefined>(() => {
     if (!currentScope) return output;
-    const track = trackById.get(currentScope.trackId);
-    return track?.output.func_output as
-      | Record<string, unknown>
-      | string
-      | undefined;
-  }, [currentScope, trackById, output]);
+    return trackPayloads[currentScope.trackId]?.output?.func_output;
+  }, [currentScope, trackPayloads, output]);
 
   const levelErrorInfo = useMemo(() => {
     if (!currentScope) return errorInfo;
     const track = trackById.get(currentScope.trackId);
     return track?.error_info;
   }, [currentScope, trackById, errorInfo]);
+
+  useEffect(() => {
+    if (currentScope) void loadTrackPayload(currentScope.trackId);
+  }, [currentScope, loadTrackPayload]);
 
   // Build flow graph for current level
   const { nodes: initialNodes, edges: initialEdges } = useMemo(
@@ -415,6 +442,13 @@ export function TraceDialogProcessPanel({
   const [nodeDetailDisplayType, setNodeDetailDisplayType] = useState<
     "llm" | "fn"
   >("llm");
+
+  const selectedTrackId = selectedNode?.id.startsWith("process-")
+    ? selectedNode.id.replace("process-", "")
+    : null;
+  const selectedPayload = selectedTrackId ? trackPayloads[selectedTrackId] : null;
+  const isSelectedPayloadLoading = selectedTrackId ? loadingTrackIds.has(selectedTrackId) : false;
+  const selectedPayloadError = selectedTrackId ? trackPayloadErrors[selectedTrackId] : null;
 
   const selectedNodeId = activeTrackId
     ? `process-${activeTrackId}`
@@ -537,6 +571,7 @@ export function TraceDialogProcessPanel({
   }, [flowInstance]);
 
   const handleEnterExecution = (trackId: string, trackName: string) => {
+    void loadTrackPayload(trackId);
     setScopeStack((prev) => [...prev, { trackId, trackName }]);
     setActiveTrackId(trackId);
     setFocusNodeId(null);
@@ -631,7 +666,7 @@ export function TraceDialogProcessPanel({
                   (scope) => scope.trackId === row.track.id,
                 );
                 const typeMeta =
-                  TRACK_TYPE_META[row.track.type] ?? TRACK_TYPE_META.customized;
+                  TRACK_TYPE_META[row.track.type] ?? TRACK_TYPE_META.general;
 
                 return (
                   <button
@@ -696,7 +731,7 @@ export function TraceDialogProcessPanel({
 
         <div className="h-full min-w-0 overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm">
           <ReactFlow
-            key={currentScope?.trackId ?? "root"}
+            key={`${currentScope?.trackId ?? "root"}:${currentScope && trackPayloads[currentScope.trackId] ? "loaded" : "base"}`}
             proOptions={{ hideAttribution: true }}
             defaultNodes={graphNodes}
             defaultEdges={initialEdges}
@@ -705,7 +740,9 @@ export function TraceDialogProcessPanel({
               setSelectedNode(node);
               setNodeDetailDisplayType("llm");
               if (node.id.startsWith("process-")) {
-                setActiveTrackId(node.id.replace("process-", ""));
+                const trackId = node.id.replace("process-", "");
+                setActiveTrackId(trackId);
+                void loadTrackPayload(trackId);
               } else {
                 setActiveTrackId(null);
               }
@@ -844,23 +881,19 @@ export function TraceDialogProcessPanel({
                   <Label>{t("traceDialog.stepFunctionInputOutput")}</Label>
                 </Button>
               </div>
-              {nodeDetailDisplayType === "llm" &&
-                (selectedNode.data.llm_inputs ||
-                selectedNode.data.llm_outputs ? (
+              {isSelectedPayloadLoading ? (
+                <Skeleton className="h-40 w-full" />
+              ) : selectedPayloadError ? (
+                <LLMJsonCard errorInfo={selectedPayloadError} />
+              ) : nodeDetailDisplayType === "llm" ? (
+                selectedPayload?.input?.llm_inputs !== undefined || selectedPayload?.output?.llm_outputs !== undefined ? (
                   <div className="flex flex-col gap-4">
                     <LLMJsonCard
-                      jsonObject={
-                        selectedNode.data.llm_inputs as Record<string, unknown>
-                      }
+                      jsonObject={selectedPayload?.input?.llm_inputs as unknown as Record<string, unknown>}
                       labelTitle={t("traceDialog.input")}
                     />
                     <LLMJsonCard
-                      jsonObject={
-                        selectedNode.data.llm_outputs as Record<
-                          string,
-                          unknown
-                        >
-                      }
+                      jsonObject={selectedPayload?.output?.llm_outputs}
                       labelTitle={t("traceDialog.output")}
                     />
                   </div>
@@ -868,25 +901,16 @@ export function TraceDialogProcessPanel({
                   t("traceDialog.noLLMTracked", {
                     title: selectedNode.data.title,
                   })
-                ))}
-              {nodeDetailDisplayType === "fn" &&
-                (selectedNode.data.fn_inputs || selectedNode.data.fn_output ? (
+                )
+              ) : (
+                selectedPayload?.input?.func_inputs !== undefined || selectedPayload?.output?.func_output !== undefined ? (
                   <div className="flex flex-col gap-4">
                     <FunctionIOCard
-                      data={
-                        selectedNode.data.fn_inputs as
-                          | Record<string, unknown>
-                          | undefined
-                      }
+                      data={selectedPayload?.input?.func_inputs}
                       labelTitle={t("traceDialog.input")}
                     />
                     <FunctionIOCard
-                      data={
-                        selectedNode.data.fn_output as
-                          | string
-                          | Record<string, unknown>
-                          | undefined
-                      }
+                      data={selectedPayload?.output?.func_output}
                       labelTitle={t("traceDialog.output")}
                       errorInfo={
                         selectedNode.data.errorInfo as string | undefined
@@ -897,7 +921,8 @@ export function TraceDialogProcessPanel({
                   t("traceDialog.noFunctionTracked", {
                     title: selectedNode.data.title,
                   })
-                ))}
+                )
+              )}
             </SheetContent>
           )}
       </Sheet>

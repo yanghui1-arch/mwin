@@ -6,13 +6,21 @@ import { TraceDialogIOPanel } from "./trace-dialog-io";
 import { TraceDialogProcessPanel } from "./trace-dailog-process-flow";
 import { type Track } from "@/api/trace";
 import { useTranslation } from "react-i18next";
+import type { TracePayload } from "@/api/payload";
 
 interface TraceDialogMainProps {
   data: Trace;
   tracks: Track[];
+  payload: TracePayload | null;
+  payloadError: string | null;
 }
 
-export function TraceDialogMain({ data, tracks }: TraceDialogMainProps) {
+export function TraceDialogMain({
+  data,
+  tracks,
+  payload,
+  payloadError,
+}: TraceDialogMainProps) {
   const [displayType, setDisplayType] = useState<"io" | "process">("io");
   const { t } = useTranslation();
 
@@ -41,8 +49,14 @@ export function TraceDialogMain({ data, tracks }: TraceDialogMainProps) {
         </Button>
       </div>
       <div>
-        {displayType === "io" && <TraceDialogIOPanel data={data}/>}
-        {displayType === "process" && <TraceDialogProcessPanel tracks={tracks} input={data.input} output={data.output?.func_output} errorInfo={data.errorInfo}/>}
+        {displayType === "io" && (
+          <TraceDialogIOPanel
+            payload={payload}
+            payloadError={payloadError}
+            errorInfo={data.errorInfo}
+          />
+        )}
+        {displayType === "process" && <TraceDialogProcessPanel tracks={tracks} input={payload?.input ?? undefined} output={payload?.output?.func_output} errorInfo={data.errorInfo}/>}
       </div>
     </div>
   );

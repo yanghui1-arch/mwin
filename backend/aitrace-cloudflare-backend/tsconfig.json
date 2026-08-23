@@ -11,5 +11,5 @@
         "allowImportingTsExtensions": false,
         "types": ["@cloudflare/workers-types", "node"]
     },
-    "include": ["src/**/*.ts", "test/**/*.ts"]
+    "include": ["worker-configuration.d.ts", "src/**/*.ts", "test/**/*.ts"]
 }

@@ -11,6 +11,9 @@ steps.get('/:projectName', (c) => withUser(c.req.raw, c.env, async (userId) => {
   const pageSize = Number(c.req.query('pageSize') ?? 15);
   return success(await c.var.services.getSteps(userId, c.req.param('projectName'), page, pageSize));
 }));
+steps.get('/:stepId/payload', (c) => withUser(c.req.raw, c.env, async (userId) => {
+  return success(await c.var.services.getStepPayload(userId, c.req.param('stepId')));
+}));
 steps.post('/delete', (c) => withUser(c.req.raw, c.env, async (userId) => {
   return success(await c.var.services.repositories.deleteStepsForUser(userId, await requestIdList(c.req.raw)));
 }));

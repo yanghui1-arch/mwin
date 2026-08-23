@@ -1,6 +1,5 @@
 package com.supertrace.aitrace.service.application.impl;
 
-import com.supertrace.aitrace.domain.core.step.Step;
 import com.supertrace.aitrace.service.application.DeleteService;
 import com.supertrace.aitrace.service.domain.StepService;
 import com.supertrace.aitrace.service.domain.TraceService;
@@ -22,7 +21,7 @@ public class DeleteServiceImpl implements DeleteService {
     public List<UUID> deleteTracesAndRelatedStepsByTraceIds(List<UUID> traceIdsToDelete) {
         List<UUID> relatedStepsIdByTraceIds = traceIdsToDelete.stream()
             .flatMap(
-                traceId -> this.stepService.findStepsByTraceId(traceId).stream().map(Step::getId)
+                traceId -> this.stepService.findStepIdsByTraceId(traceId).stream()
             )
             .toList();
         this.stepService.deleteStepsByStepUUID(relatedStepsIdByTraceIds);

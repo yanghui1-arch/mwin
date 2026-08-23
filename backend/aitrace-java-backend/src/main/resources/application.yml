@@ -10,12 +10,18 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: false
     properties:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+    locations: classpath:db/migration
 
   servlet:
     multipart:
@@ -23,9 +29,18 @@ spring:
       max-request-size: ${MWIN_MEDIA_MAX_REQUEST_SIZE:21MB}
 
 mwin:
+  object-storage:
+    provider: ${MWIN_OBJECT_STORAGE_PROVIDER:oss}
   media:
     root-dir: ${MWIN_MEDIA_ROOT:/data/mwin/media}
     max-size-bytes: ${MWIN_MEDIA_MAX_SIZE_BYTES:20971520}
+  oss:
+    endpoint: ${MWIN_OSS_ENDPOINT:https://oss-cn-shanghai.aliyuncs.com}
+    bucket: ${MWIN_OSS_BUCKET:mwintrack}
+    access-key-id: ${MWIN_OSS_ACCESS_KEY_ID:}
+    access-key-secret: ${MWIN_OSS_ACCESS_KEY_SECRET:}
+    max-raw-size-bytes: ${MWIN_OSS_MAX_RAW_SIZE_BYTES:67108864}
+    max-stored-size-bytes: ${MWIN_OSS_MAX_STORED_SIZE_BYTES:67108864}
 
 jwt:
   secret: "aitraceinitialsecaitraceinitialsecretaitraceinitialsecretaitraceinitialsecretaitraceinitialsecretaitraceinitialsecretaitraceinitialsecretret"

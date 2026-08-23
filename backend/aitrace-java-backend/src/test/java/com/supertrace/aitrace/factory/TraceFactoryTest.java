@@ -2,6 +2,7 @@ package com.supertrace.aitrace.factory;
 
 import com.supertrace.aitrace.domain.core.Trace;
 import com.supertrace.aitrace.dto.trace.LogTraceRequest;
+import com.supertrace.aitrace.service.storage.PayloadFormat;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -15,10 +16,12 @@ import static org.junit.jupiter.api.Assertions.*;
 class TraceFactoryTest {
 
     private TraceFactory factory;
+    private String payloadObjectKey;
 
     @BeforeEach
     void setUp() {
         factory = new TraceFactory();
+        payloadObjectKey = PayloadFormat.traceObjectKey(UUID.randomUUID());
     }
 
     private LogTraceRequest buildRequest() {
@@ -41,7 +44,7 @@ class TraceFactoryTest {
         LogTraceRequest req = buildRequest();
         Long projectId = 42L;
 
-        Trace trace = factory.createTrace(req, projectId);
+        Trace trace = factory.createTrace(req, projectId, payloadObjectKey);
 
         assertEquals(UUID.fromString(req.getTraceId()), trace.getId());
         assertEquals(req.getProjectName(), trace.getProjectName());
@@ -49,37 +52,33 @@ class TraceFactoryTest {
         assertEquals(req.getTraceName(), trace.getName());
         assertEquals(UUID.fromString(req.getConversationId()), trace.getConversationId());
         assertEquals(req.getTags(), trace.getTags());
-        assertEquals(req.getInput(), trace.getInput());
-        assertEquals(req.getOutput(), trace.getOutput());
+        assertEquals(payloadObjectKey, trace.getPayloadObjectKey());
         assertNull(trace.getErrorInfo());
         assertEquals(req.getStartTime(), trace.getStartTime());
         assertEquals(req.getLastUpdateTimestamp(), trace.getLastUpdateTimestamp());
     }
 
     @Test
-    void createTrace_invalidTraceId_throwsException() {
-        LogTraceRequest req = buildRequest();
-        req.setTraceId("not-a-uuid");
-
-        assertThrows(IllegalArgumentException.class, () -> factory.createTrace(req, 1L));
-    }
-
-    @Test
-    void createTrace_invalidConversationId_throwsException() {
-        LogTraceRequest req = buildRequest();
-        req.setConversationId("bad");
-
-        assertThrows(IllegalArgumentException.class, () -> factory.createTrace(req, 1L));
-    }
-
-    @Test
-    void createTrace_differentProjectIds_assignedCorrectly() {
-        LogTraceRequest req = buildRequest();
-
-        Trace t1 = factory.createTrace(req, 10L);
-        Trace t2 = factory.createTrace(req, 20L);
-
-        assertEquals(10L, t1.getProjectId());
-        assertEquals(20L, t2.getProjectId());
+    void createTrace_rejectsMalformedIdentifiers() {
+        assertAll(
+            () -> {
+                LogTraceRequest req = buildRequest();
+                req.setTraceId("not-a-uuid");
+                assertThrows(IllegalArgumentException.class,
+                    () -> factory.createTrace(req, 1L, payloadObjectKey));
+            },
+            () -> {
+                LogTraceRequest req = buildRequest();
+                req.setConversationId("not-a-uuid");
+                assertThrows(IllegalArgumentException.class,
+                    () -> factory.createTrace(req, 1L, payloadObjectKey));
+            },
+            () -> {
+                LogTraceRequest req = buildRequest();
+                req.setParentTraceId("not-a-uuid");
+                assertThrows(IllegalArgumentException.class,
+                    () -> factory.createTrace(req, 1L, payloadObjectKey));
+            }
+        );
     }
 }

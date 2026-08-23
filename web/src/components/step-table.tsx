@@ -8,11 +8,13 @@ import { LLMJsonCard } from "./llm-json-card";
 import { FunctionIOCard } from "./fn-io-card";
 import { DataTableToolbar } from "./data-table/data-table-toolbar/common-data-table-toolbar";
 import { stepApi } from "@/api/step";
+import type { StepPayload } from "@/api/payload";
 import { Badge } from "./ui/badge";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import { useTranslation } from "react-i18next";
 import type { CompletionUsage } from "openai/resources/completions.mjs";
+import { Skeleton } from "./ui/skeleton";
 
 interface StepTableProps {
   table: Table<Step>;
@@ -27,7 +29,10 @@ enum Display {
 }
 
 // convert CompletionUsgae to LLMTokenUsage
-const toLLMTokenUsage = (usage: CompletionUsage | undefined, cost: number | undefined): LLMTokenUsage => {
+const toLLMTokenUsage = (
+  usage: CompletionUsage | null | undefined,
+  cost: number | null | undefined,
+): LLMTokenUsage => {
   if (!usage) {
     return {
       input_tokens: 0,
@@ -57,11 +62,6 @@ const toLLMTokenUsage = (usage: CompletionUsage | undefined, cost: number | unde
 };
 
 export function StepTable({ table, isLoading = false }: StepTableProps) {
-  const [displayPanel, setDisplayPanel] = useState<Display>(
-    Display.FunctionInput
-  );
-  const { t } = useTranslation();
-
   const onDelete = async (deleteIds: string[]): Promise<number> => {
     const count = (await stepApi.deleteSteps({ deleteIds })).data.data.length;
     return count;
@@ -72,128 +72,89 @@ export function StepTable({ table, isLoading = false }: StepTableProps) {
       <DataTableToolbar table={table} onDelete={onDelete} />
       <DataTable table={table} isLoading={isLoading}>
         <RowPanelContent<Step>>
-          {(rowData) => {
-            const tagColors = [
-              "tag-blue",
-              "tag-emerald",
-              "tag-amber",
-              "tag-violet",
-              "tag-rose",
-              "tag-cyan",
-              "tag-orange",
-              "tag-teal",
-            ];
-            const tags = rowData.tags.map((tag, i) => (
-              <Badge className={tagColors[i % tagColors.length]} variant="outline">
-                {tag}
-              </Badge>
-            ));
-            return (
-              <div className="flex gap-4 flex-col break-all">
-                <div className="flex">
-                  <div className="mr-auto flex gap-2 font-mono">{tags}</div>
-                  <div className="ml-auto font-mono text-xs flex gap-1">
-                    <Clock size={"16px"} />
-                    {new Date(rowData.endTime).getTime() -
-                      new Date(rowData.startTime).getTime() <
-                    1000
-                      ? new Date(rowData.endTime).getTime() -
-                        new Date(rowData.startTime).getTime() +
-                        "ms"
-                      : (
-                          (new Date(rowData.endTime).getTime() -
-                            new Date(rowData.startTime).getTime()) /
-                          1000
-                        ).toFixed(2) + "s"}
-                  </div>
-                </div>
-
-                <TokensPanel
-                  key={rowData.model}
-                  model={rowData.model}
-                  usage={toLLMTokenUsage(rowData.usage, rowData.cost)}
-                  cost={rowData.cost ?? 0}
-                />
-
-                <div className="flex gap-2">
-                  <Button
-                    variant="link"
-                    onClick={() => setDisplayPanel(Display.FunctionInput)}
-                    className={
-                      displayPanel === Display.FunctionInput
-                        ? "bg-primary text-primary-foreground"
-                        : ""
-                    }
-                  >
-                    {t("stepTable.functionInput")}
-                  </Button>
-                  <Button
-                    variant="link"
-                    onClick={() => setDisplayPanel(Display.FunctionOutput)}
-                    className={
-                      displayPanel === Display.FunctionOutput
-                        ? "bg-primary text-primary-foreground"
-                        : ""
-                    }
-                  >
-                    {t("stepTable.functionOutput")}
-                  </Button>
-                  <Button
-                    variant="link"
-                    onClick={() => setDisplayPanel(Display.LLMInput)}
-                    className={
-                      displayPanel === Display.LLMInput
-                        ? "bg-primary text-primary-foreground"
-                        : ""
-                    }
-                  >
-                    {t("stepTable.llmInput")}
-                  </Button>
-                  <Button
-                    variant="link"
-                    onClick={() => setDisplayPanel(Display.LLMOutput)}
-                    className={
-                      displayPanel === Display.LLMOutput
-                        ? "bg-primary text-primary-foreground"
-                        : ""
-                    }
-                  >
-                    {t("stepTable.llmOutput")}
-                  </Button>
-                </div>
-
-                {displayPanel === Display.FunctionInput && (
-                  <FunctionIOCard data={rowData.input.func_inputs} />
-                )}
-
-                {displayPanel === Display.FunctionOutput && (
-                  <FunctionIOCard
-                    data={rowData.output.func_output}
-                    errorInfo={rowData.errorInfo}
-                  />
-                )}
-
-                {displayPanel === Display.LLMInput && (
-                  rowData.input.llm_inputs ? (
-                    <LLMJsonCard
-                      jsonObject={rowData.input.llm_inputs as unknown as Record<string, unknown>}
-                    />
-                  ) : (
-                    <LLMJsonCard errorInfo={t("stepTable.noLLMParams")} />
-                  )
-                )}
-
-                {displayPanel === Display.LLMOutput && (
-                  <LLMJsonCard
-                    jsonObject={rowData.output.llm_outputs}
-                    errorInfo={rowData.errorInfo}
-                  />
-                )}
-              </div>
-            );
-          }}
+          {(rowData) => <StepDetails rowData={rowData} />}
         </RowPanelContent>
       </DataTable>
+    </div>
+  );
+}
+
+function StepDetails({ rowData }: { rowData: Step }) {
+  const [displayPanel, setDisplayPanel] = useState<Display>(Display.FunctionInput);
+  const [payload, setPayload] = useState<StepPayload | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { t } = useTranslation();
+
+  useEffect(() => {
+    let active = true;
+    setIsLoading(true);
+    setPayload(null);
+    setError(null);
+    stepApi.getPayload(rowData.id)
+      .then((response) => {
+        if (active) setPayload(response.data.data);
+      })
+      .catch((reason: Error) => {
+        if (active) {
+          setPayload(null);
+          setError(reason.message);
+        }
+      })
+      .finally(() => {
+        if (active) setIsLoading(false);
+      });
+    return () => { active = false; };
+  }, [rowData.id]);
+
+  const tagColors = ["tag-blue", "tag-emerald", "tag-amber", "tag-violet", "tag-rose", "tag-cyan", "tag-orange", "tag-teal"];
+  const endTime = rowData.endTime ? new Date(rowData.endTime).getTime() : null;
+  const startTime = new Date(rowData.startTime).getTime();
+  const duration = endTime === null ? null : endTime - startTime;
+
+  return (
+    <div className="flex flex-col gap-4 break-all">
+      <div className="flex">
+        <div className="mr-auto flex gap-2 font-mono">
+          {rowData.tags.map((tag, index) => (
+            <Badge key={tag} className={tagColors[index % tagColors.length]} variant="outline">{tag}</Badge>
+          ))}
+        </div>
+        {duration !== null && (
+          <div className="ml-auto flex gap-1 font-mono text-xs">
+            <Clock size="16px" />
+            {duration < 1000 ? `${duration}ms` : `${(duration / 1000).toFixed(2)}s`}
+          </div>
+        )}
+      </div>
+
+      <TokensPanel
+        key={rowData.model}
+        model={rowData.model}
+        usage={toLLMTokenUsage(rowData.usage, rowData.cost)}
+        cost={rowData.cost ?? 0}
+      />
+
+      <div className="flex gap-2">
+        <Button variant="link" onClick={() => setDisplayPanel(Display.FunctionInput)} className={displayPanel === Display.FunctionInput ? "bg-primary text-primary-foreground" : ""}>{t("stepTable.functionInput")}</Button>
+        <Button variant="link" onClick={() => setDisplayPanel(Display.FunctionOutput)} className={displayPanel === Display.FunctionOutput ? "bg-primary text-primary-foreground" : ""}>{t("stepTable.functionOutput")}</Button>
+        <Button variant="link" onClick={() => setDisplayPanel(Display.LLMInput)} className={displayPanel === Display.LLMInput ? "bg-primary text-primary-foreground" : ""}>{t("stepTable.llmInput")}</Button>
+        <Button variant="link" onClick={() => setDisplayPanel(Display.LLMOutput)} className={displayPanel === Display.LLMOutput ? "bg-primary text-primary-foreground" : ""}>{t("stepTable.llmOutput")}</Button>
+      </div>
+
+      {isLoading ? (
+        <Skeleton className="h-36 w-full" />
+      ) : error ? (
+        <LLMJsonCard errorInfo={error} />
+      ) : displayPanel === Display.FunctionInput ? (
+        <FunctionIOCard data={payload?.input?.func_inputs} />
+      ) : displayPanel === Display.FunctionOutput ? (
+        <FunctionIOCard data={payload?.output?.func_output} errorInfo={rowData.errorInfo} />
+      ) : displayPanel === Display.LLMInput ? (
+        payload?.input?.llm_inputs ? <LLMJsonCard jsonObject={payload.input.llm_inputs as unknown as Record<string, unknown>} /> : <LLMJsonCard errorInfo={t("stepTable.noLLMParams")} />
+      ) : (
+        <LLMJsonCard jsonObject={payload?.output?.llm_outputs} errorInfo={rowData.errorInfo} />
+      )}
     </div>
   );
 }

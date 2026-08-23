@@ -47,6 +47,11 @@ export async function requireUserId(request: Request, env: Bindings): Promise<st
 
 /** Runs an authenticated handler and converts authentication failures to API errors. */
 export async function withUser(request: Request, env: Bindings, callback: (userId: string) => Promise<Response>): Promise<Response> {
-  try { return await callback(await requireUserId(request, env)); }
-  catch (err) { return error(err instanceof Error ? err.message : 'Authentication failed'); }
+  let userId: string;
+  try {
+    userId = await requireUserId(request, env);
+  } catch (err) {
+    return error(err instanceof Error ? err.message : 'Authentication failed', 401);
+  }
+  return callback(userId);
 }

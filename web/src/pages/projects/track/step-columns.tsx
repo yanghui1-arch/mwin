@@ -1,56 +1,22 @@
-import { type ChatCompletionAudio } from "openai/resources/index.mjs";
-import { type Annotation } from "openai/resources/beta/threads/messages.mjs";
-import { type ChatCompletionMessageToolCall } from "openai/resources/index.mjs";
-import { type ChatCompletion, type ChatCompletionCreateParams } from "openai/resources/chat/completions/completions";
 import { type CompletionUsage } from "openai/resources/index.mjs";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { ArrowDown, ArrowUp, List } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import i18n from "@/i18n";
-
-/* style as the same as openai */
-export interface FilteredFieldsOpenAIChatCompletionsOutput extends Record<string, unknown>{
-  model: string;
-  created: string;
-  content?: string;
-  role?: "assistant";
-  annotations?: Array<Annotation>;
-  audio?: ChatCompletionAudio;
-  tool_calls?: Array<ChatCompletionMessageToolCall>;
-  choices: Array<ChatCompletion.Choice>;
-  service_tier?: "auto" | "default" | "flex" | "scale" | "priority";
-  system_fingerprint?: string;
-  usage?: CompletionUsage;
-}
-
-/* style as the same as python to sql storage */
-export interface InputData {
-  func_inputs: Record<string, unknown>;
-  llm_inputs?: ChatCompletionCreateParams;
-}
-
-/* style as the same as python to sql storage */
-export interface OutputData {
-  func_output?: Record<string, unknown> | string;
-  llm_outputs?: FilteredFieldsOpenAIChatCompletionsOutput;
-}
 
 export type Step = {
   id: string;
-  parentStepId: string
+  parentStepId: string | null;
   name: string;
-  type: "customized" | "llm_response" | "retrieve" | "tool";
-  input: InputData;
-  output: OutputData;
+  type: "general" | "llm" | "retrieve" | "tool";
   tags: Array<string>;
-  errorInfo?: string;
-  model?: string;
-  usage?: CompletionUsage;
-  cost?: number;
+  errorInfo: string | null;
+  model: string | null;
+  usage: CompletionUsage | null;
+  cost: number | null;
   startTime: string;
-  endTime: string;
+  endTime: string | null;
 };
 
 export const stepColumns: ColumnDef<Step>[] = [
@@ -131,48 +97,6 @@ export const stepColumns: ColumnDef<Step>[] = [
             </span>
           </span>
         </Button>
-      );
-    },
-  },
-  {
-    accessorKey: "fn_input",
-    header: () => (
-      <div className="w-full flex justify-center">
-        <span className="font-semibold">{i18n.t("track.columns.functionInput")}</span>
-      </div>
-    ),
-    cell: ({ row }) => {
-      const functionInput = row.original.input.func_inputs;
-
-      return (
-        <div className="flex gap-2 justify-center">
-          <ScrollArea className="h-20 w-58 rounded-md p-4 ">
-            <pre className="text-sm font-mono whitespace-pre-wrap wrap-break-words text-left">
-              <code>{JSON.stringify(functionInput, null, 2)}</code>
-            </pre>
-          </ScrollArea>
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "fn_output",
-    header: () => (
-      <div className="w-full flex justify-center">
-        <span className="font-semibold">{i18n.t("track.columns.functionOutput")}</span>
-      </div>
-    ),
-    cell: ({ row }) => {
-      const functionOutput = row.original.output.func_output;
-
-      return (
-        <div className="flex gap-2 justify-center">
-          <ScrollArea className="h-20 w-58 rounded-md p-4 ">
-            <pre className="text-sm font-mono whitespace-pre-wrap wrap-break-words text-left">
-              <code>{JSON.stringify(functionOutput, null, 2)}</code>
-            </pre>
-          </ScrollArea>
-        </div>
       );
     },
   },
