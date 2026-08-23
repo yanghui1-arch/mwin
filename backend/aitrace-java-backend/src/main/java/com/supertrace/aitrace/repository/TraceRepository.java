@@ -1,17 +1,31 @@
 package com.supertrace.aitrace.repository;
 
 import com.supertrace.aitrace.domain.core.Trace;
+import com.supertrace.aitrace.service.application.model.TraceSummary;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.UUID;
+import java.util.Optional;
 
 @Repository
 public interface TraceRepository extends JpaRepository<Trace, UUID> {
-    Page<Trace> findTracesByProjectId(@NotNull Long projectId, Pageable pageable);
+    Page<TraceSummary> findByProjectId(Long projectId, Pageable pageable);
+
+    @Query("""
+        SELECT t FROM Trace t
+        WHERE t.id = :traceId
+          AND t.projectId IN (SELECT p.id FROM Project p WHERE p.userId = :userId)
+        """)
+    Optional<Trace> findByIdForUser(
+        @Param("traceId") UUID traceId,
+        @Param("userId") UUID userId
+    );
 
     long countByProjectId(@NotNull Long projectId);
 }

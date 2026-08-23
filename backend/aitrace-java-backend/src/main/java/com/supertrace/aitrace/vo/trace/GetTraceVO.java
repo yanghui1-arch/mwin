@@ -7,7 +7,6 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @Data
@@ -22,10 +21,6 @@ public class GetTraceVO {
 
     @NotNull
     private List<String> tags;
-
-    private Map<String, Object> input;
-
-    private Map<String, Object> output;
 
     private String errorInfo;
 

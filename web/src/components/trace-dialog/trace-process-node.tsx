@@ -24,7 +24,7 @@ const typeConfig: Record<
   string,
   { icon: typeof Brain; color: string; bg: string; label: string }
 > = {
-  llm_response: {
+  llm: {
     icon: Brain,
     color: "border-l-blue-500",
     bg: "bg-blue-500/5",
@@ -42,7 +42,7 @@ const typeConfig: Record<
     bg: "bg-emerald-500/5",
     label: "Retrieve",
   },
-  customized: {
+  general: {
     icon: Settings,
     color: "border-l-violet-500",
     bg: "bg-violet-500/5",
@@ -54,14 +54,14 @@ export const TraceProcessNode = memo(({ data }: NodeProps) => {
   const { i18n } = useTranslation();
   const hasPrev = data.hasPrev as boolean;
   const hasNext = data.hasNext as boolean;
-  const trackType = (data.trackType as string) || "customized";
+  const trackType = (data.trackType as string) || "general";
   const hasError = !!(data.errorInfo as string | undefined);
   const durationLabel = data.durationLabel as string | undefined;
   const isRecursive = data.isRecursive as boolean | undefined;
   const hasChildren = data.hasChildren as boolean | undefined;
-  const cost = data.cost as number | undefined;
+  const cost = data.cost as number | null | undefined;
 
-  const config = typeConfig[trackType] || typeConfig.customized;
+  const config = typeConfig[trackType] || typeConfig.general;
   const Icon = config.icon;
 
   return (
@@ -105,7 +105,7 @@ export const TraceProcessNode = memo(({ data }: NodeProps) => {
           </span>
         )}
         <span className="flex items-center gap-1 ml-auto">
-          {cost !== undefined && (
+          {cost != null && (
             <span className="font-mono opacity-70">
               {formatCost(cost, i18n.language)}
             </span>

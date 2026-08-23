@@ -1,8 +1,8 @@
 package com.supertrace.aitrace.service.application.impl;
 
 import com.supertrace.aitrace.domain.Project;
-import com.supertrace.aitrace.domain.core.Trace;
-import com.supertrace.aitrace.domain.core.step.Step;
+import com.supertrace.aitrace.service.application.model.StepSummary;
+import com.supertrace.aitrace.service.application.model.TraceSummary;
 import com.supertrace.aitrace.service.domain.ProjectService;
 import com.supertrace.aitrace.service.application.QueryService;
 import com.supertrace.aitrace.service.domain.StepService;
@@ -33,20 +33,20 @@ public class QueryServiceImpl implements QueryService {
      * @return All steps
      */
     @Override
-    public Page<Step> getSteps(UUID userId, String projectName, int page, int pageSize) {
+    public Page<StepSummary> getSteps(UUID userId, String projectName, int page, int pageSize) {
         Project project = this.projectService.getProjectByUserIdAndName(userId, projectName)
             .orElseThrow(() -> new RuntimeException("Project not found: " + projectName));
         Long projectId = project.getId();
         Sort sort = Sort.by(Sort.Direction.DESC, "startTime");
-        return this.stepService.findStepsByProjectId(projectId, page, pageSize, sort);
+        return this.stepService.findStepSummariesByProjectId(projectId, page, pageSize, sort);
     }
 
     @Override
-    public Page<Trace> getTraces(UUID userId, @NotNull String projectName, int page, int pageSize) {
+    public Page<TraceSummary> getTraces(UUID userId, @NotNull String projectName, int page, int pageSize) {
         Project project = this.projectService.getProjectByUserIdAndName(userId, projectName)
             .orElseThrow(() -> new RuntimeException("Project not found: " + projectName));
         Long projectId = project.getId();
         Sort sort = Sort.by(Sort.Direction.DESC, "startTime");
-        return this.traceService.getTracesByProjectId(projectId, page, pageSize, sort);
+        return this.traceService.getTraceSummariesByProjectId(projectId, page, pageSize, sort);
     }
 }

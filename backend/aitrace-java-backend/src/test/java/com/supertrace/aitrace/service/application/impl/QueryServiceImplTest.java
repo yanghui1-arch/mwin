@@ -1,8 +1,8 @@
 package com.supertrace.aitrace.service.application.impl;
 
 import com.supertrace.aitrace.domain.Project;
-import com.supertrace.aitrace.domain.core.Trace;
-import com.supertrace.aitrace.domain.core.step.Step;
+import com.supertrace.aitrace.service.application.model.StepSummary;
+import com.supertrace.aitrace.service.application.model.TraceSummary;
 import com.supertrace.aitrace.service.domain.ProjectService;
 import com.supertrace.aitrace.service.domain.StepService;
 import com.supertrace.aitrace.service.domain.TraceService;
@@ -19,8 +19,6 @@ import org.springframework.data.domain.Sort;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -62,35 +60,23 @@ class QueryServiceImplTest {
     // ── getSteps ──────────────────────────────────────────────────────────────
 
     @Test
-    void getSteps_projectFound_returnsStepPageSortedByStartTimeDesc() {
-        Step step = Step.builder()
-            .id(UUID.randomUUID()).name("s").traceId(UUID.randomUUID())
-            .type("llm_response").tags(new ArrayList<>()).input(new HashMap<>())
-            .projectName("my-project").projectId(7L).startTime(LocalDateTime.now())
-            .build();
-        Page<Step> page = new PageImpl<>(List.of(step));
+    void getSteps_returnsTheRequestedSummaryPageSortedByNewestFirst() {
+        StepSummary step = new StepSummary(
+            UUID.randomUUID(), null, "s", "llm_response", List.of(), null,
+            null, null, LocalDateTime.now(), LocalDateTime.now()
+        );
+        Page<StepSummary> page = new PageImpl<>(List.of(step));
 
         when(projectService.getProjectByUserIdAndName(userId, "my-project"))
             .thenReturn(Optional.of(project));
-        when(stepService.findStepsByProjectId(eq(7L), eq(0), eq(15), any(Sort.class)))
+        when(stepService.findStepSummariesByProjectId(eq(7L), eq(0), eq(15), any(Sort.class)))
             .thenReturn(page);
 
-        Page<Step> result = service.getSteps(userId, "my-project", 0, 15);
+        Page<StepSummary> result = service.getSteps(userId, "my-project", 0, 15);
 
         assertEquals(1, result.getTotalElements());
-    }
-
-    @Test
-    void getSteps_usesDescendingStartTimeSortOrder() {
-        when(projectService.getProjectByUserIdAndName(userId, "my-project"))
-            .thenReturn(Optional.of(project));
-        when(stepService.findStepsByProjectId(eq(7L), anyInt(), anyInt(), any(Sort.class)))
-            .thenReturn(Page.empty());
-
-        service.getSteps(userId, "my-project", 0, 10);
-
         ArgumentCaptor<Sort> sortCaptor = ArgumentCaptor.forClass(Sort.class);
-        verify(stepService).findStepsByProjectId(eq(7L), anyInt(), anyInt(), sortCaptor.capture());
+        verify(stepService).findStepSummariesByProjectId(eq(7L), eq(0), eq(15), sortCaptor.capture());
 
         Sort.Order order = sortCaptor.getValue().getOrderFor("startTime");
         assertNotNull(order);
@@ -108,50 +94,26 @@ class QueryServiceImplTest {
         assertTrue(ex.getMessage().contains("missing"));
     }
 
-    @Test
-    void getSteps_pageAndSizeArePassedToStepService() {
-        when(projectService.getProjectByUserIdAndName(userId, "my-project"))
-            .thenReturn(Optional.of(project));
-        when(stepService.findStepsByProjectId(anyLong(), anyInt(), anyInt(), any(Sort.class)))
-            .thenReturn(Page.empty());
-
-        service.getSteps(userId, "my-project", 3, 25);
-
-        verify(stepService).findStepsByProjectId(eq(7L), eq(3), eq(25), any(Sort.class));
-    }
-
     // ── getTraces ─────────────────────────────────────────────────────────────
 
     @Test
-    void getTraces_projectFound_returnsTracePage() {
-        Trace trace = Trace.builder()
-            .id(UUID.randomUUID()).projectName("my-project").projectId(7L)
-            .name("t1").conversationId(UUID.randomUUID()).tags(List.of())
-            .startTime(LocalDateTime.now()).lastUpdateTimestamp(LocalDateTime.now())
-            .build();
-        Page<Trace> page = new PageImpl<>(List.of(trace));
+    void getTraces_returnsTheRequestedSummaryPageSortedByNewestFirst() {
+        TraceSummary trace = new TraceSummary(
+            UUID.randomUUID(), null, "t1", List.of(), null,
+            LocalDateTime.now(), LocalDateTime.now()
+        );
+        Page<TraceSummary> page = new PageImpl<>(List.of(trace));
 
         when(projectService.getProjectByUserIdAndName(userId, "my-project"))
             .thenReturn(Optional.of(project));
-        when(traceService.getTracesByProjectId(eq(7L), eq(0), eq(10), any(Sort.class)))
+        when(traceService.getTraceSummariesByProjectId(eq(7L), eq(0), eq(10), any(Sort.class)))
             .thenReturn(page);
 
-        Page<Trace> result = service.getTraces(userId, "my-project", 0, 10);
+        Page<TraceSummary> result = service.getTraces(userId, "my-project", 0, 10);
 
         assertEquals(1, result.getTotalElements());
-    }
-
-    @Test
-    void getTraces_usesDescendingStartTimeSortOrder() {
-        when(projectService.getProjectByUserIdAndName(userId, "my-project"))
-            .thenReturn(Optional.of(project));
-        when(traceService.getTracesByProjectId(anyLong(), anyInt(), anyInt(), any(Sort.class)))
-            .thenReturn(Page.empty());
-
-        service.getTraces(userId, "my-project", 0, 10);
-
         ArgumentCaptor<Sort> sortCaptor = ArgumentCaptor.forClass(Sort.class);
-        verify(traceService).getTracesByProjectId(anyLong(), anyInt(), anyInt(), sortCaptor.capture());
+        verify(traceService).getTraceSummariesByProjectId(eq(7L), eq(0), eq(10), sortCaptor.capture());
 
         Sort.Order order = sortCaptor.getValue().getOrderFor("startTime");
         assertNotNull(order);

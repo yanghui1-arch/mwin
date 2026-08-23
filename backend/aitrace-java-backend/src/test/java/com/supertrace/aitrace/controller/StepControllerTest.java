@@ -3,14 +3,14 @@ package com.supertrace.aitrace.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.supertrace.aitrace.domain.core.step.Step;
-import com.supertrace.aitrace.domain.core.step.StepOutput;
 import com.supertrace.aitrace.dto.step.LogStepRequest;
 import com.supertrace.aitrace.service.application.ApiKeyService;
 import com.supertrace.aitrace.service.application.LogService;
 import com.supertrace.aitrace.service.application.QueryService;
 import com.supertrace.aitrace.service.domain.StepMetaService;
 import com.supertrace.aitrace.service.domain.StepService;
+import com.supertrace.aitrace.service.application.model.StepSummary;
+import com.supertrace.aitrace.service.storage.model.StoredPayload;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Page;
@@ -51,7 +51,13 @@ class StepControllerTest {
         stepService = mock(StepService.class);
         stepMetaService = mock(StepMetaService.class);
 
-        StepController controller = new StepController(logService, queryService, apiKeyService, stepService, stepMetaService);
+        StepController controller = new StepController(
+            logService,
+            queryService,
+            apiKeyService,
+            stepService,
+            stepMetaService
+        );
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
         mapper = new ObjectMapper();
@@ -144,13 +150,11 @@ class StepControllerTest {
     @Test
     void getStep_projectFound_returns200WithPageVO() throws Exception {
         UUID userId = UUID.randomUUID();
-        Step step = Step.builder()
-            .id(UUID.randomUUID()).name("step1").traceId(UUID.randomUUID())
-            .type("llm_response").tags(List.of()).input(new HashMap<>())
-            .output(StepOutput.builder().build())
-            .projectName("proj").projectId(1L).startTime(LocalDateTime.now())
-            .build();
-        Page<Step> page = new PageImpl<>(List.of(step));
+        StepSummary step = new StepSummary(
+            UUID.randomUUID(), null, "step1", "llm_response", List.of(), null,
+            null, null, LocalDateTime.now(), LocalDateTime.now()
+        );
+        Page<StepSummary> page = new PageImpl<>(List.of(step));
 
         when(queryService.getSteps(eq(userId), eq("proj"), eq(0), eq(15))).thenReturn(page);
 
@@ -162,6 +166,8 @@ class StepControllerTest {
             .andExpect(jsonPath("$.code").value(200))
             .andExpect(jsonPath("$.data.data").isArray())
             .andExpect(jsonPath("$.data.data.length()").value(1))
+            .andExpect(jsonPath("$.data.data[0].input").doesNotExist())
+            .andExpect(jsonPath("$.data.data[0].output").doesNotExist())
             .andExpect(jsonPath("$.data.pageCount").value(1));
     }
 
@@ -187,6 +193,40 @@ class StepControllerTest {
                 .requestAttr("userId", userId))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.code").value(400));
+    }
+
+    // ── GET /api/v0/step/{stepId}/payload ───────────────────────────────────
+
+    @Test
+    void getStepPayload_ownedStep_returnsPayload() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID stepId = UUID.randomUUID();
+        StoredPayload payload = new StoredPayload(
+            mapper.valueToTree(Map.of("prompt", "hello")),
+            mapper.valueToTree(Map.of("answer", "world"))
+        );
+        when(stepService.getOwnedStepPayload(userId, stepId)).thenReturn(payload);
+
+        mockMvc.perform(get("/api/v0/step/{stepId}/payload", stepId)
+                .requestAttr("userId", userId))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.input.prompt").value("hello"))
+            .andExpect(jsonPath("$.data.output.answer").value("world"));
+
+        verify(stepService).getOwnedStepPayload(userId, stepId);
+    }
+
+    @Test
+    void getStepPayload_stepNotOwned_returns400() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID stepId = UUID.randomUUID();
+        when(stepService.getOwnedStepPayload(userId, stepId))
+            .thenThrow(new RuntimeException("Step not found"));
+
+        mockMvc.perform(get("/api/v0/step/{stepId}/payload", stepId)
+                .requestAttr("userId", userId))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value("Step not found"));
     }
 
     // ── POST /api/v0/step/delete ──────────────────────────────────────────────

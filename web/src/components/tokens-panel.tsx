@@ -48,7 +48,7 @@ export interface LLMTokenUsage {
 }
 
 export interface TokensPanelProps extends React.ComponentProps<"div"> {
-  model?: string;
+  model?: string | null;
   usage: LLMTokenUsage;
   cost: number;
   currency?: string;

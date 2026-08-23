@@ -9,8 +9,8 @@ import { ArrowDownToLine, ArrowUpFromLine, AlertCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 export const TraceIONode = memo(({ data }: NodeProps) => {
-  const isInput = !!data.input;
-  const errorInfo = data.errorInfo as string | undefined;
+  const isInput = data.input !== undefined;
+  const errorInfo = data.errorInfo as string | null | undefined;
   const hasError = !isInput && !!errorInfo;
   const { t } = useTranslation();
 

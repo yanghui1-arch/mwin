@@ -4,6 +4,7 @@ import { ProjectService } from './project.js';
 import { MediaService } from './media.js';
 import type { RepositoryPort } from '../repositories/port.js';
 import type { JsonObject, LogRequest, LogTraceTreeRequest } from '../domain/types.js';
+import type { PayloadObjectStorage } from '../storage/aliyun-oss.js';
 
 /** Request-scoped facade exposing the business operations used by route handlers. */
 export class Services {
@@ -11,9 +12,13 @@ export class Services {
   private readonly logService: LogService;
   private readonly overviewService: OverviewService;
   private readonly mediaService: MediaService;
-  constructor(readonly repositories: RepositoryPort, mediaBucket?: R2Bucket) {
+  constructor(
+    readonly repositories: RepositoryPort,
+    mediaBucket: R2Bucket | undefined,
+    private readonly payloadStorage: PayloadObjectStorage,
+  ) {
     this.projectService = new ProjectService(repositories);
-    this.logService = new LogService(repositories, this.projectService);
+    this.logService = new LogService(repositories, this.projectService, payloadStorage);
     this.overviewService = new OverviewService(repositories);
     this.mediaService = new MediaService(repositories, mediaBucket);
   }
@@ -45,6 +50,22 @@ export class Services {
   logTraceTree(userId: string, request: LogTraceTreeRequest) { return this.logService.logTraceTree(userId, request); }
   /** Lists the steps belonging to a trace in execution order. */
   getTracks(userId: string, traceId: string) { return this.repositories.listStepsByTraceForUser(userId, traceId); }
+  /** Loads one user-owned step payload from OSS. */
+  async getStepPayload(userId: string, stepId: string) {
+    const step = await this.repositories.findStepForUser(userId, stepId);
+    if (!step) throw new Error('Step not found');
+    const object = await this.repositories.findS3CompatibleObject(step.payloadObjectKey);
+    if (!object) throw new Error('Step payload metadata not found');
+    return this.payloadStorage.loadStep(object);
+  }
+  /** Loads one user-owned trace payload from OSS. */
+  async getTracePayload(userId: string, traceId: string) {
+    const trace = await this.repositories.findTraceForUser(userId, traceId);
+    if (!trace) throw new Error('Trace not found');
+    const object = await this.repositories.findS3CompatibleObject(trace.payloadObjectKey);
+    if (!object) throw new Error('Trace payload metadata not found');
+    return this.payloadStorage.loadTrace(object);
+  }
   /** Builds the dashboard token-usage summary. */
   getSummary(userId: string, today?: Date) { return this.overviewService.getSummary(userId, today); }
   /** Builds the selected dashboard projects' token-usage curve. */

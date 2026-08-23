@@ -1,4 +1,4 @@
-import type { ApiKey, BatchStepWrite, JsonObject, MediaAsset, NewProject, Project, Step, StepMeta, TokenSnapshot, Trace, User, UserAuth } from '../domain/types.js';
+import type { ApiKey, BatchStepWrite, BatchTraceWrite, JsonObject, MediaAsset, NewProject, Project, S3CompatibleObject, Step, StepMeta, StepSummary, TokenSnapshot, Trace, TraceSummary, User, UserAuth } from '../domain/types.js';
 
 /** Persistence operations required by the application services. */
 export interface RepositoryPort {
@@ -19,20 +19,22 @@ export interface RepositoryPort {
   updateProjectDescription(userId: string, projectId: number, description: string): Promise<Project | null>;
   deleteProject(userId: string, name: string): Promise<void>;
 
-  upsertTraceForUser(userId: string, trace: Trace): Promise<void>;
-  upsertBatchForUser(userId: string, traces: Trace[], steps: BatchStepWrite[], projectIds: number[]): Promise<void>;
+  upsertTraceForUser(userId: string, trace: Trace, payloadObject: S3CompatibleObject): Promise<void>;
+  upsertBatchForUser(userId: string, traces: BatchTraceWrite[], steps: BatchStepWrite[], projectIds: number[]): Promise<void>;
   findTrace(traceId: string): Promise<Trace | null>;
+  findTraceForUser(userId: string, traceId: string): Promise<Trace | null>;
   countTraces(projectId: number): Promise<number>;
-  listTraces(projectId: number, page: number, pageSize: number): Promise<{ total: number; data: Trace[] }>;
+  listTraces(projectId: number, page: number, pageSize: number): Promise<{ total: number; data: TraceSummary[] }>;
   deleteTracesForUser(userId: string, traceIds: string[]): Promise<string[]>;
 
-  upsertStepForUser(userId: string, step: Step, metadata: JsonObject, cost: string): Promise<void>;
+  upsertStepForUser(userId: string, step: Step, payloadObject: S3CompatibleObject, metadata: JsonObject, cost: string): Promise<void>;
   findStepForUser(userId: string, stepId: string): Promise<Step | null>;
-  listSteps(projectId: number, page: number, pageSize: number): Promise<{ total: number; data: Step[] }>;
-  listStepsByTraceForUser(userId: string, traceId: string): Promise<Step[]>;
+  listSteps(projectId: number, page: number, pageSize: number): Promise<{ total: number; data: StepSummary[] }>;
+  listStepsByTraceForUser(userId: string, traceId: string): Promise<StepSummary[]>;
   deleteStepsForUser(userId: string, stepIds: string[]): Promise<string[]>;
   findStepMetaForUser(userId: string, stepId: string): Promise<StepMeta | null>;
   tokenSnapshots(projectIds: number[]): Promise<TokenSnapshot[]>;
+  findS3CompatibleObject(objectKey: string): Promise<S3CompatibleObject | null>;
 
   createMediaAsset(asset: MediaAsset): Promise<MediaAsset>;
   findMediaAssetForUser(userId: string, mediaId: string): Promise<MediaAsset | null>;

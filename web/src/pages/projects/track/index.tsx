@@ -100,12 +100,12 @@ export default function ProjectDetailPage() {
   });
 
   useEffect(() => {
-    void refreshStepData();
-  }, [refreshStepData]);
+    if (navButtonType === "step") void refreshStepData();
+  }, [navButtonType, refreshStepData]);
 
   useEffect(() => {
-    void refreshTraceData();
-  }, [refreshTraceData]);
+    if (navButtonType === "trace") void refreshTraceData();
+  }, [navButtonType, refreshTraceData]);
 
   return (
     <div className="flex flex-col gap-2 px-4 lg:px-6">

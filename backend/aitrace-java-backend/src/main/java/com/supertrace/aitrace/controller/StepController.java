@@ -1,6 +1,5 @@
 package com.supertrace.aitrace.controller;
 
-import com.supertrace.aitrace.domain.core.step.Step;
 import com.supertrace.aitrace.dto.step.LogStepRequest;
 import com.supertrace.aitrace.exception.AuthenticationException;
 import com.supertrace.aitrace.exception.UserIdNotFoundException;
@@ -10,6 +9,8 @@ import com.supertrace.aitrace.service.application.LogService;
 import com.supertrace.aitrace.service.application.QueryService;
 import com.supertrace.aitrace.service.domain.StepMetaService;
 import com.supertrace.aitrace.service.domain.StepService;
+import com.supertrace.aitrace.service.application.model.StepSummary;
+import com.supertrace.aitrace.service.storage.model.StoredPayload;
 import com.supertrace.aitrace.utils.ApiKeyUtils;
 import com.supertrace.aitrace.vo.PageVO;
 import com.supertrace.aitrace.vo.step.GetStepVO;
@@ -56,6 +57,16 @@ public class StepController {
         }
     }
 
+    /**
+     * Get a summary of step excluding input and output
+     * This API is for displaying the overview of steps
+     *
+     * @param request http servlet request
+     * @param projectName project name
+     * @param page page order
+     * @param pageSize page size
+     * @return a list of step excludes input and output
+     */
     @GetMapping("/step/{projectName}")
     public ResponseEntity<APIResponse<PageVO<GetStepVO>>> getStep(
         HttpServletRequest request,
@@ -65,24 +76,22 @@ public class StepController {
     ) {
         try {
             UUID userId = (UUID) request.getAttribute("userId");
-            Page<Step> steps = this.queryService.getSteps(userId, projectName, page, pageSize);
-            List<UUID> stepIds = steps.stream().map(Step::getId).toList();
+            Page<StepSummary> steps = this.queryService.getSteps(userId, projectName, page, pageSize);
+            List<UUID> stepIds = steps.stream().map(StepSummary::id).toList();
             Map<UUID, BigDecimal> costMap = this.stepMetaService.findCostsByStepIds(stepIds);
             List<GetStepVO> getStepVOs = steps.stream()
                 .map(step -> GetStepVO.builder()
-                    .id(step.getId())
-                    .parentStepId(step.getParentStepId())
-                    .name(step.getName())
-                    .type(step.getType())
-                    .tags(step.getTags())
-                    .input(step.getInput())
-                    .output(step.getOutput())
-                    .errorInfo(step.getErrorInfo())
-                    .model(step.getModel())
-                    .usage(step.getUsage())
-                    .startTime(step.getStartTime())
-                    .endTime(step.getEndTime())
-                    .cost(costMap.get(step.getId()))
+                    .id(step.id())
+                    .parentStepId(step.parentStepId())
+                    .name(step.name())
+                    .type(step.type())
+                    .tags(step.tags())
+                    .errorInfo(step.errorInfo())
+                    .model(step.model())
+                    .usage(step.usage())
+                    .startTime(step.startTime())
+                    .endTime(step.endTime())
+                    .cost(costMap.get(step.id()))
                     .build()
                 )
                 .toList();
@@ -91,6 +100,30 @@ public class StepController {
                 .pageCount(steps.getTotalPages())
                 .build();
             return ResponseEntity.ok(APIResponse.success(pageVO));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(APIResponse.error(e.getMessage()));
+        }
+    }
+
+    /**
+     * Lazily loads a Step's input and output from object storage.
+     *
+     * @param request authenticated request containing the user ID
+     * @param stepId ID of the Step to load
+     * @return the Step input and output
+     */
+    @GetMapping("/step/{stepId}/payload")
+    public ResponseEntity<APIResponse<StoredPayload>> getStepPayload(
+        HttpServletRequest request,
+        @PathVariable String stepId
+    ) {
+        try {
+            UUID userId = (UUID) request.getAttribute("userId");
+            StoredPayload payload = this.stepService.getOwnedStepPayload(
+                userId,
+                UUID.fromString(stepId)
+            );
+            return ResponseEntity.ok(APIResponse.success(payload));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(APIResponse.error(e.getMessage()));
         }

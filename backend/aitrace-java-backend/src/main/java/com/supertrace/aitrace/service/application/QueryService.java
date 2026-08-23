@@ -1,7 +1,7 @@
 package com.supertrace.aitrace.service.application;
 
-import com.supertrace.aitrace.domain.core.Trace;
-import com.supertrace.aitrace.domain.core.step.Step;
+import com.supertrace.aitrace.service.application.model.StepSummary;
+import com.supertrace.aitrace.service.application.model.TraceSummary;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.data.domain.Page;
@@ -17,7 +17,7 @@ public interface QueryService {
      * @param pageSize page size
      * @return All pagination information about steps.
      */
-    Page<Step> getSteps(@NotNull UUID userId, @NotBlank String projectName, int page, int pageSize);
+    Page<StepSummary> getSteps(@NotNull UUID userId, @NotBlank String projectName, int page, int pageSize);
 
     /**
      * Pagination search traces of project which is owned by user uuid.
@@ -28,5 +28,5 @@ public interface QueryService {
      * @param pageSize page size
      * @return All traces
      */
-    Page<Trace> getTraces(@NotNull UUID userId, @NotBlank String projectName, int page, int pageSize);
+    Page<TraceSummary> getTraces(@NotNull UUID userId, @NotBlank String projectName, int page, int pageSize);
 }

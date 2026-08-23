@@ -2,6 +2,8 @@ package com.supertrace.aitrace.service.domain;
 
 import com.supertrace.aitrace.domain.core.Trace;
 import com.supertrace.aitrace.dto.trace.LogTraceRequest;
+import com.supertrace.aitrace.service.application.model.TraceSummary;
+import com.supertrace.aitrace.service.storage.model.StoredPayload;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 
@@ -18,12 +20,11 @@ import java.util.UUID;
 public interface TraceService {
 
     /**
-     * store trace into the database
-     * Trace is the one generation in the complete workflow of agent so the id is the same.
+     * Store one completed Trace snapshot.
      *
      * @param logTraceRequest log trace request
      * @param projectId project id which trace belongs to
-     * @return step id
+     * @return trace id
      */
 
     UUID createTrace(LogTraceRequest logTraceRequest, Long projectId);
@@ -36,7 +37,7 @@ public interface TraceService {
      * @param pageSize page size
      * @return all traces
      */
-    Page<Trace> getTracesByProjectId(Long projectId, int page, int pageSize);
+    Page<TraceSummary> getTraceSummariesByProjectId(Long projectId, int page, int pageSize);
 
     /**
      * Pagination search traces by a project id with given sort rule.
@@ -47,9 +48,20 @@ public interface TraceService {
      * @param sort sort rule
      * @return all traces
      */
-    Page<Trace> getTracesByProjectId(Long projectId, int page, int pageSize, Sort sort);
+    Page<TraceSummary> getTraceSummariesByProjectId(Long projectId, int page, int pageSize, Sort sort);
 
     Optional<Trace> findById(UUID traceId);
+
+    Optional<Trace> findByIdForUser(UUID userId, UUID traceId);
+
+    /**
+     * Loads the payload of a Trace owned by the specified user.
+     *
+     * @param userId owner user ID
+     * @param traceId Trace ID
+     * @return Trace input and output
+     */
+    StoredPayload getOwnedTracePayload(UUID userId, UUID traceId);
 
     long countByProjectId(Long projectId);
 

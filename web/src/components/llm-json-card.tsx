@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Code, FileText } from "lucide-react";
-import { IOFieldViewer } from "./io-field-viewer";
+import { IOFieldViewer, PlainValue } from "./io-field-viewer";
 import { LLMMessagesViewer } from "./llm-messages-viewer";
 import { ToolsViewer } from "./tools-viewer";
 import { Markdown } from "./markdown";
@@ -14,8 +14,8 @@ import type {
 
 interface StepDetailProp {
   labelTitle?: string;
-  jsonObject?: Record<string, unknown>;
-  errorInfo?: string;
+  jsonObject?: unknown;
+  errorInfo?: string | null;
   /**
    * When true (default), LLM-aware rendering:
    *   - `messages` array (llm_inputs)  → LLMMessagesViewer, Markdown per message
@@ -35,7 +35,7 @@ export function LLMJsonCard({
 }: StepDetailProp) {
   const { t } = useTranslation();
 
-  if (!jsonObject) {
+  if (jsonObject === undefined || jsonObject === null) {
     return (
       <div className="flex flex-col gap-2 flex-1">
         {labelTitle && <Label>{labelTitle}</Label>}
@@ -46,9 +46,20 @@ export function LLMJsonCard({
     );
   }
 
+  if (typeof jsonObject !== "object" || Array.isArray(jsonObject)) {
+    return (
+      <div className="flex flex-col gap-2 flex-1">
+        {labelTitle && <Label>{labelTitle}</Label>}
+        <PlainValue value={jsonObject} />
+      </div>
+    );
+  }
+
+  const jsonRecord = jsonObject as Record<string, unknown>;
+
   if (llmJsonLight) {
     // Extract the four "special" keys; everything else goes to the tab strip.
-    const { messages, content, choices, tools, ...rest } = jsonObject;
+    const { messages, content, choices, tools, ...rest } = jsonRecord;
 
     // LLM input: messages array
     const inputMessages = Array.isArray(messages) && messages.length > 0
@@ -115,7 +126,7 @@ export function LLMJsonCard({
     <div className="flex flex-col gap-2 flex-1">
       {labelTitle && <Label>{labelTitle}</Label>}
       <div>
-        <IOFieldViewer data={jsonObject} />
+        <IOFieldViewer data={jsonRecord} />
       </div>
     </div>
   );

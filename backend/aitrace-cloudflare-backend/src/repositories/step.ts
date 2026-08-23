@@ -2,9 +2,10 @@
 import { and, count, desc, eq, inArray, isNotNull } from 'drizzle-orm';
 import { projects, stepMeta, steps as stepTable } from '../db/schema.js';
 import type { AppDatabase } from '../db/index.js';
-import type { JsonObject, Step, StepMeta, TokenSnapshot, Usage } from '../domain/types.js';
+import type { JsonObject, S3CompatibleObject, Step, StepMeta, StepSummary, TokenSnapshot, Usage } from '../domain/types.js';
 import { parseJson, stringifyJson } from '../lib/utils.js';
 import { toCostUnits } from '../lib/decimal.js';
+import { upsertS3CompatibleObjectStatement } from './s3-compatible-object.js';
 
 interface IdentifierRow { id: string }
 
@@ -29,6 +30,7 @@ function rebuildProjectCostsStatement(db: D1Database, userId: string): D1Prepare
 }
 
 function toStep(row: typeof stepTable.$inferSelect, cost: string | null): Step {
+  if (!row.payloadObjectKey) throw new Error('Step payload pointer is missing');
   return {
     id: row.id,
     parentStepId: row.parentStepId,
@@ -36,8 +38,7 @@ function toStep(row: typeof stepTable.$inferSelect, cost: string | null): Step {
     traceId: row.traceId,
     type: row.type,
     tags: parseJson<string[]>(row.tags, []),
-    input: parseJson<JsonObject>(row.input),
-    output: parseJson<JsonObject>(row.output),
+    payloadObjectKey: row.payloadObjectKey,
     errorInfo: row.errorInfo,
     model: row.model,
     usage: parseJson<Usage>(row.usage),
@@ -49,23 +50,72 @@ function toStep(row: typeof stepTable.$inferSelect, cost: string | null): Step {
   };
 }
 
+interface StepSummaryRow {
+  id: string;
+  parentStepId: string | null;
+  name: string;
+  traceId: string | null;
+  type: string;
+  tags: string;
+  errorInfo: string | null;
+  model: string | null;
+  usage: string | null;
+  projectName: string;
+  projectId: number;
+  startTime: string;
+  endTime: string | null;
+}
+
+const stepSummaryFields = {
+  id: stepTable.id,
+  parentStepId: stepTable.parentStepId,
+  name: stepTable.name,
+  traceId: stepTable.traceId,
+  type: stepTable.type,
+  tags: stepTable.tags,
+  errorInfo: stepTable.errorInfo,
+  model: stepTable.model,
+  usage: stepTable.usage,
+  projectName: stepTable.projectName,
+  projectId: stepTable.projectId,
+  startTime: stepTable.startTime,
+  endTime: stepTable.endTime,
+};
+
+function toStepSummary(row: StepSummaryRow, cost: string | null): StepSummary {
+  return {
+    ...row,
+    tags: parseJson<string[]>(row.tags, []),
+    usage: parseJson<Usage>(row.usage),
+    cost,
+  };
+}
+
 /**
  * Writes a step, its metadata, and the exact fixed-point project-cost delta in
  * one D1 transaction. Every mutation is user-scoped in SQL.
  */
-export async function upsertStepForUser(db: D1Database, userId: string, step: Step, metadata: JsonObject, cost: string): Promise<void> {
+export async function upsertStepForUser(
+  db: D1Database,
+  userId: string,
+  step: Step,
+  payloadObject: S3CompatibleObject,
+  metadata: JsonObject,
+  cost: string,
+): Promise<void> {
   const costUnits = toCostUnits(cost);
   const totalUnits = `(cost_units + ? - COALESCE((SELECT cost_units FROM step_meta WHERE id = ?), 0))`;
   const results = await db.batch([
-    db.prepare(`INSERT INTO step (id, name, trace_id, parent_step_id, type, tags, input, output, error_info, model, usage, project_name, project_id, start_time, end_time)
-      SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+    upsertS3CompatibleObjectStatement(db, payloadObject),
+    db.prepare(`INSERT INTO step (id, name, trace_id, parent_step_id, type, tags, payload_object_key, error_info, model, usage, project_name, project_id, start_time, end_time)
+      SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
       WHERE EXISTS (SELECT 1 FROM project WHERE id = ? AND user_uuid = ?)
       ON CONFLICT(id) DO UPDATE SET name = excluded.name, trace_id = excluded.trace_id, parent_step_id = excluded.parent_step_id,
-      type = excluded.type, tags = excluded.tags, input = excluded.input, output = excluded.output, error_info = excluded.error_info,
+      type = excluded.type, tags = excluded.tags, payload_object_key = excluded.payload_object_key, error_info = excluded.error_info,
       model = excluded.model, usage = excluded.usage, project_name = excluded.project_name, project_id = excluded.project_id,
       start_time = excluded.start_time, end_time = excluded.end_time
       WHERE step.project_id IN (SELECT id FROM project WHERE user_uuid = ?)`)
-      .bind(step.id, step.name, step.traceId, step.parentStepId, step.type, stringifyJson(step.tags), stringifyJson(step.input), stringifyJson(step.output), step.errorInfo, step.model, stringifyJson(step.usage), step.projectName, step.projectId, step.startTime, step.endTime, step.projectId, userId, userId),
+      .bind(step.id, step.name, step.traceId, step.parentStepId, step.type, stringifyJson(step.tags), payloadObject.objectKey, step.errorInfo, step.model, stringifyJson(step.usage), step.projectName, step.projectId, step.startTime, step.endTime, step.projectId, userId, userId),
     db.prepare(`UPDATE project SET
       cost_units = ${totalUnits},
       cost = ${formattedCost(totalUnits)},
@@ -88,7 +138,7 @@ export async function upsertStepForUser(db: D1Database, userId: string, step: St
       ON CONFLICT(id) DO UPDATE SET metadata = excluded.metadata, cost = excluded.cost, cost_units = excluded.cost_units`)
       .bind(step.id, stringifyJson(metadata), cost, costUnits, step.id, step.projectId, userId),
   ]);
-  if (results.some((result) => result.meta.changes === 0)) throw new Error('Step is not owned by the authenticated user');
+  if (results.slice(1).some((result) => result.meta.changes === 0)) throw new Error('Step is not owned by the authenticated user');
 }
 
 export async function findStepForUser(db: AppDatabase, userId: string, stepId: string): Promise<Step | null> {
@@ -99,22 +149,22 @@ export async function findStepForUser(db: AppDatabase, userId: string, stepId: s
   return row ? toStep(row.step, row.cost) : null;
 }
 
-export async function listSteps(db: AppDatabase, projectId: number, page: number, pageSize: number): Promise<{ total: number; data: Step[] }> {
+export async function listSteps(db: AppDatabase, projectId: number, page: number, pageSize: number): Promise<{ total: number; data: StepSummary[] }> {
   const totalRow = await db.select({ value: count() }).from(stepTable).where(eq(stepTable.projectId, projectId)).get();
-  const rows = await db.select({ step: stepTable, cost: stepMeta.cost }).from(stepTable)
+  const rows = await db.select({ ...stepSummaryFields, cost: stepMeta.cost }).from(stepTable)
     .leftJoin(stepMeta, eq(stepMeta.id, stepTable.id))
     .where(eq(stepTable.projectId, projectId))
     .orderBy(desc(stepTable.startTime)).limit(pageSize).offset(page * pageSize).all();
-  return { total: totalRow?.value ?? 0, data: rows.map((row) => toStep(row.step, row.cost)) };
+  return { total: totalRow?.value ?? 0, data: rows.map((row) => toStepSummary(row, row.cost)) };
 }
 
-export async function listStepsByTraceForUser(db: AppDatabase, userId: string, traceId: string): Promise<Step[]> {
-  const rows = await db.select({ step: stepTable, cost: stepMeta.cost }).from(stepTable)
+export async function listStepsByTraceForUser(db: AppDatabase, userId: string, traceId: string): Promise<StepSummary[]> {
+  const rows = await db.select({ ...stepSummaryFields, cost: stepMeta.cost }).from(stepTable)
     .innerJoin(projects, eq(projects.id, stepTable.projectId))
     .leftJoin(stepMeta, eq(stepMeta.id, stepTable.id))
     .where(and(eq(stepTable.traceId, traceId), eq(projects.userId, userId)))
     .orderBy(stepTable.startTime).all();
-  return rows.map((row) => toStep(row.step, row.cost));
+  return rows.map((row) => toStepSummary(row, row.cost));
 }
 
 /** Deletes a caller-owned set of steps and rebuilds the affected user's aggregates atomically. */

@@ -15,7 +15,11 @@ public class TraceFactory {
      * @param projectId project id which trace belongs to
      * @return a new trace
      */
-    public Trace createTrace(LogTraceRequest logTraceRequest, @NotNull Long projectId) {
+    public Trace createTrace(
+        LogTraceRequest logTraceRequest,
+        @NotNull Long projectId,
+        String payloadObjectKey
+    ) {
         return Trace.builder()
             .id(UUID.fromString(logTraceRequest.getTraceId()))
             .parentTraceId(logTraceRequest.getParentTraceId() == null
@@ -26,8 +30,7 @@ public class TraceFactory {
             .name(logTraceRequest.getTraceName())
             .conversationId(UUID.fromString(logTraceRequest.getConversationId()))
             .tags(logTraceRequest.getTags())
-            .input(logTraceRequest.getInput())
-            .output(logTraceRequest.getOutput())
+            .payloadObjectKey(payloadObjectKey)
             .errorInfo(logTraceRequest.getErrorInfo())
             .startTime(logTraceRequest.getStartTime())
             .lastUpdateTimestamp(logTraceRequest.getLastUpdateTimestamp())

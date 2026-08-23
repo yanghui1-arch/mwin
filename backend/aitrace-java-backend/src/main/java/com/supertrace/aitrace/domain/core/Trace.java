@@ -17,7 +17,6 @@ import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -62,13 +61,9 @@ public class Trace {
     @Column(columnDefinition = "jsonb")
     private List<String> tags;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(columnDefinition = "jsonb")
-    private Map<String, Object> input;
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(columnDefinition = "jsonb")
-    private Map<String, Object> output;
+    @NotBlank
+    @Column(name = "payload_object_key", nullable = false, length = 1024)
+    private String payloadObjectKey;
 
     @Column(name = "error_info")
     private String errorInfo;

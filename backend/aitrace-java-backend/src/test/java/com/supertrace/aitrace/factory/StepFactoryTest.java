@@ -4,6 +4,7 @@ import com.supertrace.aitrace.domain.core.step.Step;
 import com.supertrace.aitrace.domain.core.step.StepOutput;
 import com.supertrace.aitrace.domain.core.usage.LLMUsage;
 import com.supertrace.aitrace.dto.step.LogStepRequest;
+import com.supertrace.aitrace.service.storage.PayloadFormat;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -17,10 +18,12 @@ import static org.junit.jupiter.api.Assertions.*;
 class StepFactoryTest {
 
     private StepFactory factory;
+    private String payloadObjectKey;
 
     @BeforeEach
     void setUp() {
         factory = new StepFactory();
+        payloadObjectKey = PayloadFormat.stepObjectKey(UUID.randomUUID());
     }
 
     private LogStepRequest buildRequest(String parentStepId) {
@@ -44,19 +47,19 @@ class StepFactoryTest {
 
     @Test
     void createStep_allFieldsMappedCorrectly() {
-        LogStepRequest req = buildRequest(null);
+        String parentStepId = UUID.randomUUID().toString();
+        LogStepRequest req = buildRequest(parentStepId);
         Long projectId = 99L;
 
-        Step step = factory.createStep(req, projectId);
+        Step step = factory.createStep(req, projectId, payloadObjectKey);
 
         assertEquals(UUID.fromString(req.getStepId()), step.getId());
         assertEquals(req.getStepName(), step.getName());
         assertEquals(UUID.fromString(req.getTraceId()), step.getTraceId());
-        assertNull(step.getParentStepId());
+        assertEquals(UUID.fromString(parentStepId), step.getParentStepId());
         assertEquals(req.getStepType(), step.getType());
         assertEquals(req.getTags(), step.getTags());
-        assertEquals(req.getInput(), step.getInput());
-        assertEquals(req.getOutput(), step.getOutput());
+        assertEquals(payloadObjectKey, step.getPayloadObjectKey());
         assertNull(step.getErrorInfo());
         assertEquals(req.getModel(), step.getModel());
         assertEquals(req.getUsage(), step.getUsage());
@@ -67,58 +70,36 @@ class StepFactoryTest {
     }
 
     @Test
-    void createStep_withParentStepId_parsesUUID() {
-        String parentId = UUID.randomUUID().toString();
-        LogStepRequest req = buildRequest(parentId);
-
-        Step step = factory.createStep(req, 1L);
-
-        assertEquals(UUID.fromString(parentId), step.getParentStepId());
-    }
-
-    @Test
-    void createStep_nullParentStepId_setsNullOnStep() {
+    void createStep_withoutTraceOrParent_createsStandaloneStep() {
         LogStepRequest req = buildRequest(null);
+        req.setTraceId(null);
 
-        Step step = factory.createStep(req, 1L);
+        Step step = factory.createStep(req, 1L, payloadObjectKey);
 
+        assertNull(step.getTraceId());
         assertNull(step.getParentStepId());
     }
 
     @Test
-    void createStep_nullTraceId_createsStandaloneStep() {
-        LogStepRequest req = buildRequest(null);
-        req.setTraceId(null);
-
-        Step step = factory.createStep(req, 1L);
-
-        assertNull(step.getTraceId());
-    }
-
-    @Test
-    void createStep_differentProjectIds_areAssignedCorrectly() {
-        LogStepRequest req = buildRequest(null);
-
-        Step step1 = factory.createStep(req, 10L);
-        Step step2 = factory.createStep(req, 20L);
-
-        assertEquals(10L, step1.getProjectId());
-        assertEquals(20L, step2.getProjectId());
-    }
-
-    @Test
-    void createStep_invalidStepIdString_throwsException() {
-        LogStepRequest req = buildRequest(null);
-        req.setStepId("not-a-uuid");
-
-        assertThrows(IllegalArgumentException.class, () -> factory.createStep(req, 1L));
-    }
-
-    @Test
-    void createStep_invalidTraceIdString_throwsException() {
-        LogStepRequest req = buildRequest(null);
-        req.setTraceId("bad-uuid");
-
-        assertThrows(IllegalArgumentException.class, () -> factory.createStep(req, 1L));
+    void createStep_rejectsMalformedIdentifiers() {
+        assertAll(
+            () -> {
+                LogStepRequest req = buildRequest(null);
+                req.setStepId("not-a-uuid");
+                assertThrows(IllegalArgumentException.class,
+                    () -> factory.createStep(req, 1L, payloadObjectKey));
+            },
+            () -> {
+                LogStepRequest req = buildRequest(null);
+                req.setTraceId("not-a-uuid");
+                assertThrows(IllegalArgumentException.class,
+                    () -> factory.createStep(req, 1L, payloadObjectKey));
+            },
+            () -> {
+                LogStepRequest req = buildRequest("not-a-uuid");
+                assertThrows(IllegalArgumentException.class,
+                    () -> factory.createStep(req, 1L, payloadObjectKey));
+            }
+        );
     }
 }

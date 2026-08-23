@@ -8,6 +8,7 @@ import type { CompletionUsage } from "openai/resources/completions.mjs";
 import { TraceDialogMain } from "./trace-dialog/trace-dialog-main";
 import { DataTableToolbar } from "./data-table/data-table-toolbar/common-data-table-toolbar";
 import { traceApi, type Track } from "@/api/trace";
+import type { TracePayload } from "@/api/payload";
 import { useEffect, useState } from "react";
 import { Skeleton } from "./ui/skeleton";
 
@@ -56,25 +57,40 @@ export function TraceTable({ table, isLoading = false }: TraceTableProps) {
 
 function TraceDetails({ rowData }: { rowData: Trace }) {
   const [tracks, setTracks] = useState<Track[]>([]);
+  const [payload, setPayload] = useState<TracePayload | null>(null);
+  const [payloadError, setPayloadError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
     setIsLoading(true);
+    setTracks([]);
+    setPayload(null);
+    setPayloadError(null);
 
-    traceApi.getTracks(rowData.id)
-      .then((response) => {
-        if (active) {
-          setTracks(response.data.code === 200 ? response.data.data : []);
-        }
-      })
-      .catch((error) => {
-        console.error("Failed to load trace tracks:", error);
-        if (active) setTracks([]);
-      })
-      .finally(() => {
-        if (active) setIsLoading(false);
-      });
+    Promise.allSettled([
+      traceApi.getTracks(rowData.id),
+      traceApi.getPayload(rowData.id),
+    ]).then(([tracksResult, payloadResult]) => {
+      if (!active) return;
+      if (tracksResult.status === "fulfilled") {
+        setTracks(tracksResult.value.data.code === 200 ? tracksResult.value.data.data : []);
+      } else {
+        console.error("Failed to load trace tracks:", tracksResult.reason);
+        setTracks([]);
+      }
+      if (payloadResult.status === "fulfilled") {
+        setPayload(payloadResult.value.data.data);
+      } else {
+        setPayload(null);
+        setPayloadError(
+          payloadResult.reason instanceof Error
+            ? payloadResult.reason.message
+            : "Failed to load Trace payload",
+        );
+      }
+      setIsLoading(false);
+    });
 
     return () => {
       active = false;
@@ -129,7 +145,12 @@ function TraceDetails({ rowData }: { rowData: Trace }) {
       {Array.from(groupedUsage.entries()).map(([model, usage]) => (
         <TokensPanel key={model} model={model} usage={usage} cost={usage.cost} />
       ))}
-      <TraceDialogMain data={rowData} tracks={tracks} />
+      <TraceDialogMain
+        data={rowData}
+        tracks={tracks}
+        payload={payload}
+        payloadError={payloadError}
+      />
     </div>
   );
 }

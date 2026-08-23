@@ -105,7 +105,7 @@ interface PlainValueProps {
   value: unknown;
 }
 
-function PlainValue({ value }: PlainValueProps) {
+export function PlainValue({ value }: PlainValueProps) {
   if (value === null || value === undefined) {
     return <span className="text-sm text-muted-foreground font-mono">null</span>;
   }

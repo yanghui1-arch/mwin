@@ -1,11 +1,12 @@
 import type { Services } from '../services/index.js';
 
-export interface Bindings {
-  DB: D1Database;
+export interface Bindings extends CloudflareBindings {
   MEDIA_BUCKET?: R2Bucket;
   JWT_SECRET: string;
   GITHUB_CLIENT_ID: string;
   GITHUB_CLIENT_SECRET: string;
+  OSS_ACCESS_KEY_ID: string;
+  OSS_ACCESS_KEY_SECRET: string;
 }
 
 export type AppEnv = { Bindings: Bindings; Variables: { services: Services } };
@@ -44,12 +45,13 @@ export interface Trace {
   name: string;
   conversationId: string;
   tags: string[];
-  input: JsonObject | null;
-  output: JsonObject | null;
+  payloadObjectKey: string;
   errorInfo: string | null;
   startTime: string;
   lastUpdateTimestamp: string;
 }
+
+export type TraceSummary = Omit<Trace, 'payloadObjectKey'>;
 
 export interface Step {
   id: string;
@@ -58,8 +60,7 @@ export interface Step {
   traceId: string | null;
   type: string;
   tags: string[];
-  input: JsonObject | null;
-  output: JsonObject | null;
+  payloadObjectKey: string;
   errorInfo: string | null;
   model: string | null;
   usage: Usage | null;
@@ -69,6 +70,8 @@ export interface Step {
   endTime: string | null;
   cost?: string | null;
 }
+
+export type StepSummary = Omit<Step, 'payloadObjectKey'>;
 
 export interface LogRequest extends JsonObject {
   project_name?: string; projectName?: string;
@@ -86,8 +89,8 @@ export interface LogRequest extends JsonObject {
   error_info?: string; errorInfo?: string;
   llm_provider?: string; llmProvider?: string;
   tags?: string[];
-  input?: JsonObject;
-  output?: JsonObject;
+  input?: JsonObject | null;
+  output?: JsonObject | null;
   model?: string;
   usage?: Usage;
   description?: string;
@@ -100,8 +103,36 @@ export interface LogTraceTreeRequest extends JsonObject {
 
 export interface BatchStepWrite {
   step: Step;
+  payloadObject: S3CompatibleObject;
   metadata: JsonObject;
   cost: string;
+}
+
+export interface BatchTraceWrite {
+  trace: Trace;
+  payloadObject: S3CompatibleObject;
+}
+
+export interface StepPayload {
+  input: JsonObject | null;
+  output: JsonObject | null;
+}
+
+export interface TracePayload {
+  input: JsonObject | null;
+  output: JsonObject | null;
+}
+
+export interface S3CompatibleObject {
+  objectKey: string;
+  contentType: string;
+  contentEncoding: 'gzip';
+  schemaVersion: number;
+  rawSizeBytes: number;
+  storedSizeBytes: number;
+  sha256: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface User { id: string; username: string; email: string | null; avatar: string | null; registerTime: string }

@@ -44,6 +44,18 @@ export const projects = sqliteTable('project', {
   index('idx_project_user').on(table.userId),
 ]);
 
+export const s3CompatibleObjects = sqliteTable('s3_compatible_object', {
+  objectKey: text('object_key').primaryKey(),
+  contentType: text('content_type').notNull(),
+  contentEncoding: text('content_encoding').notNull(),
+  schemaVersion: integer('schema_version').notNull(),
+  rawSizeBytes: integer('raw_size_bytes').notNull(),
+  storedSizeBytes: integer('stored_size_bytes').notNull(),
+  sha256: text('sha256').notNull(),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
+
 export const traces = sqliteTable('trace', {
   id: text('id').primaryKey(),
   parentTraceId: text('parent_trace_id'),
@@ -52,8 +64,7 @@ export const traces = sqliteTable('trace', {
   name: text('name').notNull(),
   conversationId: text('conversation_id').notNull(),
   tags: text('tags').notNull(),
-  input: text('input'),
-  output: text('output'),
+  payloadObjectKey: text('payload_object_key').notNull().references(() => s3CompatibleObjects.objectKey),
   errorInfo: text('error_info'),
   startTime: text('start_time').notNull(),
   lastUpdateTimestamp: text('last_update_timestamp').notNull(),
@@ -69,8 +80,7 @@ export const steps = sqliteTable('step', {
   parentStepId: text('parent_step_id'),
   type: text('type').notNull(),
   tags: text('tags').notNull(),
-  input: text('input'),
-  output: text('output'),
+  payloadObjectKey: text('payload_object_key').notNull().references(() => s3CompatibleObjects.objectKey),
   errorInfo: text('error_info'),
   model: text('model'),
   usage: text('usage'),
