@@ -26,7 +26,7 @@ class SyncClient:
         project_name: str | None = None,
         host_url: str | None = None,
         apikey: str | None = None,
-        timeout_ms: int = 1000,
+        timeout_ms: int = 3000,
     ):
         client_config = build_client_config(
             project_name=project_name,
@@ -41,7 +41,7 @@ class SyncClient:
             base_url=client_config.host_url,
             headers=client_config.headers,
             timeout=timeout_ms / 1000,
-            trust_env=False,
+            trust_env=True,
         )
 
     def log_step(
