@@ -236,9 +236,26 @@ jobs:
 
       - name: Deploy tested frontend and backend
         working-directory: backend/aitrace-cloudflare-backend
+        shell: bash
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ steps.cloudflare.outputs.account_id }}
-        run: npx wrangler deploy
+          OSS_ACCESS_KEY_ID: ${{ secrets.OSS_ACCESS_KEY_ID }}
+          OSS_ACCESS_KEY_SECRET: ${{ secrets.OSS_ACCESS_KEY_SECRET }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${OSS_ACCESS_KEY_ID}" || -z "${OSS_ACCESS_KEY_SECRET}" ]]; then
+            echo "::error::OSS_ACCESS_KEY_ID and OSS_ACCESS_KEY_SECRET repository secrets must be configured."
+            exit 1
+          fi
+
+          WORKER_SECRETS_FILE="$(mktemp)"
+          trap 'rm -f "${WORKER_SECRETS_FILE}"' EXIT
+          jq -n '{
+            OSS_ACCESS_KEY_ID: env.OSS_ACCESS_KEY_ID,
+            OSS_ACCESS_KEY_SECRET: env.OSS_ACCESS_KEY_SECRET
+          }' > "${WORKER_SECRETS_FILE}"
+          chmod 600 "${WORKER_SECRETS_FILE}"
+          npx wrangler deploy --secrets-file "${WORKER_SECRETS_FILE}"
 
       - name: Verify production
         shell: bash
