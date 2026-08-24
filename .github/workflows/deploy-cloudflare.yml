@@ -263,14 +263,20 @@ jobs:
           APP_URL: ${{ steps.cloudflare.outputs.app_url }}
         run: |
           set -euo pipefail
-          CURL_RETRY=(--fail --silent --show-error --retry 12 --retry-delay 5 --retry-all-errors)
+          CURL_RETRY=(--silent --show-error --retry 12 --retry-delay 5 --retry-all-errors)
 
-          curl "${CURL_RETRY[@]}" "${APP_URL}/" | grep -qi '<html'
+          curl --fail "${CURL_RETRY[@]}" "${APP_URL}/" | grep -qi '<html'
 
-          BACKEND_RESPONSE="$(curl "${CURL_RETRY[@]}" "${APP_URL}/api/does-not-exist")"
+          BACKEND_RESULT="$(curl "${CURL_RETRY[@]}" --write-out $'\n%{http_code}' "${APP_URL}/api/does-not-exist")"
+          BACKEND_STATUS="${BACKEND_RESULT##*$'\n'}"
+          BACKEND_RESPONSE="${BACKEND_RESULT%$'\n'*}"
+          [[ "${BACKEND_STATUS}" == "404" ]]
           jq -e '.code == 404 and .data == null' <<<"${BACKEND_RESPONSE}" >/dev/null
 
-          TELEMETRY_RESPONSE="$(curl "${CURL_RETRY[@]}" --request POST --header "Content-Type: application/json" --header "Authorization: Bearer invalid-ci-smoke-key" --data '{}' "${APP_URL}/api/v0/log/trace")"
+          TELEMETRY_RESULT="$(curl "${CURL_RETRY[@]}" --write-out $'\n%{http_code}' --request POST --header "Content-Type: application/json" --header "Authorization: Bearer invalid-ci-smoke-key" --data '{}' "${APP_URL}/api/v0/log/trace")"
+          TELEMETRY_STATUS="${TELEMETRY_RESULT##*$'\n'}"
+          TELEMETRY_RESPONSE="${TELEMETRY_RESULT%$'\n'*}"
+          [[ "${TELEMETRY_STATUS}" == "500" ]]
           jq -e '.code == 500 and (.message | contains("Invalid AITrace API key"))' <<<"${TELEMETRY_RESPONSE}" >/dev/null
 
           {
