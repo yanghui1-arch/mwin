@@ -10,7 +10,6 @@ import { TraceTable } from "@/components/trace-table";
 import http from "@/api/http";
 import { useManulPaginationDataTable } from "@/hooks/use-datatable";
 import { type PaginationState} from "@tanstack/react-table";
-import { normalizeStep, normalizeTrace } from "@/lib/track";
 
 export default function ProjectDetailPage() {
   const { name } = useParams<{ name: string }>();
@@ -49,7 +48,7 @@ export default function ProjectDetailPage() {
         setPagination((current) => ({ ...current, pageIndex: lastPage }));
         return;
       }
-      setStepData(data.map(normalizeStep));
+      setStepData(data);
     } catch (error) {
       console.error("Failed to load steps:", error);
       setStepData([]);
@@ -73,7 +72,7 @@ export default function ProjectDetailPage() {
         setTracePagination((current) => ({ ...current, pageIndex: lastPage }));
         return;
       }
-      setTraceData(data.map(normalizeTrace));
+      setTraceData(data);
     } catch (error) {
       console.error("Failed to load traces:", error);
       setTraceData([]);

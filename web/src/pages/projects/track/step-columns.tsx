@@ -17,8 +17,8 @@ export type Step = {
   cost: number | null;
   startTime: string;
   endTime: string | null;
-  /** Raw (uncompressed) payload size in bytes; null when the payload object is missing. */
-  payloadSize: number | null;
+  /** Raw (uncompressed) payload size in bytes. */
+  payloadSize: number;
 };
 
 export const stepColumns: ColumnDef<Step>[] = [

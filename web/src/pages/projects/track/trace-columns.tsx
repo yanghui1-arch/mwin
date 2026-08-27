@@ -12,10 +12,10 @@ export type Trace = {
   errorInfo: string | null;
   startTime: string;
   lastUpdateTimestamp: string;
-  /** Raw (uncompressed) payload size in bytes; null when the payload object is missing. */
-  payloadSize: number | null;
+  /** Raw (uncompressed) payload size in bytes. */
+  payloadSize: number;
   /** Number of steps belonging to this trace. */
-  stepCount: number | null;
+  stepCount: number;
 };
 
 export const traceColumns: ColumnDef<Trace>[] = [
@@ -111,10 +111,9 @@ export const traceColumns: ColumnDef<Trace>[] = [
       />
     ),
     cell: ({ row }) => {
-      const { stepCount } = row.original;
       return (
         <div className="text-center font-mono text-sm font-medium tabular-nums">
-          {stepCount === null ? "—" : stepCount}
+          {row.original.stepCount}
         </div>
       );
     },
