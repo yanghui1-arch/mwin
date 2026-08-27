@@ -6,47 +6,24 @@ import { rotateApiKey } from '../src/repositories/user.js';
 import { upsertTraceForUser } from '../src/repositories/trace.js';
 import { upsertStepForUser } from '../src/repositories/step.js';
 import { upsertBatchForUser } from '../src/repositories/batch.js';
-
-interface RecordedStatement { sql: string; values: unknown[] }
+import { SqliteD1Db } from './helpers/d1-sqlite.js';
 
 const payloadObject = (kind: 'step' | 'trace', id: string) => ({
   objectKey: `payloads/v2/${kind}/${id}.json.gz`, contentType: 'application/gzip', contentEncoding: 'gzip' as const,
   schemaVersion: 2, rawSizeBytes: 1, storedSizeBytes: 1, sha256: '0'.repeat(64), createdAt: '', updatedAt: '',
 });
 
+/** Records prepared D1 statements without executing them, for assertion. */
 class RecordingDb {
-  readonly batches: RecordedStatement[][] = [];
+  readonly batches: { sql: string; values: unknown[] }[][] = [];
 
   prepare(sql: string) {
-    return { bind: (...values: unknown[]): RecordedStatement => ({ sql, values }) };
+    return { bind: (...values: unknown[]) => ({ sql, values }) };
   }
 
-  async batch(statements: RecordedStatement[]) {
+  async batch(statements: { sql: string; values: unknown[] }[]) {
     this.batches.push(statements);
     return statements.map(() => ({ meta: { changes: 1 }, results: [] }));
-  }
-}
-
-class SqliteBatchDb extends RecordingDb {
-  constructor(private readonly db: DatabaseSync) {
-    super();
-  }
-
-  override async batch(statements: RecordedStatement[]) {
-    this.batches.push(statements);
-    this.db.exec('BEGIN');
-    try {
-      const results = statements.map((statement) => {
-        const result = this.db.prepare(statement.sql)
-          .run(...statement.values as Array<string | number | null>);
-        return { meta: { changes: Number(result.changes) }, results: [] };
-      });
-      this.db.exec('COMMIT');
-      return results;
-    } catch (error) {
-      this.db.exec('ROLLBACK');
-      throw error;
-    }
   }
 }
 
@@ -179,7 +156,7 @@ test('trace-tree multi-row statements execute against SQLite', async () => {
     );
     INSERT INTO project (id, user_uuid) VALUES (1, 'user-1');
   `);
-  const db = new SqliteBatchDb(sqlite);
+  const db = new SqliteD1Db(sqlite);
   const traces = Array.from({ length: 2 }, (_, index) => {
     const id = `trace-${index + 1}`;
     return {
