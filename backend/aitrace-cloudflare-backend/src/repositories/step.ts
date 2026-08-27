@@ -64,7 +64,7 @@ interface StepSummaryRow {
   projectId: number;
   startTime: string;
   endTime: string | null;
-  rawSizeBytes: number | null;
+  payloadSize: number | null;
 }
 
 const stepSummaryFields = {
@@ -81,17 +81,15 @@ const stepSummaryFields = {
   projectId: stepTable.projectId,
   startTime: stepTable.startTime,
   endTime: stepTable.endTime,
-  rawSizeBytes: s3CompatibleObjects.rawSizeBytes,
+  payloadSize: s3CompatibleObjects.rawSizeBytes,
 };
 
 function toStepSummary(row: StepSummaryRow, cost: string | null): StepSummary {
-  const { rawSizeBytes, ...summary } = row;
   return {
-    ...summary,
+    ...row,
     tags: parseJson<string[]>(row.tags, []),
     usage: parseJson<Usage>(row.usage),
     cost,
-    payloadSize: rawSizeBytes,
   };
 }
 

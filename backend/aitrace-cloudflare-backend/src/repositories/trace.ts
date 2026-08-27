@@ -61,7 +61,7 @@ interface TraceSummaryRow {
   errorInfo: string | null;
   startTime: string;
   lastUpdateTimestamp: string;
-  rawSizeBytes: number | null;
+  payloadSize: number | null;
   stepCount: number;
 }
 
@@ -76,13 +76,12 @@ const traceSummaryFields = {
   errorInfo: traceTable.errorInfo,
   startTime: traceTable.startTime,
   lastUpdateTimestamp: traceTable.lastUpdateTimestamp,
-  rawSizeBytes: s3CompatibleObjects.rawSizeBytes,
+  payloadSize: s3CompatibleObjects.rawSizeBytes,
   stepCount: sql<number>`(SELECT COUNT(*) FROM step WHERE step.trace_id = ${traceTable.id})`,
 };
 
 function toTraceSummary(row: TraceSummaryRow): TraceSummary {
-  const { rawSizeBytes, ...summary } = row;
-  return { ...summary, tags: parseJson<string[]>(row.tags, []), payloadSize: rawSizeBytes };
+  return { ...row, tags: parseJson<string[]>(row.tags, []) };
 }
 
 /**
