@@ -1,6 +1,7 @@
 package com.supertrace.aitrace.service.domain;
 
 import com.supertrace.aitrace.dto.step.LogStepRequest;
+import com.supertrace.aitrace.service.domain.model.StepBatchItem;
 import com.supertrace.aitrace.service.application.model.StepSummary;
 import com.supertrace.aitrace.service.storage.model.StoredPayload;
 import jakarta.validation.constraints.NotNull;
@@ -25,6 +26,9 @@ public interface StepService {
      * @return step id
      */
     UUID logStep(UUID userId, LogStepRequest logStepRequest, Long projectId);
+
+    /** Stores TraceTree Steps in fixed-size OSS payload chunks. */
+    void logSteps(UUID userId, List<StepBatchItem> items);
 
     /**
      * get all steps of a project which is owned by userId

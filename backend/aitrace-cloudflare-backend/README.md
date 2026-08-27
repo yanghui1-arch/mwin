@@ -26,9 +26,10 @@ tenant-guarded UPSERTs and fixed-point aggregate updates.
 R2 stores optional media binaries, while their metadata is persisted in D1.
 Step and Trace payloads use Alibaba OSS instead of R2. The Worker writes a
 gzip-compressed, self-describing document and D1 stores its metadata in
-`s3_compatible_object`. Step objects use `mwin.step-payload/v2`, Trace objects
-use `mwin.trace-payload/v2`, and older OSS schema versions are not maintained.
-D1 does not keep inline payload columns.
+`s3_compatible_object`. Standalone Step objects use `mwin.step-payload/v2`,
+Trace objects use `mwin.trace-payload/v2`, and TraceTree Steps are stored in
+16-entry chunks using `mwin.step-payload-chunk/v3`. D1 does not keep inline
+payload columns.
 
 ## Cloudflare bindings
 
@@ -52,6 +53,7 @@ New payloads use deterministic keys:
 ```text
 payloads/v2/step/{stepId}.json.gz
 payloads/v2/trace/{traceId}.json.gz
+payloads/v3/step-chunk/{firstStepId}.json.gz
 ```
 
 The Worker accepts at most 8 MiB for one raw or compressed payload and 16 MiB

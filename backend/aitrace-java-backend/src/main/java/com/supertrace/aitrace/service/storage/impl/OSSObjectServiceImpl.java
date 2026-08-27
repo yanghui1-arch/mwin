@@ -10,6 +10,8 @@ import com.supertrace.aitrace.service.storage.PayloadCodec;
 import com.supertrace.aitrace.service.storage.PayloadFormat;
 import com.supertrace.aitrace.service.storage.S3CompatibleObjectService;
 import com.supertrace.aitrace.service.storage.model.StepPayload;
+import com.supertrace.aitrace.service.storage.model.StepPayloadChunk;
+import com.supertrace.aitrace.service.storage.model.StepPayloadChunkEntry;
 import com.supertrace.aitrace.service.storage.model.TracePayload;
 import jakarta.annotation.PreDestroy;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,6 +24,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -41,8 +44,6 @@ import java.util.UUID;
 public class OSSObjectServiceImpl implements S3CompatibleObjectService {
     private static final String CONTENT_TYPE = "application/gzip";
     private static final String CONTENT_ENCODING = "gzip";
-    private static final int SCHEMA_VERSION = PayloadFormat.CURRENT_VERSION;
-
     private final S3CompatibleObjectRepository repository;
     private final PayloadCodec payloadCodec;
     private final String endpoint;
@@ -90,7 +91,20 @@ public class OSSObjectServiceImpl implements S3CompatibleObjectService {
      */
     @Override
     public String storeStepPayload(UUID stepId, StepPayload payload) {
-        return store(PayloadFormat.stepObjectKey(stepId), payloadCodec.encodeStep(payload));
+        return store(
+            PayloadFormat.stepObjectKey(stepId),
+            PayloadFormat.CURRENT_VERSION,
+            payloadCodec.encodeStep(payload)
+        );
+    }
+
+    @Override
+    public String storeStepPayloadChunk(List<StepPayloadChunkEntry> entries) {
+        return store(
+            PayloadFormat.stepChunkObjectKey(entries.get(0).id()),
+            PayloadFormat.STEP_CHUNK_VERSION,
+            payloadCodec.encodeStepChunk(new StepPayloadChunk(entries))
+        );
     }
 
     /**
@@ -102,20 +116,39 @@ public class OSSObjectServiceImpl implements S3CompatibleObjectService {
      */
     @Override
     public String storeTracePayload(UUID traceId, TracePayload payload) {
-        return store(PayloadFormat.traceObjectKey(traceId), payloadCodec.encodeTrace(payload));
+        return store(
+            PayloadFormat.traceObjectKey(traceId),
+            PayloadFormat.CURRENT_VERSION,
+            payloadCodec.encodeTrace(payload)
+        );
     }
 
     /**
      * Loads and decodes a Step payload using its object key.
      *
      * @param objectKey key stored on the Step record
+     * @param stepId Step identifier used to select an entry from a chunk
      * @return decoded Step payload
      */
     @Override
-    public StepPayload loadStepPayload(String objectKey) {
+    public StepPayload loadStepPayload(String objectKey, UUID stepId) {
         S3CompatibleObject object = findMetadata(objectKey);
         byte[] compressed = loadCompressed(object);
-        return payloadCodec.decodeStep(compressed, object.getSha256(), object.getSchemaVersion());
+        if (object.getSchemaVersion() == PayloadFormat.CURRENT_VERSION) {
+            return payloadCodec.decodeStep(compressed, object.getSha256(), object.getSchemaVersion());
+        }
+        if (object.getSchemaVersion() == PayloadFormat.STEP_CHUNK_VERSION) {
+            return payloadCodec.decodeStepChunk(compressed, object.getSha256(), object.getSchemaVersion())
+                .steps()
+                .stream()
+                .filter(entry -> entry.id().equals(stepId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Step payload not found in chunk: " + stepId))
+                .toStepPayload();
+        }
+        throw new IllegalStateException(
+            "Unsupported stored payload schema version: " + object.getSchemaVersion()
+        );
     }
 
     /**
@@ -160,7 +193,7 @@ public class OSSObjectServiceImpl implements S3CompatibleObjectService {
      * @param payload encoded JSON and its gzip representation
      * @return the stored object key
      */
-    private String store(String objectKey, PayloadCodec.EncodedPayload payload) {
+    private String store(String objectKey, int schemaVersion, PayloadCodec.EncodedPayload payload) {
         if (payload.compressed().length > maxStoredSizeBytes) {
             throw new IllegalArgumentException(
                 "Compressed payload exceeds the configured limit of " + maxStoredSizeBytes + " bytes");
@@ -184,7 +217,7 @@ public class OSSObjectServiceImpl implements S3CompatibleObjectService {
                 .build());
         object.setContentType(CONTENT_TYPE);
         object.setContentEncoding(CONTENT_ENCODING);
-        object.setSchemaVersion(SCHEMA_VERSION);
+        object.setSchemaVersion(schemaVersion);
         object.setRawSizeBytes((long) payload.raw().length);
         object.setStoredSizeBytes((long) payload.compressed().length);
         object.setSha256(payload.sha256());

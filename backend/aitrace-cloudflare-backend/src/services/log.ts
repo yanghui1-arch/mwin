@@ -2,8 +2,10 @@ import { isPositive, toDecimalString } from '../lib/decimal.js';
 import { calcUsageCost } from './pricing.js';
 import type { ProjectService } from './project.js';
 import { stringField } from './project.js';
-import type { BatchStepWrite, BatchTraceWrite, JsonObject, LogRequest, LogTraceTreeRequest, Project, S3CompatibleObject, Step, StepMeta, StepPayload, Trace, TracePayload } from '../domain/types.js';
+import type { BatchStepWrite, BatchTraceWrite, JsonObject, LogRequest, LogTraceTreeRequest, Project, S3CompatibleObject, Step, StepMeta, StepPayload, StepPayloadChunkEntry, Trace, TracePayload } from '../domain/types.js';
 import type { PayloadObjectStorage } from '../storage/aliyun-oss.js';
+
+const STEP_CHUNK_SIZE = 16;
 
 interface LogRepositories {
   upsertTraceForUser(userId: string, trace: Trace, payloadObject: S3CompatibleObject): Promise<void>;
@@ -87,18 +89,27 @@ export class LogService {
         payloadObject,
       };
     });
-    const steps = await mapWithConcurrency(stepRequests, 4, async (item): Promise<BatchStepWrite> => {
+    const incomingSteps = stepRequests.map((item) => {
       const projectName = stringField(item.project_name ?? item.projectName, 'project name');
-      const incoming = toIncomingStep(item, projects.get(projectName)!);
-      const payloadObject = await this.payloadStorage.storeStep(incoming.step.id, incoming.payload);
-      const step: Step = { ...incoming.step, payloadObjectKey: payloadObject.objectKey };
-      return {
-        step,
-        payloadObject,
-        metadata: { description: item.description ?? null },
-        cost: calcUsageCost(item.llm_provider ?? item.llmProvider, step.model, step.usage),
-      };
+      return { item, incoming: toIncomingStep(item, projects.get(projectName)!) };
     });
+    const stepChunks = chunkValues(incomingSteps, STEP_CHUNK_SIZE);
+    const steps = (await mapWithConcurrency(stepChunks, 4, async (chunk): Promise<BatchStepWrite[]> => {
+      const entries: StepPayloadChunkEntry[] = chunk.map(({ incoming }) => ({
+        id: incoming.step.id,
+        ...incoming.payload,
+      }));
+      const payloadObject = await this.payloadStorage.storeStepChunk(entries);
+      return chunk.map(({ item, incoming }) => {
+        const step: Step = { ...incoming.step, payloadObjectKey: payloadObject.objectKey };
+        return {
+          step,
+          payloadObject,
+          metadata: { description: item.description ?? null },
+          cost: calcUsageCost(item.llm_provider ?? item.llmProvider, step.model, step.usage),
+        };
+      });
+    })).flat();
     await this.repositories.upsertBatchForUser(
       userId,
       traces,
@@ -110,6 +121,14 @@ export class LogService {
       steps: steps.length,
     };
   }
+}
+
+function chunkValues<T>(values: T[], size: number): T[][] {
+  const result: T[][] = [];
+  for (let offset = 0; offset < values.length; offset += size) {
+    result.push(values.slice(offset, offset + size));
+  }
+  return result;
 }
 
 async function mapWithConcurrency<T, R>(

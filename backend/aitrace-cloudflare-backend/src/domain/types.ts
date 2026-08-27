@@ -118,6 +118,14 @@ export interface StepPayload {
   output: JsonObject | null;
 }
 
+export interface StepPayloadChunkEntry extends StepPayload {
+  id: string;
+}
+
+export interface StepPayloadChunk {
+  steps: StepPayloadChunkEntry[];
+}
+
 export interface TracePayload {
   input: JsonObject | null;
   output: JsonObject | null;

@@ -3,6 +3,7 @@ package com.supertrace.aitrace.service.storage;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.supertrace.aitrace.service.storage.model.StepPayload;
+import com.supertrace.aitrace.service.storage.model.StepPayloadChunk;
 import com.supertrace.aitrace.service.storage.model.TracePayload;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -42,12 +43,44 @@ public class PayloadCodec {
         return encode(PayloadFormat.TRACE_SCHEMA, payload);
     }
 
+    public EncodedPayload encodeStepChunk(StepPayloadChunk payload) {
+        return encode(PayloadFormat.STEP_CHUNK_SCHEMA, payload);
+    }
+
     public StepPayload decodeStep(byte[] compressed, String expectedSha256, int schemaVersion) {
-        return decode(compressed, expectedSha256, schemaVersion, PayloadFormat.STEP_SCHEMA, StepPayload.class);
+        JsonNode data = decodeData(
+            compressed,
+            expectedSha256,
+            schemaVersion,
+            PayloadFormat.CURRENT_VERSION,
+            PayloadFormat.STEP_SCHEMA
+        );
+        requirePayloadShape(data);
+        return convert(data, StepPayload.class);
     }
 
     public TracePayload decodeTrace(byte[] compressed, String expectedSha256, int schemaVersion) {
-        return decode(compressed, expectedSha256, schemaVersion, PayloadFormat.TRACE_SCHEMA, TracePayload.class);
+        JsonNode data = decodeData(
+            compressed,
+            expectedSha256,
+            schemaVersion,
+            PayloadFormat.CURRENT_VERSION,
+            PayloadFormat.TRACE_SCHEMA
+        );
+        requirePayloadShape(data);
+        return convert(data, TracePayload.class);
+    }
+
+    public StepPayloadChunk decodeStepChunk(byte[] compressed, String expectedSha256, int schemaVersion) {
+        JsonNode data = decodeData(
+            compressed,
+            expectedSha256,
+            schemaVersion,
+            PayloadFormat.STEP_CHUNK_VERSION,
+            PayloadFormat.STEP_CHUNK_SCHEMA
+        );
+        requireStepChunkShape(data);
+        return convert(data, StepPayloadChunk.class);
     }
 
     private <T> EncodedPayload encode(String schema, T payload) {
@@ -64,12 +97,12 @@ public class PayloadCodec {
         }
     }
 
-    private <T> T decode(
+    private JsonNode decodeData(
         byte[] compressed,
         String expectedSha256,
         int schemaVersion,
-        String expectedSchema,
-        Class<T> payloadType
+        int expectedVersion,
+        String expectedSchema
     ) {
         try {
             byte[] raw;
@@ -92,7 +125,7 @@ public class PayloadCodec {
                 throw new IllegalStateException("Payload checksum mismatch");
             }
             JsonNode root = objectMapper.readTree(raw);
-            if (schemaVersion != PayloadFormat.CURRENT_VERSION) {
+            if (schemaVersion != expectedVersion) {
                 throw new IllegalStateException("Unsupported stored payload schema version: " + schemaVersion);
             }
             if (!root.isObject()
@@ -100,8 +133,14 @@ public class PayloadCodec {
                 || !root.has("data")) {
                 throw new IllegalStateException("Stored payload schema does not match " + expectedSchema);
             }
-            JsonNode data = root.get("data");
-            requirePayloadShape(data);
+            return root.get("data");
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to decode payload", e);
+        }
+    }
+
+    private <T> T convert(JsonNode data, Class<T> payloadType) {
+        try {
             return objectMapper.treeToValue(data, payloadType);
         } catch (IOException e) {
             throw new IllegalStateException("Failed to decode payload", e);
@@ -112,6 +151,18 @@ public class PayloadCodec {
         if (data == null || !data.isObject() || !data.has("input") || !data.has("output")) {
             throw new IllegalStateException("Stored payload must contain input and output");
         }
+    }
+
+    private static void requireStepChunkShape(JsonNode data) {
+        if (data == null || !data.isObject() || !data.path("steps").isArray()) {
+            throw new IllegalStateException("Stored Step chunk must contain a steps array");
+        }
+        data.path("steps").forEach(entry -> {
+            if (!entry.path("id").isTextual()) {
+                throw new IllegalStateException("Stored Step chunk entry must contain an id");
+            }
+            requirePayloadShape(entry);
+        });
     }
 
     private static void requireWithinLimit(long size, long limit, String label) {

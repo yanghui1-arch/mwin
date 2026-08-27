@@ -2,9 +2,13 @@ package com.supertrace.aitrace.service.storage;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.supertrace.aitrace.service.storage.model.StepPayload;
+import com.supertrace.aitrace.service.storage.model.StepPayloadChunk;
+import com.supertrace.aitrace.service.storage.model.StepPayloadChunkEntry;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -70,6 +74,29 @@ class PayloadCodecTest {
                 assertTrue(error.getMessage().contains(PayloadFormat.TRACE_SCHEMA));
             }
         );
+    }
+
+    @Test
+    void encodeAndDecode_roundTripsStepChunk() throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        PayloadCodec codec = new PayloadCodec(mapper, 1024 * 1024);
+        StepPayloadChunk chunk = new StepPayloadChunk(List.of(
+            new StepPayloadChunkEntry(
+                UUID.randomUUID(),
+                mapper.valueToTree(Map.of("prompt", "hello")),
+                mapper.valueToTree(Map.of("answer", "world"))
+            )
+        ));
+
+        PayloadCodec.EncodedPayload encoded = codec.encodeStepChunk(chunk);
+        StepPayloadChunk decoded = codec.decodeStepChunk(
+            encoded.compressed(),
+            encoded.sha256(),
+            PayloadFormat.STEP_CHUNK_VERSION
+        );
+
+        assertEquals(PayloadFormat.STEP_CHUNK_SCHEMA, mapper.readTree(encoded.raw()).path("schema").asText());
+        assertEquals(chunk, decoded);
     }
 
     @Test

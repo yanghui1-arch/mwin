@@ -25,10 +25,10 @@ export async function upsertBatchForUser(
 ): Promise<void> {
   const statements: D1PreparedStatement[] = upsertS3CompatibleObjectStatements(
     db,
-    [
+    uniqueObjects([
       ...traces.map(({ payloadObject }) => payloadObject),
       ...stepWrites.map(({ payloadObject }) => payloadObject),
-    ],
+    ]),
   );
 
   const traceChunkSize = Math.floor(
@@ -144,6 +144,10 @@ export async function upsertBatchForUser(
   }
 
   if (statements.length) await db.batch(statements);
+}
+
+function uniqueObjects<T extends { objectKey: string }>(objects: T[]): T[] {
+  return [...new Map(objects.map((object) => [object.objectKey, object])).values()];
 }
 
 function chunks<T>(values: T[], size: number): T[][] {
