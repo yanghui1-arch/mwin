@@ -10,15 +10,8 @@ interface SortableHeaderProps<TData> {
   column: Column<TData, unknown>;
 }
 
-/**
- * Centered, sortable column header shared by the data tables.
- *
- * The fixed `w-4` slots around the label keep every sortable header aligned
- * regardless of label length, and the leading `List` icon is the consistent
- * "this column sorts" affordance used across the app. When a `tooltip` is
- * provided, an info icon appears after the label so users can discover what a
- * technical column (such as payload size) actually measures.
- */
+/** Shared centered, sortable column header. The optional tooltip shows help
+ * text via an info icon next to the label. */
 export function SortableHeader<TData>({ label, tooltip, column }: SortableHeaderProps<TData>) {
   const button = (
     <Button

@@ -12,9 +12,9 @@ export type Trace = {
   errorInfo: string | null;
   startTime: string;
   lastUpdateTimestamp: string;
-  /** Raw byte size of the trace payload (input + output). Null until the backend reports it. */
+  /** Raw (uncompressed) payload size in bytes; null when the payload object is missing. */
   payloadSize: number | null;
-  /** How many steps belong to this trace. Null until the backend reports it. */
+  /** Number of steps belonging to this trace. */
   stepCount: number | null;
 };
 

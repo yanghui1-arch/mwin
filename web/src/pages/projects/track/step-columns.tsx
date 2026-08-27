@@ -17,7 +17,7 @@ export type Step = {
   cost: number | null;
   startTime: string;
   endTime: string | null;
-  /** Raw byte size of the step payload (input + output). Null until the backend reports it. */
+  /** Raw (uncompressed) payload size in bytes; null when the payload object is missing. */
   payloadSize: number | null;
 };
 

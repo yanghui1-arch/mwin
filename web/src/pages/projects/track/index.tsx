@@ -10,37 +10,7 @@ import { TraceTable } from "@/components/trace-table";
 import http from "@/api/http";
 import { useManulPaginationDataTable } from "@/hooks/use-datatable";
 import { type PaginationState} from "@tanstack/react-table";
-
-/**
- * The step/trace list endpoints are expected to grow payload metadata
- * (#55): `payload_size` (bytes) and, for traces, `step_count` (steps in the
- * trace). Until the backend ships those fields — and to stay resilient to
- * either snake_case or camelCase payloads — normalize them into the frontend
- * model here. Missing or malformed values render as a placeholder, never a crash.
- */
-function toNonNegativeNumber(value: unknown): number | null {
-  if (typeof value === "number" && Number.isFinite(value) && value >= 0) return value;
-  if (typeof value === "string" && value.trim() !== "") {
-    const parsed = Number(value);
-    if (Number.isFinite(parsed) && parsed >= 0) return parsed;
-  }
-  return null;
-}
-
-function normalizeStep(row: Record<string, unknown>): Step {
-  return {
-    ...row,
-    payloadSize: toNonNegativeNumber(row.payloadSize ?? row.payload_size),
-  } as Step;
-}
-
-function normalizeTrace(row: Record<string, unknown>): Trace {
-  return {
-    ...row,
-    payloadSize: toNonNegativeNumber(row.payloadSize ?? row.payload_size),
-    stepCount: toNonNegativeNumber(row.stepCount ?? row.step_count),
-  } as Trace;
-}
+import { normalizeStep, normalizeTrace } from "@/lib/track";
 
 export default function ProjectDetailPage() {
   const { name } = useParams<{ name: string }>();
