@@ -12,7 +12,7 @@ export interface D1BoundStatement {
 
 /** Minimal D1Database shim over node:sqlite for running Drizzle selects locally. */
 export class D1Shim {
-  constructor(private readonly db: DatabaseSync) {}
+  constructor(protected readonly db: DatabaseSync) {}
   prepare(sql: string) {
     const statement = this.db.prepare(sql);
     const bound = (params: unknown[]) => {
