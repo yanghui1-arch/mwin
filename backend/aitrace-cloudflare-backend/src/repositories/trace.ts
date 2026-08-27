@@ -61,7 +61,7 @@ interface TraceSummaryRow {
   errorInfo: string | null;
   startTime: string;
   lastUpdateTimestamp: string;
-  payloadSize: number | null;
+  payloadSize: number;
   stepCount: number;
 }
 
@@ -136,7 +136,7 @@ export async function countTraces(db: AppDatabase, projectId: number): Promise<n
 export async function listTraces(db: AppDatabase, projectId: number, page: number, pageSize: number): Promise<{ total: number; data: TraceSummary[] }> {
   const total = await countTraces(db, projectId);
   const rows = await db.select(traceSummaryFields).from(traceTable)
-    .leftJoin(s3CompatibleObjects, eq(s3CompatibleObjects.objectKey, traceTable.payloadObjectKey))
+    .innerJoin(s3CompatibleObjects, eq(s3CompatibleObjects.objectKey, traceTable.payloadObjectKey))
     .where(eq(traceTable.projectId, projectId))
     .orderBy(desc(traceTable.startTime)).limit(pageSize).offset(page * pageSize).all();
   return { total, data: rows.map(toTraceSummary) };

@@ -64,7 +64,7 @@ interface StepSummaryRow {
   projectId: number;
   startTime: string;
   endTime: string | null;
-  payloadSize: number | null;
+  payloadSize: number;
 }
 
 const stepSummaryFields = {
@@ -155,7 +155,7 @@ export async function listSteps(db: AppDatabase, projectId: number, page: number
   const totalRow = await db.select({ value: count() }).from(stepTable).where(eq(stepTable.projectId, projectId)).get();
   const rows = await db.select({ ...stepSummaryFields, cost: stepMeta.cost }).from(stepTable)
     .leftJoin(stepMeta, eq(stepMeta.id, stepTable.id))
-    .leftJoin(s3CompatibleObjects, eq(s3CompatibleObjects.objectKey, stepTable.payloadObjectKey))
+    .innerJoin(s3CompatibleObjects, eq(s3CompatibleObjects.objectKey, stepTable.payloadObjectKey))
     .where(eq(stepTable.projectId, projectId))
     .orderBy(desc(stepTable.startTime)).limit(pageSize).offset(page * pageSize).all();
   return { total: totalRow?.value ?? 0, data: rows.map((row) => toStepSummary(row, row.cost)) };
@@ -165,7 +165,7 @@ export async function listStepsByTraceForUser(db: AppDatabase, userId: string, t
   const rows = await db.select({ ...stepSummaryFields, cost: stepMeta.cost }).from(stepTable)
     .innerJoin(projects, eq(projects.id, stepTable.projectId))
     .leftJoin(stepMeta, eq(stepMeta.id, stepTable.id))
-    .leftJoin(s3CompatibleObjects, eq(s3CompatibleObjects.objectKey, stepTable.payloadObjectKey))
+    .innerJoin(s3CompatibleObjects, eq(s3CompatibleObjects.objectKey, stepTable.payloadObjectKey))
     .where(and(eq(stepTable.traceId, traceId), eq(projects.userId, userId)))
     .orderBy(stepTable.startTime).all();
   return rows.map((row) => toStepSummary(row, row.cost));
@@ -191,7 +191,7 @@ export async function findStepMetaForUser(db: AppDatabase, userId: string, stepI
     metadata: stepMeta.metadata,
     cost: stepMeta.cost,
   }).from(stepMeta)
-    .innerJoin(stepTable, eq(stepTable.id, stepMeta.id))
+    .innerJoin(stepTable, eq(stepMeta.id, stepTable.id))
     .innerJoin(projects, eq(projects.id, stepTable.projectId))
     .where(and(eq(stepMeta.id, stepId), eq(projects.userId, userId))).get();
   if (!row || row.metadata === null) return null;
