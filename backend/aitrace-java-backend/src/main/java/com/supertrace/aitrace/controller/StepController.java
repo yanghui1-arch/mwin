@@ -92,6 +92,7 @@ public class StepController {
                     .startTime(step.startTime())
                     .endTime(step.endTime())
                     .cost(costMap.get(step.id()))
+                    .payloadSize(step.payloadSize())
                     .build()
                 )
                 .toList();
