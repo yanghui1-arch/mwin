@@ -1,6 +1,6 @@
 /** Trace persistence: Drizzle handles typed reads; raw D1 batch is reserved for atomic aggregate mutations. */
-import { and, count, desc, eq } from 'drizzle-orm';
-import { projects, traces as traceTable } from '../db/schema.js';
+import { and, count, desc, eq, sql } from 'drizzle-orm';
+import { projects, s3CompatibleObjects, traces as traceTable } from '../db/schema.js';
 import type { AppDatabase } from '../db/index.js';
 import type { S3CompatibleObject, Trace, TraceSummary } from '../domain/types.js';
 import { parseJson, stringifyJson } from '../lib/utils.js';
@@ -61,6 +61,8 @@ interface TraceSummaryRow {
   errorInfo: string | null;
   startTime: string;
   lastUpdateTimestamp: string;
+  rawSizeBytes: number | null;
+  stepCount: number;
 }
 
 const traceSummaryFields = {
@@ -74,10 +76,13 @@ const traceSummaryFields = {
   errorInfo: traceTable.errorInfo,
   startTime: traceTable.startTime,
   lastUpdateTimestamp: traceTable.lastUpdateTimestamp,
+  rawSizeBytes: s3CompatibleObjects.rawSizeBytes,
+  stepCount: sql<number>`(SELECT COUNT(*) FROM step WHERE step.trace_id = ${traceTable.id})`,
 };
 
 function toTraceSummary(row: TraceSummaryRow): TraceSummary {
-  return { ...row, tags: parseJson<string[]>(row.tags, []) };
+  const { rawSizeBytes, ...summary } = row;
+  return { ...summary, tags: parseJson<string[]>(row.tags, []), payloadSize: rawSizeBytes };
 }
 
 /**
@@ -131,7 +136,9 @@ export async function countTraces(db: AppDatabase, projectId: number): Promise<n
 
 export async function listTraces(db: AppDatabase, projectId: number, page: number, pageSize: number): Promise<{ total: number; data: TraceSummary[] }> {
   const total = await countTraces(db, projectId);
-  const rows = await db.select(traceSummaryFields).from(traceTable).where(eq(traceTable.projectId, projectId))
+  const rows = await db.select(traceSummaryFields).from(traceTable)
+    .leftJoin(s3CompatibleObjects, eq(s3CompatibleObjects.objectKey, traceTable.payloadObjectKey))
+    .where(eq(traceTable.projectId, projectId))
     .orderBy(desc(traceTable.startTime)).limit(pageSize).offset(page * pageSize).all();
   return { total, data: rows.map(toTraceSummary) };
 }

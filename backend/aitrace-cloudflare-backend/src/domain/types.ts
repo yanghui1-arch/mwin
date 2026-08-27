@@ -51,7 +51,12 @@ export interface Trace {
   lastUpdateTimestamp: string;
 }
 
-export type TraceSummary = Omit<Trace, 'payloadObjectKey'>;
+export type TraceSummary = Omit<Trace, 'payloadObjectKey'> & {
+  /** Raw (uncompressed) payload size in bytes, from the referenced S3 object. Null when absent. */
+  payloadSize: number | null;
+  /** How many steps belong to this trace. */
+  stepCount: number;
+};
 
 export interface Step {
   id: string;
@@ -71,7 +76,10 @@ export interface Step {
   cost?: string | null;
 }
 
-export type StepSummary = Omit<Step, 'payloadObjectKey'>;
+export type StepSummary = Omit<Step, 'payloadObjectKey'> & {
+  /** Raw (uncompressed) payload size in bytes, from the referenced S3 object. Null when absent. */
+  payloadSize: number | null;
+};
 
 export interface LogRequest extends JsonObject {
   project_name?: string; projectName?: string;
