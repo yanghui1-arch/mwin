@@ -197,7 +197,14 @@
                                   "endTime":  "End Time",
                                   "input":  "Input",
                                   "output":  "Output",
-                                  "lastUpdate":  "Last Update"
+                                  "lastUpdate":  "Last Update",
+                                  "size":  "Size",
+                                  "stepCount":  "Steps",
+                                  "sizeHint":  {
+                                                  "step":  "Raw (uncompressed) size of this step's input and output payloads.",
+                                                  "trace":  "Raw (uncompressed) size of this trace's input and output payloads."
+                                              },
+                                  "stepCountHint":  "How many steps are recorded inside this trace."
                               }
               },
     "traceDialog":  {

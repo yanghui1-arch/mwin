@@ -1,8 +1,8 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button";
-import { ArrowDown, ArrowUp, List } from "lucide-react";
+import { SortableHeader } from "@/components/sortable-header";
 import i18n from "@/i18n";
+import { formatByteSize } from "@/lib/format";
 
 export type Trace = {
   id: string;
@@ -12,6 +12,10 @@ export type Trace = {
   errorInfo: string | null;
   startTime: string;
   lastUpdateTimestamp: string;
+  /** Raw byte size of the trace payload (input + output). Null until the backend reports it. */
+  payloadSize: number | null;
+  /** How many steps belong to this trace. Null until the backend reports it. */
+  stepCount: number | null;
 };
 
 export const traceColumns: ColumnDef<Trace>[] = [
@@ -37,29 +41,7 @@ export const traceColumns: ColumnDef<Trace>[] = [
   },
   {
     accessorKey: "id",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          className="w-full justify-center"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          <span className="inline-flex items-center justify-center gap-1">
-            <span className="w-4 inline-flex justify-end">
-              <List className="h-4 w-4" />
-            </span>
-            <span className="font-semibold">ID</span>
-            <span className="w-4 inline-flex justify-start">
-              {column.getIsSorted() === "asc" ? (
-                <ArrowDown className="h-4 w-4" />
-              ) : (
-                <ArrowUp className="h-4 w-4" />
-              )}
-            </span>
-          </span>
-        </Button>
-      );
-    },
+    header: ({ column }) => <SortableHeader label="ID" column={column} />,
     cell: ({ row }) => {
       return (
         <div className="w-40 truncate justify-center">{row.original.id}</div>
@@ -99,6 +81,44 @@ export const traceColumns: ColumnDef<Trace>[] = [
   //     );
   //   },
   // },
+  {
+    accessorKey: "payloadSize",
+    id: "size",
+    header: ({ column }) => (
+      <SortableHeader
+        label={i18n.t("track.columns.size")}
+        tooltip={i18n.t("track.columns.sizeHint.trace")}
+        column={column}
+      />
+    ),
+    cell: ({ row }) => {
+      const { payloadSize } = row.original;
+      return (
+        <div className="text-center font-mono text-sm font-medium tabular-nums">
+          {formatByteSize(payloadSize)}
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "stepCount",
+    id: "steps",
+    header: ({ column }) => (
+      <SortableHeader
+        label={i18n.t("track.columns.stepCount")}
+        tooltip={i18n.t("track.columns.stepCountHint")}
+        column={column}
+      />
+    ),
+    cell: ({ row }) => {
+      const { stepCount } = row.original;
+      return (
+        <div className="text-center font-mono text-sm font-medium tabular-nums">
+          {stepCount === null ? "—" : stepCount}
+        </div>
+      );
+    },
+  },
   {
     accessorKey: "startTime",
     header: () => (

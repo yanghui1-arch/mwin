@@ -197,7 +197,14 @@
                                   "endTime":  "结束时间",
                                   "input":  "输入",
                                   "output":  "输出",
-                                  "lastUpdate":  "最后更新"
+                                  "lastUpdate":  "最后更新",
+                                  "size":  "大小",
+                                  "stepCount":  "步骤数",
+                                  "sizeHint":  {
+                                                  "step":  "该步骤输入与输出 payload 的原始（未压缩）大小。",
+                                                  "trace":  "该追踪链路输入与输出 payload 的原始（未压缩）大小。"
+                                              },
+                                  "stepCountHint":  "该追踪链路内记录的步骤数量。"
                               }
               },
     "traceDialog":  {

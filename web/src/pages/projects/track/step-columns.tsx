@@ -1,9 +1,9 @@
 import { type CompletionUsage } from "openai/resources/index.mjs";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button";
-import { ArrowDown, ArrowUp, List } from "lucide-react";
+import { SortableHeader } from "@/components/sortable-header";
 import i18n from "@/i18n";
+import { formatByteSize } from "@/lib/format";
 
 export type Step = {
   id: string;
@@ -17,6 +17,8 @@ export type Step = {
   cost: number | null;
   startTime: string;
   endTime: string | null;
+  /** Raw byte size of the step payload (input + output). Null until the backend reports it. */
+  payloadSize: number | null;
 };
 
 export const stepColumns: ColumnDef<Step>[] = [
@@ -42,29 +44,7 @@ export const stepColumns: ColumnDef<Step>[] = [
   },
   {
     accessorKey: "id",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          className="w-full justify-center"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          <span className="inline-flex items-center justify-center gap-1">
-            <span className="w-4 inline-flex justify-end">
-              <List className="h-4 w-4" />
-            </span>
-            <span className="font-semibold">ID</span>
-            <span className="w-4 inline-flex justify-start">
-              {column.getIsSorted() === "asc" ? (
-                <ArrowDown className="h-4 w-4" />
-              ) : (
-                <ArrowUp className="h-4 w-4" />
-              )}
-            </span>
-          </span>
-        </Button>
-      );
-    },
+    header: ({ column }) => <SortableHeader label="ID" column={column} />,
     cell: ({row}) => {
 
       return (
@@ -76,27 +56,26 @@ export const stepColumns: ColumnDef<Step>[] = [
   },
   {
     accessorKey: "name",
-    header: ({ column }) => {
+    header: ({ column }) => (
+      <SortableHeader label={i18n.t("track.columns.name")} column={column} />
+    ),
+  },
+  {
+    accessorKey: "payloadSize",
+    id: "size",
+    header: ({ column }) => (
+      <SortableHeader
+        label={i18n.t("track.columns.size")}
+        tooltip={i18n.t("track.columns.sizeHint.step")}
+        column={column}
+      />
+    ),
+    cell: ({ row }) => {
+      const { payloadSize } = row.original;
       return (
-        <Button
-          variant="ghost"
-          className="w-full justify-center"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          <span className="inline-flex items-center justify-center gap-1">
-            <span className="w-4 inline-flex justify-end">
-              <List className="h-4 w-4" />
-            </span>
-            <span className="font-semibold">{i18n.t("track.columns.name")}</span>
-            <span className="w-4 inline-flex justify-start">
-              {column.getIsSorted() === "asc" ? (
-                <ArrowDown className="h-4 w-4" />
-              ) : (
-                <ArrowUp className="h-4 w-4" />
-              )}
-            </span>
-          </span>
-        </Button>
+        <div className="text-center font-mono text-sm font-medium tabular-nums">
+          {formatByteSize(payloadSize)}
+        </div>
       );
     },
   },
