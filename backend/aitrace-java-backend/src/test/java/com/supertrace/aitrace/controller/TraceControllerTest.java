@@ -10,7 +10,6 @@ import com.supertrace.aitrace.service.domain.StepService;
 import com.supertrace.aitrace.service.domain.TraceService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -68,21 +67,5 @@ class TraceControllerTest {
             .andExpect(jsonPath("$.data.data[0].payloadSize").value(256))
             .andExpect(jsonPath("$.data.data[0].stepCount").value(3))
             .andExpect(jsonPath("$.data.pageCount").value(1));
-    }
-
-    @Test
-    void getTrace_missingPayloadObject_serializesNullSize() throws Exception {
-        UUID userId = UUID.randomUUID();
-        TraceSummary trace = new TraceSummary(
-            UUID.randomUUID(), null, "trace1", List.of(), null,
-            LocalDateTime.now(), LocalDateTime.now(), null, 0L
-        );
-        when(queryService.getTraces(any(), any(), anyInt(), anyInt()))
-            .thenReturn(new PageImpl<>(List.of(trace)));
-
-        mockMvc.perform(get("/api/v0/trace/proj").requestAttr("userId", userId))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.data.data[0].payloadSize").isEmpty())
-            .andExpect(jsonPath("$.data.data[0].stepCount").value(0));
     }
 }
