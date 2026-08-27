@@ -152,7 +152,7 @@ class StepControllerTest {
         UUID userId = UUID.randomUUID();
         StepSummary step = new StepSummary(
             UUID.randomUUID(), null, "step1", "llm_response", List.of(), null,
-            null, null, LocalDateTime.now(), LocalDateTime.now()
+            null, null, LocalDateTime.now(), LocalDateTime.now(), 128L
         );
         Page<StepSummary> page = new PageImpl<>(List.of(step));
 
@@ -168,6 +168,7 @@ class StepControllerTest {
             .andExpect(jsonPath("$.data.data.length()").value(1))
             .andExpect(jsonPath("$.data.data[0].input").doesNotExist())
             .andExpect(jsonPath("$.data.data[0].output").doesNotExist())
+            .andExpect(jsonPath("$.data.data[0].payloadSize").value(128))
             .andExpect(jsonPath("$.data.pageCount").value(1));
     }
 

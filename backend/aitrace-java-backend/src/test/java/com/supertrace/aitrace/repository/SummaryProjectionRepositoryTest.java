@@ -4,6 +4,7 @@ import com.supertrace.aitrace.domain.Project;
 import com.supertrace.aitrace.domain.core.Trace;
 import com.supertrace.aitrace.domain.core.step.Step;
 import com.supertrace.aitrace.domain.core.storage.S3CompatibleObject;
+import com.supertrace.aitrace.service.application.model.TraceSummary;
 import com.supertrace.aitrace.service.storage.PayloadFormat;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -85,5 +86,16 @@ class SummaryProjectionRepositoryTest {
         assertEquals(stepId,
             stepRepository.findStepSummariesByTraceIdForUser(traceId, userId)
                 .get(0).id());
+
+        assertEquals(2L,
+            stepRepository.findByProjectId(project.getId(), PageRequest.of(0, 1))
+                .getContent().get(0).payloadSize());
+        assertEquals(2L,
+            stepRepository.findStepSummariesByTraceIdForUser(traceId, userId)
+                .get(0).payloadSize());
+        TraceSummary traceSummary = traceRepository.findByProjectId(project.getId(), PageRequest.of(0, 1))
+            .getContent().get(0);
+        assertEquals(2L, traceSummary.payloadSize());
+        assertEquals(1L, traceSummary.stepCount());
     }
 }
