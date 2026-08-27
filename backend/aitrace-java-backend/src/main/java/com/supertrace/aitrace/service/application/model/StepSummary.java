@@ -20,6 +20,7 @@ public record StepSummary(
     String model,
     LLMUsage usage,
     LocalDateTime startTime,
-    LocalDateTime endTime
+    LocalDateTime endTime,
+    Long payloadSize
 ) {
 }

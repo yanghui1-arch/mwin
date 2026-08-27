@@ -30,4 +30,10 @@ public class GetTraceVO {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss.SSSSSS")
     private LocalDateTime lastUpdateTimestamp;
 
+    /** Raw (uncompressed) input+output payload size in bytes; null when the object is missing. */
+    private Long payloadSize;
+
+    /** Number of steps recorded inside this trace. */
+    private Long stepCount;
+
 }

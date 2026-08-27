@@ -11,6 +11,8 @@ public record TraceSummary(
     List<String> tags,
     String errorInfo,
     LocalDateTime startTime,
-    LocalDateTime lastUpdateTimestamp
+    LocalDateTime lastUpdateTimestamp,
+    Long payloadSize,
+    Long stepCount
 ) {
 }
