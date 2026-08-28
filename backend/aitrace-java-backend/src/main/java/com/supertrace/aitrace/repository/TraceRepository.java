@@ -15,7 +15,16 @@ import java.util.Optional;
 
 @Repository
 public interface TraceRepository extends JpaRepository<Trace, UUID> {
-    Page<TraceSummary> findByProjectId(Long projectId, Pageable pageable);
+    @Query("""
+        SELECT t.id, t.parentTraceId, t.name, t.tags, t.errorInfo,
+               t.startTime, t.lastUpdateTimestamp,
+               o.rawSizeBytes,
+               (SELECT COUNT(s.id) FROM Step s WHERE s.traceId = t.id)
+        FROM Trace t
+        JOIN S3CompatibleObject o ON o.objectKey = t.payloadObjectKey
+        WHERE t.projectId = :projectId
+        """)
+    Page<TraceSummary> findByProjectId(@Param("projectId") Long projectId, Pageable pageable);
 
     @Query("""
         SELECT t FROM Trace t

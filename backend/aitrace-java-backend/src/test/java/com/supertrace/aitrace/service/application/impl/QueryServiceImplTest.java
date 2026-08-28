@@ -63,7 +63,7 @@ class QueryServiceImplTest {
     void getSteps_returnsTheRequestedSummaryPageSortedByNewestFirst() {
         StepSummary step = new StepSummary(
             UUID.randomUUID(), null, "s", "llm_response", List.of(), null,
-            null, null, LocalDateTime.now(), LocalDateTime.now()
+            null, null, LocalDateTime.now(), LocalDateTime.now(), 128L
         );
         Page<StepSummary> page = new PageImpl<>(List.of(step));
 
@@ -100,7 +100,7 @@ class QueryServiceImplTest {
     void getTraces_returnsTheRequestedSummaryPageSortedByNewestFirst() {
         TraceSummary trace = new TraceSummary(
             UUID.randomUUID(), null, "t1", List.of(), null,
-            LocalDateTime.now(), LocalDateTime.now()
+            LocalDateTime.now(), LocalDateTime.now(), 256L, 3L
         );
         Page<TraceSummary> page = new PageImpl<>(List.of(trace));
 

@@ -42,4 +42,8 @@ public class GetStepVO {
 
     private BigDecimal cost;
 
+    /** Raw (uncompressed) input+output payload size in bytes; never null (the payload object is required). */
+    @NotNull
+    private Long payloadSize;
+
 }

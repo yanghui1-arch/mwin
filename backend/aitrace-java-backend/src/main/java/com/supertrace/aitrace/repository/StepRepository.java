@@ -17,13 +17,24 @@ import java.util.UUID;
 
 @Repository
 public interface StepRepository extends JpaRepository<Step, UUID> {
-    Page<StepSummary> findByProjectId(Long projectId, Pageable pageable);
+    @Query("""
+        SELECT s.id, s.parentStepId, s.name, s.type, s.tags, s.errorInfo,
+               s.model, s.usage, s.startTime, s.endTime,
+               o.rawSizeBytes
+        FROM Step s
+        JOIN S3CompatibleObject o ON o.objectKey = s.payloadObjectKey
+        WHERE s.projectId = :projectId
+        """)
+    Page<StepSummary> findByProjectId(@Param("projectId") Long projectId, Pageable pageable);
 
     @Query("""
         SELECT s.id, s.parentStepId, s.name, s.type, s.tags, s.errorInfo,
-               s.model, s.usage, s.startTime, s.endTime
-        FROM Step s, Project p
-        WHERE s.traceId = :traceId AND s.projectId = p.id AND p.userId = :userId
+               s.model, s.usage, s.startTime, s.endTime,
+               o.rawSizeBytes
+        FROM Step s
+        JOIN Project p ON p.id = s.projectId
+        JOIN S3CompatibleObject o ON o.objectKey = s.payloadObjectKey
+        WHERE s.traceId = :traceId AND p.userId = :userId
         ORDER BY s.startTime ASC
         """)
     List<StepSummary> findStepSummariesByTraceIdForUser(

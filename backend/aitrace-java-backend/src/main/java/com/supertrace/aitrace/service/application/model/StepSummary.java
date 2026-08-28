@@ -1,6 +1,7 @@
 package com.supertrace.aitrace.service.application.model;
 
 import com.supertrace.aitrace.domain.core.usage.LLMUsage;
+import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,6 +21,8 @@ public record StepSummary(
     String model,
     LLMUsage usage,
     LocalDateTime startTime,
-    LocalDateTime endTime
+    LocalDateTime endTime,
+    /** Raw payload size in bytes; never null (the payload object is required). */
+    @NotNull Long payloadSize
 ) {
 }

@@ -81,6 +81,8 @@ public class TraceController {
                     .errorInfo(trace.errorInfo())
                     .startTime(trace.startTime())
                     .lastUpdateTimestamp(trace.lastUpdateTimestamp())
+                    .payloadSize(trace.payloadSize())
+                    .stepCount(trace.stepCount())
                     .build()
                 )
                 .toList();

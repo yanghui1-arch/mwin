@@ -1,6 +1,6 @@
 /** Step persistence: Drizzle handles typed reads; raw D1 batch is reserved for atomic billing mutations. */
 import { and, count, desc, eq, inArray, isNotNull } from 'drizzle-orm';
-import { projects, stepMeta, steps as stepTable } from '../db/schema.js';
+import { projects, s3CompatibleObjects, stepMeta, steps as stepTable } from '../db/schema.js';
 import type { AppDatabase } from '../db/index.js';
 import type { JsonObject, S3CompatibleObject, Step, StepMeta, StepSummary, TokenSnapshot, Usage } from '../domain/types.js';
 import { parseJson, stringifyJson } from '../lib/utils.js';
@@ -64,6 +64,7 @@ interface StepSummaryRow {
   projectId: number;
   startTime: string;
   endTime: string | null;
+  payloadSize: number;
 }
 
 const stepSummaryFields = {
@@ -80,6 +81,7 @@ const stepSummaryFields = {
   projectId: stepTable.projectId,
   startTime: stepTable.startTime,
   endTime: stepTable.endTime,
+  payloadSize: s3CompatibleObjects.rawSizeBytes,
 };
 
 function toStepSummary(row: StepSummaryRow, cost: string | null): StepSummary {
@@ -153,6 +155,7 @@ export async function listSteps(db: AppDatabase, projectId: number, page: number
   const totalRow = await db.select({ value: count() }).from(stepTable).where(eq(stepTable.projectId, projectId)).get();
   const rows = await db.select({ ...stepSummaryFields, cost: stepMeta.cost }).from(stepTable)
     .leftJoin(stepMeta, eq(stepMeta.id, stepTable.id))
+    .innerJoin(s3CompatibleObjects, eq(s3CompatibleObjects.objectKey, stepTable.payloadObjectKey))
     .where(eq(stepTable.projectId, projectId))
     .orderBy(desc(stepTable.startTime)).limit(pageSize).offset(page * pageSize).all();
   return { total: totalRow?.value ?? 0, data: rows.map((row) => toStepSummary(row, row.cost)) };
@@ -162,6 +165,7 @@ export async function listStepsByTraceForUser(db: AppDatabase, userId: string, t
   const rows = await db.select({ ...stepSummaryFields, cost: stepMeta.cost }).from(stepTable)
     .innerJoin(projects, eq(projects.id, stepTable.projectId))
     .leftJoin(stepMeta, eq(stepMeta.id, stepTable.id))
+    .innerJoin(s3CompatibleObjects, eq(s3CompatibleObjects.objectKey, stepTable.payloadObjectKey))
     .where(and(eq(stepTable.traceId, traceId), eq(projects.userId, userId)))
     .orderBy(stepTable.startTime).all();
   return rows.map((row) => toStepSummary(row, row.cost));
@@ -187,7 +191,7 @@ export async function findStepMetaForUser(db: AppDatabase, userId: string, stepI
     metadata: stepMeta.metadata,
     cost: stepMeta.cost,
   }).from(stepMeta)
-    .innerJoin(stepTable, eq(stepTable.id, stepMeta.id))
+    .innerJoin(stepTable, eq(stepMeta.id, stepTable.id))
     .innerJoin(projects, eq(projects.id, stepTable.projectId))
     .where(and(eq(stepMeta.id, stepId), eq(projects.userId, userId))).get();
   if (!row || row.metadata === null) return null;
