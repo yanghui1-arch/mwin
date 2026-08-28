@@ -6,9 +6,11 @@ import com.supertrace.aitrace.dto.step.LogStepRequest;
 import com.supertrace.aitrace.factory.StepFactory;
 import com.supertrace.aitrace.repository.StepRepository;
 import com.supertrace.aitrace.service.domain.StepService;
+import com.supertrace.aitrace.service.domain.model.StepBatchItem;
 import com.supertrace.aitrace.service.application.model.StepSummary;
 import com.supertrace.aitrace.service.storage.S3CompatibleObjectService;
 import com.supertrace.aitrace.service.storage.model.StepPayload;
+import com.supertrace.aitrace.service.storage.model.StepPayloadChunkEntry;
 import com.supertrace.aitrace.service.storage.model.StoredPayload;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,8 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class StepServiceImpl implements StepService {
+
+    private static final int STEP_CHUNK_SIZE = 16;
 
     private final StepRepository stepRepository;
     private final StepFactory stepFactory;
@@ -56,6 +60,46 @@ public class StepServiceImpl implements StepService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void logSteps(@NotNull UUID userId, @NotNull List<StepBatchItem> items) {
+        List<PreparedStep> preparedSteps = items.stream()
+            .map(item -> {
+                LogStepRequest request = item.request();
+                UUID stepId = UUID.fromString(request.getStepId());
+                return new PreparedStep(
+                    request,
+                    item.projectId(),
+                    stepId,
+                    new StepPayload(
+                        objectMapper.valueToTree(request.getInput()),
+                        objectMapper.valueToTree(request.getOutput())
+                    )
+                );
+            })
+            .toList();
+
+        List<Step> steps = new ArrayList<>(preparedSteps.size());
+        for (int offset = 0; offset < preparedSteps.size(); offset += STEP_CHUNK_SIZE) {
+            List<PreparedStep> chunk = preparedSteps.subList(
+                offset,
+                Math.min(offset + STEP_CHUNK_SIZE, preparedSteps.size())
+            );
+            List<StepPayloadChunkEntry> entries = chunk.stream()
+                .map(step -> new StepPayloadChunkEntry(
+                    step.id(),
+                    step.payload().input(),
+                    step.payload().output()
+                ))
+                .toList();
+            String payloadObjectKey = s3CompatibleObjectService.storeStepPayloadChunk(entries);
+            chunk.stream()
+                .map(step -> stepFactory.createStep(step.request(), step.projectId(), payloadObjectKey))
+                .forEach(steps::add);
+        }
+        stepRepository.saveAllAndFlush(steps);
+    }
+
+    @Override
     public Page<StepSummary> findStepSummariesByProjectId(Long projectId, int page, int pageSize) {
         Pageable pageable = PageRequest.of(page, pageSize);
         return this.stepRepository.findByProjectId(projectId, pageable);
@@ -82,7 +126,7 @@ public class StepServiceImpl implements StepService {
     public StoredPayload getOwnedStepPayload(UUID userId, UUID stepId) {
         Step step = this.stepRepository.findByIdForUser(stepId, userId)
             .orElseThrow(() -> new RuntimeException("Step not found"));
-        return s3CompatibleObjectService.loadStepPayload(step.getPayloadObjectKey()).toStoredPayload();
+        return s3CompatibleObjectService.loadStepPayload(step.getPayloadObjectKey(), stepId).toStoredPayload();
     }
 
     @Override
@@ -90,6 +134,14 @@ public class StepServiceImpl implements StepService {
     public List<UUID> deleteStepsByStepUUID(List<UUID> stepIdToDelete) {
         this.stepRepository.deleteAllById(stepIdToDelete);
         return stepIdToDelete;
+    }
+
+    private record PreparedStep(
+        LogStepRequest request,
+        Long projectId,
+        UUID id,
+        StepPayload payload
+    ) {
     }
 
 }

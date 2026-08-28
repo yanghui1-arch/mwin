@@ -7,13 +7,16 @@ import com.supertrace.aitrace.domain.core.usage.LLMUsage;
 import com.supertrace.aitrace.dto.step.LogStepRequest;
 import com.supertrace.aitrace.factory.StepFactory;
 import com.supertrace.aitrace.repository.StepRepository;
+import com.supertrace.aitrace.service.domain.model.StepBatchItem;
 import com.supertrace.aitrace.service.storage.PayloadFormat;
 import com.supertrace.aitrace.service.storage.S3CompatibleObjectService;
 import com.supertrace.aitrace.service.storage.model.StepPayload;
+import com.supertrace.aitrace.service.storage.model.StepPayloadChunkEntry;
 import com.supertrace.aitrace.service.storage.model.StoredPayload;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -21,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.StreamSupport;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -142,6 +146,50 @@ class StepServiceImplTest {
         verifyNoInteractions(stepRepository);
     }
 
+    @Test
+    void logSteps_storesSixteenPayloadsPerChunk() {
+        List<LogStepRequest> requests = new ArrayList<>();
+        for (int index = 0; index < 17; index++) {
+            requests.add(buildRequest());
+        }
+        List<StepBatchItem> items = requests.stream()
+            .map(request -> new StepBatchItem(request, projectId))
+            .toList();
+        when(s3CompatibleObjectService.storeStepPayloadChunk(any()))
+            .thenReturn("payloads/v3/step-chunk/first.json.gz")
+            .thenReturn("payloads/v3/step-chunk/last.json.gz");
+        when(stepFactory.createStep(any(), eq(projectId), anyString()))
+            .thenAnswer(invocation -> {
+                LogStepRequest request = invocation.getArgument(0);
+                return buildStep(UUID.fromString(request.getStepId()));
+            });
+
+        service.logSteps(userId, items);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<StepPayloadChunkEntry>> chunkCaptor = ArgumentCaptor.forClass(List.class);
+        verify(s3CompatibleObjectService, times(2)).storeStepPayloadChunk(chunkCaptor.capture());
+        assertEquals(16, chunkCaptor.getAllValues().get(0).size());
+        assertEquals(1, chunkCaptor.getAllValues().get(1).size());
+        assertEquals(UUID.fromString(requests.get(0).getStepId()), chunkCaptor.getAllValues().get(0).get(0).id());
+        assertEquals(UUID.fromString(requests.get(16).getStepId()), chunkCaptor.getAllValues().get(1).get(0).id());
+        verify(stepRepository).saveAllAndFlush(argThat(steps ->
+            StreamSupport.stream(steps.spliterator(), false).count() == 17
+        ));
+    }
+
+    @Test
+    void logSteps_objectStorageFailure_doesNotPersistSteps() {
+        LogStepRequest request = buildRequest();
+        List<StepBatchItem> items = List.of(new StepBatchItem(request, projectId));
+        when(s3CompatibleObjectService.storeStepPayloadChunk(any()))
+            .thenThrow(new IllegalStateException("OSS unavailable"));
+
+        assertThrows(IllegalStateException.class, () -> service.logSteps(userId, items));
+
+        verifyNoInteractions(stepRepository);
+    }
+
     // ── getOwnedStepPayload ──────────────────────────────────────────────────
 
     @Test
@@ -155,12 +203,12 @@ class StepServiceImplTest {
             objectMapper.valueToTree(Map.of("answer", "world"))
         );
         when(stepRepository.findByIdForUser(stepId, userId)).thenReturn(Optional.of(step));
-        when(s3CompatibleObjectService.loadStepPayload(objectKey)).thenReturn(expected);
+        when(s3CompatibleObjectService.loadStepPayload(objectKey, stepId)).thenReturn(expected);
 
         StoredPayload result = service.getOwnedStepPayload(userId, stepId);
 
         assertEquals(expected.toStoredPayload(), result);
-        verify(s3CompatibleObjectService).loadStepPayload(objectKey);
+        verify(s3CompatibleObjectService).loadStepPayload(objectKey, stepId);
     }
 
     @Test

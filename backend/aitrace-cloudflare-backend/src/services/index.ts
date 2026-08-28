@@ -56,7 +56,7 @@ export class Services {
     if (!step) throw new Error('Step not found');
     const object = await this.repositories.findS3CompatibleObject(step.payloadObjectKey);
     if (!object) throw new Error('Step payload metadata not found');
-    return this.payloadStorage.loadStep(object);
+    return this.payloadStorage.loadStep(object, stepId);
   }
   /** Loads one user-owned trace payload from OSS. */
   async getTracePayload(userId: string, traceId: string) {

@@ -12,6 +12,7 @@ import com.supertrace.aitrace.service.application.LogService;
 import com.supertrace.aitrace.service.domain.ProjectService;
 import com.supertrace.aitrace.service.domain.StepMetaService;
 import com.supertrace.aitrace.service.domain.StepService;
+import com.supertrace.aitrace.service.domain.model.StepBatchItem;
 import com.supertrace.aitrace.service.domain.TraceService;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -178,10 +179,18 @@ public class LogServiceImpl implements LogService {
             ? Map.of()
             : this.stepMetaService.findCostsByStepIds(incomingStepIds);
 
+        List<StepBatchItem> stepItems = stepRequests.stream()
+            .map(request -> new StepBatchItem(
+                request,
+                projects.get(request.getProjectName()).getId()
+            ))
+            .toList();
+        this.stepService.logSteps(userId, stepItems);
+
         for (LogStepRequest request : stepRequests) {
             Project project = projects.get(request.getProjectName());
             BatchAggregate aggregate = aggregates.get(project.getId());
-            UUID stepId = this.stepService.logStep(userId, request, project.getId());
+            UUID stepId = UUID.fromString(request.getStepId());
             BigDecimal previousCost = previousCosts.getOrDefault(stepId, BigDecimal.ZERO);
             BigDecimal updatedCost = this.stepMetaService.addStepMeta(
                 stepId,

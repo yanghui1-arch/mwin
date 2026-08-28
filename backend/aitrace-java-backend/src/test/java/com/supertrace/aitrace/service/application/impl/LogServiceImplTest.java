@@ -392,7 +392,6 @@ class LogServiceImplTest {
         when(projectRepository.findProjectsByName("test-project")).thenReturn(List.of(existingProject));
         when(traceService.countByProjectId(10L)).thenReturn(0L);
         when(traceService.findById(any())).thenReturn(Optional.empty());
-        when(stepService.logStep(userId, step, 10L)).thenReturn(stepId);
         when(stepMetaService.findCostsByStepIds(any())).thenReturn(Map.of());
         when(stepMetaService.addStepMeta(any(), any(), any(), any(), any()))
             .thenReturn(StepMeta.builder().id(stepId).cost(new BigDecimal("2.5")).build());
@@ -405,6 +404,11 @@ class LogServiceImplTest {
         ArgumentCaptor<LogTraceRequest> traceCaptor = ArgumentCaptor.forClass(LogTraceRequest.class);
         verify(traceService, times(2)).createTrace(traceCaptor.capture(), eq(10L));
         assertEquals(List.of(parent, child), traceCaptor.getAllValues());
+        verify(stepService).logSteps(eq(userId), argThat(items ->
+            items.size() == 1
+                && items.get(0).request() == step
+                && items.get(0).projectId().equals(10L)
+        ));
         verify(projectRepository, times(1)).updateAverageDuration(10L, 4000);
         verify(projectRepository, times(1)).updateCost(10L, new BigDecimal("2.5"));
     }

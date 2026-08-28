@@ -97,16 +97,22 @@ test('trace-tree batch writes preserve trace order and rebuild aggregates once',
 
 test('trace-tree batch keeps 128 steps within bounded multi-row statements', async () => {
   const db = new RecordingDb();
+  const chunkObjects = Array.from({ length: 8 }, (_, index) => ({
+    ...payloadObject('step', `chunk-${index}`),
+    objectKey: `payloads/v3/step-chunk/step-${index * 16}.json.gz`,
+    schemaVersion: 3,
+  }));
   const steps = Array.from({ length: 128 }, (_, index) => {
     const id = `step-${index}`;
+    const chunkObject = chunkObjects[Math.floor(index / 16)];
     return {
       step: {
         id, name: id, traceId: null, parentStepId: null, type: 'general', tags: [],
         errorInfo: null, model: null, usage: null, projectName: 'demo', projectId: 1,
         startTime: '2026-07-10T00:00:00Z', endTime: '2026-07-10T00:00:01Z',
-        payloadObjectKey: `payloads/v2/step/${id}.json.gz`,
+        payloadObjectKey: chunkObject.objectKey,
       },
-      payloadObject: payloadObject('step', id),
+      payloadObject: chunkObject,
       metadata: { description: null },
       cost: '0.0000000000',
     };
@@ -123,6 +129,7 @@ test('trace-tree batch keeps 128 steps within bounded multi-row statements', asy
   assert.equal(db.batches.length, 1);
   assert.ok(db.batches[0].length < 50);
   assert.ok(db.batches[0].every((statement) => statement.values.length <= 100));
+  assert.equal(db.batches[0][0].values.length, 8 * 9);
 });
 
 test('trace-tree multi-row statements execute against SQLite', async () => {

@@ -66,7 +66,7 @@ test('payload storage reads a typed v2 document and rejects a Step/Trace mismatc
     const storage = new AliyunOssPayloadStorage(options);
     const object = metadata('payloads/v2/step/step-1.json.gz', 2, raw, compressed);
 
-    assert.deepEqual(await storage.loadStep(object), payload);
+    assert.deepEqual(await storage.loadStep(object, 'step-1'), payload);
     await assert.rejects(storage.loadTrace(object), /mwin\.trace-payload\/v2/);
   } finally {
     globalThis.fetch = originalFetch;
@@ -84,7 +84,45 @@ test('payload storage rejects unsupported schema versions', async () => {
     const storage = new AliyunOssPayloadStorage(options);
     const object = metadata('payloads/v1/step/step-1.json.gz', 1, raw, compressed);
 
-    await assert.rejects(storage.loadStep(object), /Unsupported stored payload schema version: 1/);
+    await assert.rejects(storage.loadStep(object, 'step-1'), /Unsupported stored payload schema version: 1/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('payload storage writes and reads a v3 Step chunk', async () => {
+  const originalFetch = globalThis.fetch;
+  const entries = [
+    { id: 'step-1', input: { prompt: 'one' }, output: { answer: 'first' } },
+    { id: 'step-2', input: { prompt: 'two' }, output: { answer: 'second' } },
+  ];
+  let storedBody = new Uint8Array();
+  let requestUrl = '';
+  globalThis.fetch = async (input, init) => {
+    const request = new Request(input, init);
+    requestUrl = request.url;
+    if (request.method === 'PUT') {
+      storedBody = new Uint8Array(await request.arrayBuffer());
+      return new Response(null, { status: 200 });
+    }
+    return new Response(storedBody, { status: 200 });
+  };
+
+  try {
+    const storage = new AliyunOssPayloadStorage(options);
+    const object = await storage.storeStepChunk(entries);
+
+    assert.equal(object.objectKey, 'payloads/v3/step-chunk/step-1.json.gz');
+    assert.equal(object.schemaVersion, 3);
+    assert.equal(requestUrl, 'https://mwintrack.oss-cn-shanghai.aliyuncs.com/payloads/v3/step-chunk/step-1.json.gz');
+    assert.deepEqual(JSON.parse(new TextDecoder().decode(gunzipSync(storedBody))), {
+      schema: 'mwin.step-payload-chunk/v3',
+      data: { steps: entries },
+    });
+    assert.deepEqual(await storage.loadStep(object, 'step-2'), {
+      input: entries[1].input,
+      output: entries[1].output,
+    });
   } finally {
     globalThis.fetch = originalFetch;
   }

@@ -1,16 +1,19 @@
-import type { JsonObject, S3CompatibleObject, StepPayload, TracePayload } from '../domain/types.js';
+import type { JsonObject, S3CompatibleObject, StepPayload, StepPayloadChunk, StepPayloadChunkEntry, TracePayload } from '../domain/types.js';
 
 const CONTENT_TYPE = 'application/gzip';
 const CONTENT_ENCODING = 'gzip' as const;
-const SCHEMA_VERSION = 2;
+const PAYLOAD_SCHEMA_VERSION = 2;
+const STEP_CHUNK_SCHEMA_VERSION = 3;
 const STEP_SCHEMA = 'mwin.step-payload/v2';
+const STEP_CHUNK_SCHEMA = 'mwin.step-payload-chunk/v3';
 const TRACE_SCHEMA = 'mwin.trace-payload/v2';
 const ERROR_BODY_LIMIT = 4096;
 
 export interface PayloadObjectStorage {
   storeStep(stepId: string, payload: StepPayload): Promise<S3CompatibleObject>;
+  storeStepChunk(entries: StepPayloadChunkEntry[]): Promise<S3CompatibleObject>;
   storeTrace(traceId: string, payload: TracePayload): Promise<S3CompatibleObject>;
-  loadStep(object: S3CompatibleObject): Promise<StepPayload>;
+  loadStep(object: S3CompatibleObject, stepId: string): Promise<StepPayload>;
   loadTrace(object: S3CompatibleObject): Promise<TracePayload>;
 }
 
@@ -31,32 +34,66 @@ export class AliyunOssPayloadStorage implements PayloadObjectStorage {
   }
 
   storeStep(stepId: string, payload: StepPayload) {
-    return this.store(`payloads/v2/step/${stepId}.json.gz`, STEP_SCHEMA, payload);
+    return this.store(
+      `payloads/v2/step/${stepId}.json.gz`,
+      PAYLOAD_SCHEMA_VERSION,
+      STEP_SCHEMA,
+      payload,
+    );
+  }
+
+  storeStepChunk(entries: StepPayloadChunkEntry[]) {
+    return this.store(
+      `payloads/v3/step-chunk/${entries[0].id}.json.gz`,
+      STEP_CHUNK_SCHEMA_VERSION,
+      STEP_CHUNK_SCHEMA,
+      { steps: entries },
+    );
   }
 
   storeTrace(traceId: string, payload: TracePayload) {
-    return this.store(`payloads/v2/trace/${traceId}.json.gz`, TRACE_SCHEMA, payload);
+    return this.store(
+      `payloads/v2/trace/${traceId}.json.gz`,
+      PAYLOAD_SCHEMA_VERSION,
+      TRACE_SCHEMA,
+      payload,
+    );
   }
 
-  loadStep(object: S3CompatibleObject): Promise<StepPayload> {
-    return this.load(object, STEP_SCHEMA);
+  async loadStep(object: S3CompatibleObject, stepId: string): Promise<StepPayload> {
+    if (object.schemaVersion === PAYLOAD_SCHEMA_VERSION) {
+      const payload = await this.load(object, PAYLOAD_SCHEMA_VERSION, STEP_SCHEMA);
+      if (!isPayload(payload)) throw new Error('Stored payload must contain JSON input and output');
+      return payload;
+    }
+    if (object.schemaVersion === STEP_CHUNK_SCHEMA_VERSION) {
+      const chunk = await this.load(object, STEP_CHUNK_SCHEMA_VERSION, STEP_CHUNK_SCHEMA);
+      if (!isStepPayloadChunk(chunk)) throw new Error('Stored Step chunk is invalid');
+      const entry = chunk.steps.find((step) => step.id === stepId);
+      if (!entry) throw new Error(`Step payload not found in chunk: ${stepId}`);
+      return { input: entry.input, output: entry.output };
+    }
+    throw new Error(`Unsupported stored payload schema version: ${object.schemaVersion}`);
   }
 
-  loadTrace(object: S3CompatibleObject): Promise<TracePayload> {
-    return this.load(object, TRACE_SCHEMA);
+  async loadTrace(object: S3CompatibleObject): Promise<TracePayload> {
+    const payload = await this.load(object, PAYLOAD_SCHEMA_VERSION, TRACE_SCHEMA);
+    if (!isPayload(payload)) throw new Error('Stored payload must contain JSON input and output');
+    return payload;
   }
 
   private async load(
     object: S3CompatibleObject,
+    expectedVersion: number,
     expectedSchema: string,
-  ): Promise<StepPayload> {
+  ): Promise<unknown> {
     const response = await this.request('GET', object.objectKey);
     if (!response.ok) throw await this.ossError('read', response);
     const compressed = await readLimited(response.body, this.options.maxStoredSizeBytes);
     const raw = await decompressGzip(compressed, this.options.maxRawSizeBytes);
     const checksum = await sha256Hex(raw);
     if (checksum !== object.sha256.toLowerCase()) throw new Error('Payload checksum mismatch');
-    if (object.schemaVersion !== SCHEMA_VERSION) {
+    if (object.schemaVersion !== expectedVersion) {
       throw new Error(`Unsupported stored payload schema version: ${object.schemaVersion}`);
     }
     const document: unknown = JSON.parse(new TextDecoder().decode(raw));
@@ -65,15 +102,14 @@ export class AliyunOssPayloadStorage implements PayloadObjectStorage {
       || !('data' in document)) {
       throw new Error(`Stored payload schema does not match ${expectedSchema}`);
     }
-    const value = document.data;
-    if (!isPayload(value)) throw new Error('Stored payload must contain JSON input and output');
-    return value;
+    return document.data;
   }
 
   private async store(
     objectKey: string,
+    schemaVersion: number,
     schema: string,
-    payload: StepPayload | TracePayload,
+    payload: StepPayload | StepPayloadChunk | TracePayload,
   ): Promise<S3CompatibleObject> {
     const raw = new TextEncoder().encode(JSON.stringify({ schema, data: payload }));
     requireWithinLimit(raw.byteLength, this.options.maxRawSizeBytes, 'Raw payload');
@@ -91,7 +127,7 @@ export class AliyunOssPayloadStorage implements PayloadObjectStorage {
       objectKey,
       contentType: CONTENT_TYPE,
       contentEncoding: CONTENT_ENCODING,
-      schemaVersion: SCHEMA_VERSION,
+      schemaVersion,
       rawSizeBytes: raw.byteLength,
       storedSizeBytes: compressed.byteLength,
       sha256: await sha256Hex(raw),
@@ -141,6 +177,14 @@ function isPayload(value: unknown): value is StepPayload | TracePayload {
   return isJsonObject(value.input) || value.input === null
     ? isJsonObject(value.output) || value.output === null
     : false;
+}
+
+function isStepPayloadChunk(value: unknown): value is StepPayloadChunk {
+  return isJsonObject(value)
+    && Array.isArray(value.steps)
+    && value.steps.every((entry) => isJsonObject(entry)
+      && typeof entry.id === 'string'
+      && isPayload(entry));
 }
 
 async function compressGzip(raw: Uint8Array): Promise<Uint8Array> {
